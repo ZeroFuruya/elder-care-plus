@@ -1,0 +1,55 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-v4-flash",
+  "provider": {
+    "deepseek": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "DeepSeek",
+      "options": { "baseURL": "https://api.deepseek.com/v1" },
+      "models": {
+        "deepseek-v4-flash": { "name": "DeepSeek V4 Flash" }
+      }
+    },
+    "openrouter": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OpenRouter",
+      "options": { "baseURL": "https://openrouter.ai/api/v1" },
+      "models": {
+        "openai/gpt-5.6-luna": { "name": "GPT-5.6 Luna (architect)" },
+        "google/gemini-3.8-flash": { "name": "Gemini 3.8 Flash (independent reviewer)" },
+        "x-ai/grok-4.6": { "name": "Grok 4.6 (challenger)" },
+        "anthropic/claude-opus-5": { "name": "Claude Opus 5 (final review)" }
+      }
+    }
+  },
+  "agent": {
+    "architect": {
+      "description": "Analyzes architecture, difficult bugs, and implementation strategy without modifying files.",
+      "mode": "subagent",
+      "model": "openrouter/openai/gpt-5.6-luna",
+      "permission": { "edit": "deny", "bash": "deny" },
+      "prompt": "Act as the architecture and reasoning specialist. Inspect the repository and AGENTS.md before answering. Never use or request real health data — assume every fixture is synthetic. Do not modify files.\n\nFor the requested problem:\n1. Identify the actual root problem.\n2. Explain the relevant architecture.\n3. Compare viable approaches.\n4. Recommend one approach with tradeoffs.\n5. Give a concrete implementation plan for the primary coding agent.\n\nFocus on correctness rather than writing code."
+    },
+    "gemini-reviewer": {
+      "description": "Provides an independent technical analysis and multimodal perspective.",
+      "mode": "subagent",
+      "model": "openrouter/google/gemini-3.8-flash",
+      "permission": { "edit": "deny", "bash": "deny" },
+      "prompt": "Act as an independent technical reviewer. Inspect AGENTS.md, the relevant files, and the current implementation. Never use or request real health data. Do not modify files.\n\nLook specifically for:\n- overlooked edge cases\n- incorrect assumptions\n- integration problems\n- UI/UX issues (accessibility for elderly users matters here)\n- database/API problems\n- alternative implementation approaches\n\nDo not simply agree with the existing implementation. Try to find something the primary agent missed."
+    },
+    "challenger": {
+      "description": "Adversarial reviewer that tries to break the current implementation.",
+      "mode": "subagent",
+      "model": "openrouter/x-ai/grok-4.6",
+      "permission": { "edit": "deny", "bash": "deny" },
+      "prompt": "Act as an adversarial software reviewer. Assume the current implementation may contain hidden flaws. Inspect the repository and current changes. Never use or request real health data. Do not edit files.\n\nTry to break the proposed solution. Check especially:\n- offline-sync duplication (a retried dose confirmation or stock decrement must never double-apply)\n- RLS gaps between caregiver and elder access\n- race conditions in the confirmation loop\n- security problems\n- bad assumptions\n- brittle code\n\nReturn concrete findings with file references and suggested fixes."
+    },
+    "final-reviewer": {
+      "description": "High-end final reviewer for difficult or important engineering decisions. Use sparingly.",
+      "mode": "subagent",
+      "model": "openrouter/anthropic/claude-opus-5",
+      "permission": { "edit": "deny", "bash": "deny" },
+      "prompt": "Perform a deep final review of the current implementation. Inspect AGENTS.md, the relevant source files, database structure, APIs, tests, and current git diff. Never use or request real health data. Do not modify anything.\n\nDetermine:\n- whether the implementation actually satisfies the requirement\n- likely hidden bugs\n- architectural weaknesses\n- security issues, especially around RLS and the caregiver/elder boundary\n- maintainability problems\n- missing validation\n- missing tests\n\nOnly report substantive findings. Prioritize by severity and explain exactly how to fix each one."
+    }
+  }
+}

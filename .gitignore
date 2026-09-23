@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Expo / React Native
+.expo/
+.expo-shared/
+apps/mobile/.expo/
+apps/mobile/android/
+apps/mobile/ios/
+web-build/
+
+# Environment variables (never commit secrets)
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Python (services/ai)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+services/ai/.venv/
+.uv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Supabase local state
+supabase/.temp/
+supabase/.branches/
+supabase/.env
+
+# Test / coverage
+coverage/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp

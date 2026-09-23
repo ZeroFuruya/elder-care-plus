@@ -1,0 +1,22 @@
+{
+  "name": "eldercare-plus",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ElderCare+ — family-centered medication coordination app (monorepo root)",
+  "packageManager": "pnpm@12.5.1",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "lint": "pnpm -r --if-present run lint",
+    "test": "pnpm -r --if-present run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "mobile": "pnpm --filter mobile start",
+    "ai": "cd services/ai && uv run uvicorn main:app --reload"
+  },
+  "devDependencies": {
+    "prettier": "^3.9.8"
+  }
+}

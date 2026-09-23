@@ -1,0 +1,10 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'services/*'
+
+# pnpm 12 blocks dependency build scripts by default (supply-chain hardening).
+# These are the ones we reviewed and allow. Anything new must be approved
+# deliberately, not blanket-enabled.
+allowBuilds:
+  unrs-resolver: true

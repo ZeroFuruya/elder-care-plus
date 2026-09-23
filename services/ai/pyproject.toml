@@ -1,0 +1,48 @@
+[project]
+name = "eldercare-ai"
+version = "0.0.0"
+description = "ElderCare+ AI service: prescription OCR (reference-only) and caregiver-approved text embeddings."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.5",
+  "python-multipart>=0.0.12",
+  "uvicorn[standard]>=0.32",
+]
+
+# Heavy, platform-specific model runtimes. NOT installed by default:
+#   uv sync --extra ml
+# torch needs a CUDA 12.8+ build on the owner's RTX 5050 (docs/01-dev-environment.md section 3).
+[project.optional-dependencies]
+ml = [
+  "paddleocr",
+  "rapidocr-onnxruntime",
+  "sentence-transformers",
+]
+
+[dependency-groups]
+dev = [
+  "httpx>=0.27",
+  "pytest>=8",
+  "ruff>=0.6",
+]
+
+[tool.uv]
+package = false
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+# Test fixtures use deliberately fake credentials and assert on them.
+"tests/**" = ["S101", "S105", "S106"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

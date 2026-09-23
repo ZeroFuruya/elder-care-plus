@@ -1,0 +1,19 @@
+# Normalize line endings to LF so the repo is identical on Windows and in CI.
+# Matches .editorconfig (end_of_line = lf).
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+
+# Keep lockfiles as text so diffs are readable
+pnpm-lock.yaml text eol=lf
+services/ai/uv.lock text eol=lf

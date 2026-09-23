@@ -1,0 +1,8 @@
+-- Seed data for local development.
+--
+-- SYNTHETIC FIXTURES ONLY. Never put real elder or caregiver data here — real
+-- health data must not enter dev, tests, or any AI tool
+-- (docs/01-dev-environment.md section 1.8).
+--
+-- Intentionally empty: fixtures are added per sprint alongside the tables they
+-- populate. `supabase db reset` runs this file after migrations.
