@@ -2,14 +2,28 @@
 
 ## Status
 
-Docs-only repository. There is **no source code, no `package.json`, no git repo, and no `opencode.json` yet** — only `docs/` and this file. Do not assume a stack from the directory; the stack is already decided in `docs/01-dev-environment.md` §4. The commands listed there are **targets: they will fail until the repo is scaffolded.** Do not scaffold or start implementing without an approved sprint spec and an explicit owner request.
+**Scaffolded, not started.** The monorepo exists at commit `bb50848`: `apps/mobile/` (Expo + Expo Router navigation skeleton), `services/ai/` (FastAPI, `/health` real, `/ocr` and `/embed/text` return `501`), `packages/shared/` (zod schemas + status labels), `supabase/` (config + bootstrap migration only), `.github/workflows/`, `opencode.json`, and `pnpm-lock.yaml`.
+
+**Verified green on 2026-09-24:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (7 passing), `pnpm format:check`.
+
+**Not built yet:** there is **no product schema, no auth, and no real screen** — the screens are `ScreenScaffold` placeholders. The Supabase local stack cannot run until Docker Desktop is installed. Do not scaffold further or start implementing without an approved sprint spec and an explicit owner request (`docs/specs/README.md`).
+
+**Blocking unknown (scope baseline).** Both approved design PDFs are now readable and have been
+read. They agree with each other on scope, and disagree with `docs/00-product-flow.md` + the
+code: the approved baseline has **two roles**, no prescriptions/OCR, no stock/expiry, and **one**
+emergency contact. Separately, the v1.2 wireframe pack adds a **third role** ("Connected Family
+Member", 15 screens) that no other source has. Read `docs/02-ui-ux-standard.md` §20 for the
+evidence and `docs/adr/adr-001`…`adr-004` for decision briefs. **Resolve before Sprint 1.**
 
 ## Required reading before any work
 
 1. `docs/00-product-flow.md` — product source of truth (roles, screens, flows, data model, hard rules). **Wins on product scope.**
 2. `docs/01-dev-environment.md` — tooling source of truth (stack, services, workflow, model roster). **Wins on tooling.**
+3. `docs/02-ui-ux-standard.md` — UI/UX source of truth (tokens, status presentation, accessibility, copy rules). **Wins on UI/UX.** Required before touching anything under `apps/mobile/src/`.
 
-These are long and full of **decided** choices (do not silently swap tools, services, or models). Read both in full before feature or setup work. The summary below is not a substitute.
+These are long and full of **decided** choices (do not silently swap tools, services, or models). Read all three in full before feature or setup work. The summary below is not a substitute.
+
+The two approved design PDFs (`docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf`, `docs/ElderCare_Plus_Complete_Wireframes_Connected_Family_v1.2.pdf`) are also authoritative on screens and visual identity, but you cannot read PDFs directly — use the digest in `docs/02-ui-ux-standard.md` §5 and §20, which is transcribed from them and records where they disagree with `00-product-flow.md`.
 
 ## Hard rules — violating these is a bug
 
