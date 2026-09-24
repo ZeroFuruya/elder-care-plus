@@ -1,4 +1,3 @@
-import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { userRoleLabels } from '@eldercare/shared';
@@ -8,13 +7,9 @@ import { Card } from '@/components/card';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
-import { getLinkedElder } from '@/db';
-import { useAsyncData } from '@/hooks/use-async-data';
 
-export default function CaregiverProfileScreen() {
+export default function ElderProfileScreen() {
   const user = useSessionUser();
-  const loader = useCallback(() => getLinkedElder(user.id), [user.id]);
-  const { state } = useAsyncData(loader);
 
   return (
     <Screen title="Profile" subtitle="Your account">
@@ -33,13 +28,10 @@ export default function CaregiverProfileScreen() {
         </View>
       </Card>
 
-      <Card title="Linked older adult">
-        <Text style={styles.value}>
-          {state.status === 'ready' && state.data ? state.data.elderName : 'None linked'}
-        </Text>
+      <Card title="Your data">
         <Text style={styles.body}>
-          A caregiver account follows exactly one older adult in this release, so the dashboard
-          shows that person&apos;s doses and confirmations.
+          Doses you confirm are stored in the local database on this device and are shown to the
+          family caregiver you are linked to. Nothing is deleted — a record is only added.
         </Text>
       </Card>
 

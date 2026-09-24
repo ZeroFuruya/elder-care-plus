@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "eldercareplus",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "icon": "./assets/expo.icon",
       "supportsTablet": false
@@ -40,7 +40,8 @@
         "expo-image-picker",
         {
           "photosPermission": "ElderCare+ needs access to your photos so you can attach a prescription photo for your caregiver to review.",
-          "cameraPermission": "ElderCare+ needs camera access so you can photograph a prescription for your caregiver to review."
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ]
     ],
