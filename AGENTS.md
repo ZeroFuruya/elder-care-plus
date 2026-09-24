@@ -2,11 +2,11 @@
 
 ## Status
 
-**Scaffolded, not started.** The monorepo exists at commit `bb50848`: `apps/mobile/` (Expo + Expo Router navigation skeleton), `services/ai/` (FastAPI, `/health` real, `/ocr` and `/embed/text` return `501`), `packages/shared/` (zod schemas + status labels), `supabase/` (config + bootstrap migration only), `.github/workflows/`, `opencode.json`, and `pnpm-lock.yaml`.
+**Scaffolded and running locally.** `main` is at `db675f7`, pushed to the private GitHub repo `ZeroFuruya/elder-care-plus`. `apps/mobile/` is no longer a skeleton: it is a working two-role app backed by a local **`expo-sqlite`** database with seeded synthetic fixtures, local auth, and real screens for both roles (see `DEMO.md` for how to run it and the demo accounts). `services/ai/` is still a contract only — `/health` is real, `/ocr` and `/embed/text` return `501`. `packages/shared/` holds the zod schemas and the status-presentation contract. `supabase/` holds config plus the bootstrap extension migration and **no product schema**.
 
-**Verified green on 2026-09-24:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (7 passing), `pnpm format:check`.
+**Verified green on 2026-09-24:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (22 passing), `pnpm format:check`, `pnpm check:contrast`.
 
-**Not built yet:** there is **no product schema, no auth, and no real screen** — the screens are `ScreenScaffold` placeholders. The Supabase local stack cannot run until Docker Desktop is installed. Do not scaffold further or start implementing without an approved sprint spec and an explicit owner request (`docs/specs/README.md`).
+**Not built yet:** no Supabase product schema, no Supabase Auth, no RLS, and no appointments (the Calendar tabs show a deliberate empty state). The mobile build is a **local-database demo**, not the RLS-backed design — moving to Supabase means replacing `apps/mobile/src/db/users.ts` and `db/doses.ts` and adding RLS; the screens do not change. The Supabase local stack cannot run until Docker Desktop is installed. Do not scaffold further or start implementing without an approved sprint spec and an explicit owner request (`docs/specs/README.md`).
 
 **Blocking unknown (scope baseline).** Both approved design PDFs are now readable and have been
 read. They agree with each other on scope, and disagree with `docs/00-product-flow.md` + the
@@ -23,7 +23,7 @@ evidence and `docs/adr/adr-001`…`adr-004` for decision briefs. **Resolve befor
 
 These are long and full of **decided** choices (do not silently swap tools, services, or models). Read all three in full before feature or setup work. The summary below is not a substitute.
 
-The two approved design PDFs (`docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf`, `docs/ElderCare_Plus_Complete_Wireframes_Connected_Family_v1.2.pdf`) are also authoritative on screens and visual identity, but you cannot read PDFs directly — use the digest in `docs/02-ui-ux-standard.md` §5 and §20, which is transcribed from them and records where they disagree with `00-product-flow.md`.
+The two approved design PDFs (`docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf`, `docs/ElderCare_Plus_Complete_Wireframes_Connected_Family_v1.2.pdf`) are also authoritative on screens and visual identity. Read them with the checked-in, dependency-free extractor — `node scripts/pdf-text.mjs <pdf> --out <txt>` — and trust the PDF, not the extracted `.txt` (regenerate it rather than treating it as a source). `docs/02-ui-ux-standard.md` §5 and §20 digest them and record where they disagree with `00-product-flow.md`.
 
 ## Hard rules — violating these is a bug
 

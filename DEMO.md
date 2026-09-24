@@ -17,6 +17,9 @@ No Docker, no network and no credentials are needed: the database is `expo-sqlit
 (the brief allows "a local database or a cloud database"). It is created and seeded the first time
 the app starts.
 
+**Use a device or emulator — not the web target.** `expo start --web` fails to bundle because
+`expo-sqlite`'s web worker cannot resolve its WASM file under this pnpm workspace.
+
 ## Working accounts
 
 Both are seeded automatically. The password is the same for both so it is easy to type on stage.
@@ -34,7 +37,7 @@ automatically, and a new older adult gets a fresh day of doses so their dashboar
 | Requirement                            | Where it lives                                                            |
 | -------------------------------------- | ------------------------------------------------------------------------- |
 | Login and logout                       | `(auth)/sign-in.tsx`, `components/logout-button.tsx`                      |
-| Sample dashboard after login           | `(elder)/elder/index.tsx` (Today), `(caregiver)/caregiver/index.tsx`      |
+| Sample dashboard after login           | `(elder)/elder/index.tsx` (Home), `(caregiver)/caregiver/index.tsx`       |
 | Credentials checked against a database | `db/users.ts`, salted SHA-256 in `db/users.ts`, table in `db/database.ts` |
 | Create account / registration          | `(auth)/sign-up.tsx` with a role choice                                   |
 | Success and error messages             | `components/banner.tsx` + `auth/validation.ts`                            |
@@ -51,7 +54,7 @@ automatically, and a new older adult gets a fresh day of doses so their dashboar
 
 The elder confirms a dose; the caregiver's dashboard updates from the same record.
 
-1. Sign in as **Ana** (`ana@eldercare.app`). Today shows a dose that is **Due**.
+1. Sign in as **Ana** (`ana@eldercare.app`). Home shows a dose that is **Due**.
 2. Tap **Mark as taken** (56 dp target). A success banner reports the time.
 3. Log out (confirm the dialog), then sign in as **Maria** (`maria@eldercare.app`).
 4. The dashboard shows the new claim under **Recent confirmations**, the **Taken** count has gone
@@ -75,7 +78,10 @@ Confirmations are idempotent at the database level: the `taken_at IS NULL` guard
   the local-database build the brief asked for.
 - The session is in memory, so a cold start returns to the welcome screen. That is deliberate for a
   login demonstration.
-- Appointments, reports beyond confirmations, and the third role (connected family member) are not
-  built. Appointments screens show an empty state rather than fake rows.
+- **Appointments are not built.** The Calendar tab shows a deliberate empty state rather than fake
+  rows.
+- **Reports cover confirmation history only** — the 7-day confirmation rate and a day-by-day
+  breakdown. No other reporting exists yet.
+- The third role (connected family member) is not built.
 - The demo day is rebuilt when it has nothing pending, so a demonstration cannot dead-end on the
   clock. `db/demo.ts` marks that scaffolding clearly.

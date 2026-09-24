@@ -129,7 +129,12 @@ eldercare-plus/
 
 ## 7. Environment reference
 
-**Installed on the owner's machine (Windows):** Git, GitHub CLI, VS Code, Node LTS, pnpm via `corepack enable`, Docker Desktop (WSL2), Python 3.12, uv, Supabase CLI via `npx supabase`, Bruno, NVIDIA driver, Expo Go on the phone.
+**Installed and verified on the owner's machine (Windows), 2026-09-24:** Git, VS Code, Node LTS, pnpm (now enabled via `corepack enable`; shims in `C:\Program Files\nodejs`, v12.5.1), uv (the project's Python is pinned to 3.12 by `services/ai/.python-version` — there is **no system Python 3.12**, `python` resolves only to the Microsoft Store alias), NVIDIA driver, Supabase CLI via `npx supabase`, Expo Go on the phone.
+
+**Not installed** — earlier revisions of this file wrongly claimed these were present. This matters:
+- **GitHub CLI (`gh`).** Create and push repositories with plain `git` plus Git Credential Manager (`credential.helper=manager`). Installing `gh` is an owner decision, not a silent setup step.
+- **Docker Desktop.** `npx supabase start` cannot run, so migrations can only be *authored*, never applied or tested locally. Required before any Supabase-local work.
+- **Bruno.** API testing for `services/ai` uses its own pytest suite (`uv run pytest`) instead.
 
 **`opencode.json`** — DeepSeek direct for the main coder, OpenRouter for the four specialist subagents, each with `edit`/`bash` denied so they can only analyze and report, never modify files:
 
@@ -357,6 +362,7 @@ After Sprint 8: integration and security pass, system testing, user evaluation, 
 
 ## 16. Changelog
 
+- 2026-09-24: Corrected §7's installed-tooling list against the actual machine: **GitHub CLI, Docker Desktop and Bruno are not installed**; pnpm is now enabled via `corepack enable` (it previously was not on PATH); Python 3.12 comes from uv, not a system Python. Recorded the consequences for `npx supabase start` and for repo creation. No stack decision changed.
 - 2026-09-24: Read the approved `docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf` (28 pages; previously believed to have no extractable text). It is the **approved baseline** and it agrees with the wireframe pack, not with `docs/00-product-flow.md`, on scope: two roles, no prescriptions/OCR, no stock/expiry, one emergency contact. `docs/02-ui-ux-standard.md` §5/§20 were updated with its palette, contrast math and evidence; scope decision briefs were added as `docs/adr/adr-001`…`adr-004`; `AGENTS.md`'s blocking-unknown note was rewritten. No sprint-map change yet — Sprint 2/3/5/6 depend on the open decisions.
 - 2026-09-24: Added `docs/02-ui-ux-standard.md` (normative UI/UX standard: token audit, status presentation contract, accessibility and copy rules) and listed it as required reading in `AGENTS.md`. Records one failing contrast pair (`primary` on `background`, 4.48:1) and six open UI decisions.
 - 2026-09-23: Excluded the generated, git-ignored `apps/mobile/expo-env.d.ts` from Prettier so `pnpm format:check` passes on a clean checkout.
