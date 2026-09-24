@@ -13,6 +13,7 @@
     "test": "pnpm -r --if-present run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "check:contrast": "node scripts/check-contrast.mjs",
     "mobile": "pnpm --filter mobile start",
     "ai": "cd services/ai && uv run uvicorn main:app --reload"
   },

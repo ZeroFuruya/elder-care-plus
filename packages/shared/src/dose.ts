@@ -22,3 +22,41 @@ export const syncStateLabels: Record<SyncState, string> = {
   synced: 'Synced',
   pending: 'Pending sync',
 };
+
+/** Approved default in the system documentation (BR-03). */
+export const DEFAULT_GRACE_MINUTES = 30;
+
+export interface DoseTiming {
+  scheduledAt: Date | number | string;
+  takenAt?: Date | number | string | null;
+}
+
+function toTime(value: Date | number | string): number {
+  return value instanceof Date ? value.getTime() : new Date(value).getTime();
+}
+
+/**
+ * Derives the status a dose should display *right now*.
+ *
+ * Only a confirmation is ever stored; `upcoming`, `due` and `missed` are computed from the
+ * schedule and the grace period, so a stale row can never show the wrong state.
+ *
+ *   taken  -> there is a confirmation timestamp
+ *   missed -> the grace period has elapsed with no confirmation
+ *   due    -> the scheduled time has passed but the grace period has not
+ *   upcoming -> the scheduled time is still in the future
+ */
+export function deriveDoseStatus(
+  timing: DoseTiming,
+  now: Date | number | string = new Date(),
+  graceMinutes: number = DEFAULT_GRACE_MINUTES,
+): DoseStatus {
+  if (timing.takenAt) return 'taken';
+
+  const scheduled = toTime(timing.scheduledAt);
+  const current = toTime(now);
+
+  if (current >= scheduled + graceMinutes * 60_000) return 'missed';
+  if (current >= scheduled) return 'due';
+  return 'upcoming';
+}
