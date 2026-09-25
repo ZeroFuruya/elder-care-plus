@@ -50,6 +50,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "99b2e992-8322-4642-932e-43ff81c3f773"
+      }
+    },
+    "owner": "zerofuruyas-team"
   }
 }
