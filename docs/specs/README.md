@@ -6,5 +6,6 @@ critiques it before any implementation starts (docs/01-dev-environment.md sectio
 A spec contains: goal, user stories, acceptance criteria, screens, data touched,
 and out-of-scope.
 
-No spec exists yet. Per AGENTS.md, scaffolding is allowed without one, but feature
-implementation is not.
+`sprint-1.md` exists (accounts, roles, care circle, consent — schema first). It was written and
+implemented at the owner's request on 2026-09-25; the owner's review and acceptance are still
+outstanding.
