@@ -34,22 +34,23 @@ automatically, and a new older adult gets a fresh day of doses so their dashboar
 
 ## How the brief maps to the build
 
-| Requirement                            | Where it lives                                                            |
-| -------------------------------------- | ------------------------------------------------------------------------- |
-| Login and logout                       | `(auth)/sign-in.tsx`, `components/logout-button.tsx`                      |
-| Sample dashboard after login           | `(elder)/elder/index.tsx` (Home), `(caregiver)/caregiver/index.tsx`       |
-| Credentials checked against a database | `db/users.ts`, salted SHA-256 in `db/users.ts`, table in `db/database.ts` |
-| Create account / registration          | `(auth)/sign-up.tsx` with a role choice                                   |
-| Caregiver sets a medicine and schedule | `(caregiver)/caregiver/meds.tsx`, `createDose` in `db/doses.ts`           |
-| Success and error messages             | `components/banner.tsx` + `auth/validation.ts`                            |
-| Empty username or password             | "Enter your email and password to sign in."                               |
-| Incorrect username or password         | "Incorrect username or password. Please try again."                       |
-| Account does not exist                 | "Account does not exist. Check the email address, or create an account."  |
-| Successful login                       | green "Signed in successfully" banner before the dashboard opens          |
-| Show / hide password                   | Show–Hide control inside every password field                             |
-| Loading indicators                     | spinner inside the submit button and on every data screen                 |
-| Form validation                        | per-field messages on blur and on submit, including password confirmation |
-| Logout confirmation                    | "Are you sure you want to logout/sign out?" with Cancel / Yes, sign out   |
+| Requirement                            | Where it lives                                                              |
+| -------------------------------------- | --------------------------------------------------------------------------- |
+| Login and logout                       | `(auth)/sign-in.tsx`, `components/logout-button.tsx`                        |
+| Sample dashboard after login           | `(elder)/elder/index.tsx` (Home), `(caregiver)/caregiver/index.tsx`         |
+| Credentials checked against a database | `db/users.ts`, salted SHA-256 in `db/users.ts`, table in `db/database.ts`   |
+| Inspect the database on screen         | `app/database.tsx` (caregiver Profile → **View database**), `db/inspect.ts` |
+| Create account / registration          | `(auth)/sign-up.tsx` with a role choice                                     |
+| Caregiver sets a medicine and schedule | `(caregiver)/caregiver/meds.tsx`, `createDose` in `db/doses.ts`             |
+| Success and error messages             | `components/banner.tsx` + `auth/validation.ts`                              |
+| Empty username or password             | "Enter your email and password to sign in."                                 |
+| Incorrect username or password         | "Incorrect username or password. Please try again."                         |
+| Account does not exist                 | "Account does not exist. Check the email address, or create an account."    |
+| Successful login                       | green "Signed in successfully" banner before the dashboard opens            |
+| Show / hide password                   | Show–Hide control inside every password field                               |
+| Loading indicators                     | spinner inside the submit button and on every data screen                   |
+| Form validation                        | per-field messages on blur and on submit, including password confirmation   |
+| Logout confirmation                    | "Are you sure you want to logout/sign out?" with Cancel / Yes, sign out     |
 
 ## The transaction that connects the two roles
 
@@ -77,6 +78,18 @@ The loop is repeatable on stage. Run steps 1–4 as many times as you like:
 
 Reload the app (terminal `r`, or shake the device and tap **Reload**) only if you want to start the
 day over from scratch — it is not needed to repeat the flow.
+
+## Showing the database (for checking)
+
+The app has one datastore: the on-device SQLite file `eldercare.db`, with tables `users`,
+`care_links` and `doses`. To show it on the phone, sign in as **Maria**, open the **Profile** tab and
+tap **View database** under **Local database**. The screen lists every table, its row count and its
+latest rows (newest first, capped at 25 per table — pull down to refresh). It is read-only: it only
+runs `SELECT`/`PRAGMA`, and password hashes are masked.
+
+That is the database the app really reads and writes. The Supabase/Postgres schema under `supabase/`
+is a separate, not-yet-connected design — do not present it as this app's live data (see
+**Known limits**).
 
 ## Messages to show during checking
 

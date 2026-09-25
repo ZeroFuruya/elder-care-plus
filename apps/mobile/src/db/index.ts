@@ -21,6 +21,7 @@ export {
   type DoseView,
   type NewDose,
 } from './doses';
+export { inspectDatabase, type TableDump } from './inspect';
 export {
   authenticate,
   countUsers,
