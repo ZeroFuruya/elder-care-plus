@@ -1,6 +1,6 @@
 # ADR-003 — Is medicine stock / expiry / batch tracking in scope?
 
-- **Status:** Proposed — **decision pending with the owner**.
+- **Status:** **Accepted** — option A, product-flow scope (owner decision, 2026-09-25).
 - **Date:** 2026-09-24.
 - **Conflict:** `docs/02-ui-ux-standard.md` §20.2 **C-R3**.
 - **Prepared by:** the main coder as a decision brief. The owner makes the call and may rewrite
@@ -66,9 +66,15 @@ rewritten to be about dose events alone.
 
 ## Decision
 
-- [ ] **Owner:** chosen option and reason.
-- [ ] If B: remove `inventory.ts`, `StockStatus`, the stock UI, and the inventory mentions in the
-      hard rules and sprint map.
+**Owner: A — keep stock/expiry tracking.** Decided 2026-09-25 (product-flow scope).
+
+- `medicine_batches` and `inventory_transactions` stay in the schema; the dose-confirmation RPC
+  decrements the active batch atomically and writes exactly one `inventory_transaction`.
+- Expiry and low-stock status are never conveyed by colour alone.
+- Manual stock adjustments require a reason and an `audit_events` row.
+
+Follow-up: the approved system documentation §1.4 ("medicine stock tracking … out of scope") and
+§7.2 (no batch or inventory entity) must be revised.
 
 ## Consequences
 

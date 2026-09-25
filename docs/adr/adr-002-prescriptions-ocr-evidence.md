@@ -1,6 +1,6 @@
 # ADR-002 — Are prescriptions, photo evidence and OCR in scope?
 
-- **Status:** Proposed — **decision pending with the owner**.
+- **Status:** **Accepted** — option A, product-flow scope (owner decision, 2026-09-25).
 - **Date:** 2026-09-24.
 - **Conflict:** `docs/02-ui-ux-standard.md` §20.2 **C-R2**.
 - **Prepared by:** the main coder as a decision brief. The owner makes the call and may rewrite
@@ -73,9 +73,16 @@ Do not leave `app.json` requesting camera access while no screen uses it (C's ho
 
 ## Decision
 
-- [ ] **Owner:** chosen option and reason.
-- [ ] If A: record the approved-document revision.
-- [ ] If B: list the files and permissions removed.
+**Owner: A — keep prescriptions, photo evidence and OCR.** Decided 2026-09-25 (product-flow scope).
+
+- `prescriptions`, `prescription_medicines`, `prescription_evidence` and `document_chunks`, plus the
+  private `prescription-evidence` bucket, stay in the schema.
+- The reference-only guardrail stands: OCR/AI output never auto-creates or auto-fills a medicine,
+  schedule, dose or clinical advice; the caregiver reviews and enters every field.
+- Elder-submitted evidence stays `pending_review` until the caregiver verifies it.
+
+Follow-up: the approved system documentation §11.1 ("no camera permission in version 1.0") must be
+revised to record the evidence-upload rationale and consent copy covering photographs.
 
 ## Consequences
 

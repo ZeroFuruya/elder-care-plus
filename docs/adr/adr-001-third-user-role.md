@@ -1,6 +1,6 @@
 # ADR-001 — Is "Connected Family Member" a third user role?
 
-- **Status:** Proposed — **decision pending with the owner**.
+- **Status:** **Accepted** — option A, the third role is implemented (owner decision, 2026-09-25).
 - **Date:** 2026-09-24.
 - **Conflict:** `docs/02-ui-ux-standard.md` §20.2 **C-R1**.
 - **Prepared by:** the main coder as a decision brief. The owner makes the call and may rewrite
@@ -64,8 +64,23 @@ be revised to say so, and §1.4's "multiple caregivers per elder" line must chan
 
 ## Decision
 
-- [ ] **Owner:** chosen option, and the reason, recorded here.
-- [ ] Follow-up: docs that must change as a result.
+**Owner: A — implement the third role.** Decided 2026-09-25.
+
+- The care circle is modelled as membership rows on `care_links`, with
+  `member_role ∈ (caregiver, family_member)` and `access_level ∈ (manage, view)`.
+- Cardinality: **one caregiver (the manager) + N family members (view-only).**
+- Consent: **caregiver invites → elder consents → the member redeems the code and accepts →
+  active.** Revoking a link, and any change to consent, require re-authentication.
+- Help requests and availability (the rest of `F-01`…`F-15`) are deferred to a dedicated family
+  sprint.
+
+Follow-up:
+
+- The approved system documentation v1.0 must be revised: §2.2's "one active caregiver link" stays
+  (there is still exactly one manager), but §1.4's "multiple caregivers per elder" must be
+  rewritten to permit read-only family members.
+- `packages/shared/src/role.ts` and the `(family)` route group move with the family UI sprint; the
+  database role enum leads, so the two are intentionally out of step until then.
 
 ## Consequences if A/B/C
 

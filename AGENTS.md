@@ -6,14 +6,14 @@
 
 **Verified green on 2026-09-24:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (22 passing), `pnpm format:check`, `pnpm check:contrast`.
 
-**Not built yet:** no Supabase product schema, no Supabase Auth, no RLS, and no appointments (the Calendar tabs show a deliberate empty state). The mobile build is a **local-database demo**, not the RLS-backed design — moving to Supabase means replacing `apps/mobile/src/db/users.ts` and `db/doses.ts` and adding RLS; the screens do not change. The Supabase local stack cannot run until Docker Desktop is installed. Do not scaffold further or start implementing without an approved sprint spec and an explicit owner request (`docs/specs/README.md`).
+**Not built yet:** no Supabase product schema, no Supabase Auth, no RLS, and no appointments (the Calendar tabs show a deliberate empty state). The mobile build is a **local-database demo**, not the RLS-backed design — moving to Supabase means replacing `apps/mobile/src/db/users.ts` and `db/doses.ts` and adding RLS; the screens do not change. Docker Desktop is installed and the local Supabase stack runs; Sprint 1 (accounts, care circle, RLS) is in progress under `docs/specs/sprint-1.md`. Do not start any other sprint without its approved spec and an explicit owner request (`docs/specs/README.md`).
 
-**Blocking unknown (scope baseline).** Both approved design PDFs are now readable and have been
-read. They agree with each other on scope, and disagree with `docs/00-product-flow.md` + the
-code: the approved baseline has **two roles**, no prescriptions/OCR, no stock/expiry, and **one**
-emergency contact. Separately, the v1.2 wireframe pack adds a **third role** ("Connected Family
-Member", 15 screens) that no other source has. Read `docs/02-ui-ux-standard.md` §20 for the
-evidence and `docs/adr/adr-001`…`adr-004` for decision briefs. **Resolve before Sprint 1.**
+**Scope baseline resolved (2026-09-25).** The four conflicts between the approved design PDFs and
+`docs/00-product-flow.md` (`docs/02-ui-ux-standard.md` §20.2, C-R1…C-R4) are decided: the
+product-flow scope wins, and "Connected Family Member" is a **third role**, modelled as care-circle
+membership. See `docs/adr/adr-001`…`adr-004`, all now **Accepted**. Consequence: the approved
+system documentation and wireframes must be revised to match, and the third role's screens land in
+the dedicated family sprint (`docs/01-dev-environment.md` §11).
 
 ## Required reading before any work
 

@@ -1,6 +1,6 @@
 # ADR-004 — One emergency contact, or an ordered list of numbers?
 
-- **Status:** Proposed — **decision pending with the owner**.
+- **Status:** **Accepted** — option A, ordered list (owner decision, 2026-09-25).
 - **Date:** 2026-09-24.
 - **Conflict:** `docs/02-ui-ux-standard.md` §20.2 **C-R4**.
 - **Prepared by:** the main coder as a decision brief. The owner makes the call and may rewrite
@@ -64,8 +64,15 @@ defensible — it is precisely what the approved baseline says — provided the 
 
 ## Decision
 
-- [ ] **Owner:** A, B or C, and the reason.
-- [ ] Follow-up: which document changes (the approved docs for A/C, or the product-flow doc for B).
+**Owner: A — keep the ordered list of emergency numbers.** Decided 2026-09-25 (product-flow scope).
+
+- `emergency_numbers` keeps `label`, `phone`, `priority`, `verified_at` and `active`.
+- The elder screen keeps one dominant action; the ordered list holds local emergency service,
+  primary caregiver, alternate family contact, doctor/clinic and optional pharmacy.
+- The caregiver must verify the local emergency-service details for the elder's region.
+
+Follow-up: the `E-07` one-contact frames must be revised to carry the ordered list behind the
+dominant action.
 
 ## Consequences
 

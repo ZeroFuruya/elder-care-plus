@@ -8,23 +8,32 @@ It is a care-coordination and record-keeping app, **not** a diagnostic, prescrib
 
 ## 2. Roles and authority
 
-| Capability | Family caregiver | Elder |
-| --- | --- | --- |
-| Link care account and manage elder profile | Create/manage | Consent to link; view |
-| Medication plan, schedules, stock, expiry | Create/edit/deactivate | View only |
-| Mark a scheduled dose as taken | View event only | Confirm own dose only |
-| Prescription record and evidence | Create, verify, archive | View verified prescriptions; optionally submit a photo for review |
-| Appointments | Create/edit/complete/cancel | View and receive reminders |
-| Emergency information/numbers | Manage | View and call |
-| Reports, alerts, audit trail | View | View personal daily history only |
+Three roles: **older adult (elder)**, **family caregiver**, and **connected family member**
+(`docs/adr/adr-001-third-user-role.md`).
 
-One active caregiver-to-one elder link is the initial release model. Link codes are six digits, single-use, and expire after 24 hours. Never hard-delete medical history; deactivate or archive records and keep timestamps.
+| Capability | Family caregiver (manager) | Connected family member (view-only) | Elder |
+| --- | --- | --- | --- |
+| Link care account and manage elder profile | Create/manage | Join a circle with elder consent | Consent to link; view |
+| Medication plan, schedules, stock, expiry | Create/edit/deactivate | View only | View only |
+| Mark a scheduled dose as taken | View event only | View event only | Confirm own dose only |
+| Prescription record and evidence | Create, verify, archive | View verified prescriptions only | View verified prescriptions; optionally submit a photo for review |
+| Appointments | Create/edit/complete/cancel | View only | View and receive reminders |
+| Emergency information/numbers | Manage | View and call | View and call |
+| Reports, alerts, audit trail | View | View adherence summary only | View personal daily history only |
+
+An elder has **one caregiver (the manager)** plus **any number of connected family members** with
+read-only access. Membership lives on `care_links` with `member_role` and `access_level`; a family
+member joins only after the **elder consents**. Link codes are six digits, single-use, and expire
+after 24 hours. Never hard-delete medical history; deactivate or archive records and keep
+timestamps.
 
 ## 3. Navigation
 
 **Caregiver tabs:** Dashboard, Medicines, Prescriptions, Appointments, Profile. Reports are reached from Dashboard; Emergency is a prominent dashboard/profile action.
 
 **Elder tabs:** Today, Medicines, Prescriptions, Appointments, Emergency. Account/settings and notification center are available from the top bar.
+
+**Connected family member:** care circle (join after elder consent), read-only care view, help requests, availability. These screens land in the dedicated family sprint (`docs/01-dev-environment.md` §11).
 
 All screens show a notification bell. Emergency is always reachable in one tap from the elder home screen. Use large controls, 48 dp minimum touch targets (56 dp for `Mark as taken`), readable text, and status text/icons in addition to color.
 

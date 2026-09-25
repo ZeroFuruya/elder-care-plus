@@ -286,16 +286,18 @@ Store quantities as decimals with an explicit unit. Auto-decrement stock only wh
 
 | Sprint | Focus (flow) | Main tech |
 |---|---|---|
-| 1 | Accounts, roles, care linking (Flow A) | Supabase Auth, `profiles`, `care_links`, link-code RPC |
+| 1 | Accounts, roles, care circle and consent (Flow A) | Supabase Auth, `profiles`, `care_links`, `care_link_invites`, link-code RPC, `audit_events`, RLS |
+| 1b | Cut the mobile app over to Supabase Auth + Postgres | `@supabase/supabase-js`, SQLite outbox for offline confirmations, `(family)` route group |
 | 2 | Elder profile and emergency info (Flow G) | `elder_profiles`, `emergency_numbers` |
 | 3 | Medication and inventory setup (Flow B) | `medications`, `medication_schedules`, `medicine_batches` |
 | 4 | Daily medication adherence (Flow C) | `dose_events`, confirmation RPC, notifications, offline queue |
 | 5 | Inventory and expiry safety (Flow D) | `inventory_transactions`, alert thresholds, needs-review state |
 | 6 | Prescriptions and evidence (Flow E) | `prescriptions`, `prescription_evidence`, OCR service, signed URLs |
 | 7 | Appointments (Flow F) | `appointments`, reminders, visit/in_home fields |
-| 8 | Reports, audit trail, `document_chunks` retrieval, offline-sync hardening | `audit_events`, embeddings, idempotency tests |
+| 8 | Family care circle UI (`F-01`…`F-15`) | `(family)` routes, read-only care view, help requests, availability |
+| 9 | Reports, audit trail, `document_chunks` retrieval, offline-sync hardening | `audit_events`, embeddings, idempotency tests |
 
-After Sprint 8: integration and security pass, system testing, user evaluation, final deployment — same academic-cycle shape as the owner's other thesis app.
+After Sprint 9: integration and security pass, system testing, user evaluation, final deployment — same academic-cycle shape as the owner's other thesis app.
 
 ---
 
@@ -362,6 +364,7 @@ After Sprint 8: integration and security pass, system testing, user evaluation, 
 
 ## 16. Changelog
 
+- 2026-09-25: The owner decided all four scope conflicts (`docs/adr/adr-001`…`adr-004`, now Accepted): the product-flow scope wins, and "Connected Family Member" is a third role modelled as care-circle membership on `care_links` (one manager + N view-only family members, elder consent required). Section 11 gained a family-UI sprint (8) and a mobile cutover sprint (1b); reports/audit moved to 9. `docs/00-product-flow.md` §2 now lists three roles. Consequence: the approved system documentation and wireframes must be revised to match.
 - 2026-09-24: Corrected §7's installed-tooling list against the actual machine: **GitHub CLI, Docker Desktop and Bruno are not installed**; pnpm is now enabled via `corepack enable` (it previously was not on PATH); Python 3.12 comes from uv, not a system Python. Recorded the consequences for `npx supabase start` and for repo creation. No stack decision changed.
 - 2026-09-24: Read the approved `docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf` (28 pages; previously believed to have no extractable text). It is the **approved baseline** and it agrees with the wireframe pack, not with `docs/00-product-flow.md`, on scope: two roles, no prescriptions/OCR, no stock/expiry, one emergency contact. `docs/02-ui-ux-standard.md` §5/§20 were updated with its palette, contrast math and evidence; scope decision briefs were added as `docs/adr/adr-001`…`adr-004`; `AGENTS.md`'s blocking-unknown note was rewritten. No sprint-map change yet — Sprint 2/3/5/6 depend on the open decisions.
 - 2026-09-24: Added `docs/02-ui-ux-standard.md` (normative UI/UX standard: token audit, status presentation contract, accessibility and copy rules) and listed it as required reading in `AGENTS.md`. Records one failing contrast pair (`primary` on `background`, 4.48:1) and six open UI decisions.
