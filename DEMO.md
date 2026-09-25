@@ -40,6 +40,7 @@ automatically, and a new older adult gets a fresh day of doses so their dashboar
 | Sample dashboard after login           | `(elder)/elder/index.tsx` (Home), `(caregiver)/caregiver/index.tsx`       |
 | Credentials checked against a database | `db/users.ts`, salted SHA-256 in `db/users.ts`, table in `db/database.ts` |
 | Create account / registration          | `(auth)/sign-up.tsx` with a role choice                                   |
+| Caregiver sets a medicine and schedule | `(caregiver)/caregiver/meds.tsx`, `createDose` in `db/doses.ts`           |
 | Success and error messages             | `components/banner.tsx` + `auth/validation.ts`                            |
 | Empty username or password             | "Enter your email and password to sign in."                               |
 | Incorrect username or password         | "Incorrect username or password. Please try again."                       |
@@ -52,16 +53,30 @@ automatically, and a new older adult gets a fresh day of doses so their dashboar
 
 ## The transaction that connects the two roles
 
-The elder confirms a dose; the caregiver's dashboard updates from the same record.
+The caregiver sets the medicine and the schedule; the elder confirms a dose; the caregiver's
+dashboard updates from the same record.
 
-1. Sign in as **Ana** (`ana@eldercare.app`). Home shows a dose that is **Due**.
-2. Tap **Mark as taken** (56 dp target). A success banner reports the time.
-3. Log out (confirm the dialog), then sign in as **Maria** (`maria@eldercare.app`).
-4. The dashboard shows the new claim under **Recent confirmations**, the **Taken** count has gone
-   up, and the seven-day rate moved.
+1. Sign in as **Maria** (`maria@eldercare.app`). On **Meds**, fill in a medicine and tap
+   **Save medicine** — leave **Due now** selected so there is something to confirm straight away.
+2. Log out (confirm the dialog), then sign in as **Ana** (`ana@eldercare.app`). Home shows the new
+   dose as **Due**.
+3. Tap **Mark as taken** (56 dp target). A success banner reports the time.
+4. Log out and sign back in as **Maria**: **Meds** lists the new medicine, and the dashboard shows
+   the claim under **Recent confirmations**, with the **Taken** count and the seven-day rate moved.
 
 Confirmations are idempotent at the database level: the `taken_at IS NULL` guard in
 `db/doses.ts` means a double tap or a retry cannot overwrite a timestamp or record a dose twice.
+
+### Doing it again, without restarting the app
+
+The loop is repeatable on stage. Run steps 1–4 as many times as you like:
+
+- **Caregiver side:** every **Save medicine** adds a new due dose for the elder.
+- **Elder side:** if nothing is due, a fresh due dose is added automatically, so **Mark as taken**
+  is always available. Nothing is deleted, so the care plan the caregiver has built up is kept.
+
+Reload the app (terminal `r`, or shake the device and tap **Reload**) only if you want to start the
+day over from scratch — it is not needed to repeat the flow.
 
 ## Messages to show during checking
 
@@ -71,6 +86,7 @@ Confirmations are idempotent at the database level: the `taken_at IS NULL` guard
 - Wrong password → `ana@eldercare.app` + `wrongpass`.
 - Success → `ana@eldercare.app` + `demo1234`.
 - Logout → Profile tab, **Log out**, then **Cancel** (stays), then **Yes, sign out** (leaves).
+- Empty medicine → on **Meds** (as Maria), tap **Save medicine** with the fields blank.
 
 ## Known limits (honest list)
 
@@ -83,5 +99,8 @@ Confirmations are idempotent at the database level: the `taken_at IS NULL` guard
 - **Reports cover confirmation history only** — the 7-day confirmation rate and a day-by-day
   breakdown. No other reporting exists yet.
 - The third role (connected family member) is not built.
-- The demo day is rebuilt when it has nothing pending, so a demonstration cannot dead-end on the
-  clock. `db/demo.ts` marks that scaffolding clearly.
+- **The app is not connected to Supabase yet.** It reads and writes on-device `expo-sqlite`; the
+  Supabase schema and its RLS are a separate, later cutover.
+- Scheduling is still demo scaffolding: `db/demo.ts` seeds a day and adds a due dose when nothing is
+  due so a demonstration cannot dead-end on the clock, and `db/doses.ts` has no medicine catalogue —
+  each dose carries its medicine inline. Both are marked in the code.

@@ -136,9 +136,13 @@ async function ensureHistory(elderId: string, now: Date): Promise<void> {
 }
 
 /**
- * Rebuilds *today's unconfirmed* doses so that a dose is always due when the app is opened —
- * a live demo cannot depend on the clock. Confirmations are never deleted, so the cross-role
- * story (elder confirms, caregiver sees it) survives a restart.
+ * Seeds *today's* dose list, once, if the day is empty.
+ *
+ * Unlike the earlier wipe-and-reseed version this never deletes anything, so confirmations and any
+ * doses the caregiver has added survive a restart. `loadDemoSafeDay` is what keeps a due dose on
+ * screen.
+ *
+ * Demo scaffolding: delete with `loadDemoSafeDay` when real scheduling lands (Sprint 4).
  */
 export async function ensureDemoSchedule(elderId: string, now: Date = new Date()): Promise<void> {
   const database = await getDatabase();
@@ -147,37 +151,29 @@ export async function ensureDemoSchedule(elderId: string, now: Date = new Date()
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
 
-  await database.runAsync(
-    `DELETE FROM doses
-      WHERE elder_id = ? AND taken_at IS NULL AND scheduled_at >= ? AND scheduled_at <= ?`,
+  const existing = await database.getFirstAsync<{ total: number }>(
+    `SELECT COUNT(*) AS total FROM doses
+      WHERE elder_id = ? AND scheduled_at >= ? AND scheduled_at <= ?`,
     elderId,
     startOfToday.toISOString(),
     endOfToday.toISOString(),
   );
-
-  const takenToday = await database.getFirstAsync<{ total: number }>(
-    `SELECT COUNT(*) AS total FROM doses
-      WHERE elder_id = ? AND taken_at IS NOT NULL AND scheduled_at >= ?`,
-    elderId,
-    startOfToday.toISOString(),
-  );
+  if ((existing?.total ?? 0) > 0) return;
 
   const minutes = (count: number) => new Date(now.getTime() + count * 60_000);
 
-  if ((takenToday?.total ?? 0) === 0) {
-    await insertDose({
-      elderId,
-      ...AMLODIPINE,
-      scheduledAt: minutes(-120),
-      takenAt: minutes(-115),
-    });
-  }
-
-  // Outside the grace period -> derives as Missed (the caregiver's "needs attention" row).
+  // One already-confirmed dose so the caregiver report is never empty ...
+  await insertDose({
+    elderId,
+    ...AMLODIPINE,
+    scheduledAt: minutes(-120),
+    takenAt: minutes(-115),
+  });
+  // ... one outside the grace period -> derives as Missed (the "needs attention" row) ...
   await insertDose({ elderId, ...METFORMIN, scheduledAt: minutes(-45) });
-  // Inside the grace period -> derives as Due; this is the dose the elder confirms on stage.
+  // ... one inside the grace period -> derives as Due; the dose the elder confirms on stage ...
   await insertDose({ elderId, ...AMLODIPINE, scheduledAt: minutes(-5) });
-  // Future -> derives as Upcoming.
+  // ... and one in the future -> derives as Upcoming.
   await insertDose({ elderId, ...METFORMIN, scheduledAt: minutes(180) });
 }
 
@@ -197,19 +193,27 @@ export async function ensureDemoData(now: Date = new Date()): Promise<DemoIds> {
   return { caregiverId: caregiver.id, elderId: elder.id };
 }
 
+/** Adds one fresh due dose. Never deletes, so a schedule the caregiver has built is left alone. */
+async function insertDueDose(elderId: string, now: Date): Promise<void> {
+  await insertDose({
+    elderId,
+    ...AMLODIPINE,
+    scheduledAt: new Date(now.getTime() - 5 * 60_000),
+  });
+}
+
 /**
- * Today's doses for the elder home screen, with one piece of demo scaffolding: if the day has
- * nothing pending (everything taken or missed), the schedule is rebuilt so a dose is due again.
- * This is what stops a live demo from dead-ending on the clock. Delete with `ensureDemoSchedule`.
+ * Today's doses for the elder home screen, with one piece of demo scaffolding: if nothing is
+ * currently *due*, a due dose is added, so the confirmation loop can be repeated without
+ * restarting the app. Nothing is removed. Delete with `ensureDemoSchedule` when Sprint 4 lands.
  */
 export async function loadDemoSafeDay(
   elderId: string,
   now: Date = new Date(),
 ): Promise<DoseView[]> {
   const doses = await listDosesForDay(elderId, now);
-  const hasPending = doses.some((dose) => dose.status === 'due' || dose.status === 'upcoming');
-  if (hasPending) return doses;
+  if (doses.some((dose) => dose.status === 'due')) return doses;
 
-  await ensureDemoSchedule(elderId, now);
+  await insertDueDose(elderId, now);
   return listDosesForDay(elderId, now);
 }

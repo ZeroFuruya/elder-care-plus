@@ -1,3 +1,5 @@
+import { randomUUID } from 'expo-crypto';
+
 import { deriveDoseStatus, type DoseStatus } from '@eldercare/shared';
 
 import { getDatabase } from './database';
@@ -109,6 +111,39 @@ export async function confirmDose(
     elderId,
   );
   return result.changes > 0;
+}
+
+export interface NewDose {
+  elderId: string;
+  medicine: string;
+  strength: string;
+  instructions: string;
+  scheduledAt: Date;
+}
+
+/**
+ * Schedules a dose for the elder.
+ *
+ * This is the caregiver's write path; the elder's only write is `confirmDose`. `status` is stored
+ * as `upcoming` because the real state is derived from `scheduled_at` at read time
+ * (`deriveDoseStatus`), so a row can never show a stale state.
+ */
+export async function createDose(dose: NewDose): Promise<string> {
+  const database = await getDatabase();
+  const id = randomUUID();
+
+  await database.runAsync(
+    `INSERT INTO doses (id, elder_id, medicine, strength, instructions, scheduled_at, status, taken_at)
+     VALUES (?, ?, ?, ?, ?, ?, 'upcoming', NULL)`,
+    id,
+    dose.elderId,
+    dose.medicine,
+    dose.strength,
+    dose.instructions,
+    dose.scheduledAt.toISOString(),
+  );
+
+  return id;
 }
 
 export async function getDoseById(doseId: string, now = new Date()): Promise<DoseView | null> {

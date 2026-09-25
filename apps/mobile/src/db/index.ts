@@ -10,6 +10,7 @@ export {
 export { getLinkedElder, linkCaregiverToElder, type CareLink } from './care-links';
 export {
   confirmDose,
+  createDose,
   getDoseById,
   listDoses,
   listDosesForDay,
@@ -18,6 +19,7 @@ export {
   summarise,
   type AdherenceSummary,
   type DoseView,
+  type NewDose,
 } from './doses';
 export {
   authenticate,
