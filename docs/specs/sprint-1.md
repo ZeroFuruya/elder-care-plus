@@ -118,16 +118,17 @@ Sprint 1 details into security corrections that must be in place before acceptan
 freezes the corrections, their acceptance criteria and their tests. It supersedes the
 "re-auth is advisory" note in *Out of scope* and the matching line in *Risks*.
 
-The base migrations are already applied locally, so the corrections ship as **one new migration**
-plus test updates; the existing migration files are not edited (`docs/01-dev-environment.md`
-§8.1). The redemption function changes its return type, so the migration drops and recreates it
-(`CREATE OR REPLACE` cannot change a return type) and re-grants execute to `authenticated` only.
-Implementation is scheduled for Tue 2026-09-29; the mechanism confirmation the plan expected on
-Mon 2026-09-28 is already done (see SC-2).
+The base migrations are already applied locally, so the corrections ship as **forward migrations**
+(the closeout migration plus a small review-fix migration) and test updates; applied migrations
+are not edited (`docs/01-dev-environment.md` §8.1). The redemption function changes its return
+type, so the first migration drops and recreates it (`CREATE OR REPLACE` cannot change a return
+type) and re-grants execute to `authenticated` only. Implementation is scheduled for Tue
+2026-09-29; the mechanism confirmation the plan expected on Mon 2026-09-28 is already done (see
+SC-2). Implementation and review actually completed on 2026-09-27.
 
-Revised 2026-09-27 after the `@architect` critique; the three required outcomes are unchanged and
-the additions below are the build contract (locking, exact result shapes, countable-failure rules,
-malformed-claim handling).
+Revised 2026-09-27 after the `@architect`, `@challenger` and `@gemini-reviewer` passes; the three
+required outcomes are unchanged and the additions below are the build contract (locking, exact
+result shapes, countable-failure rules, malformed-claim handling, uniform audit summaries).
 
 ### SC-1 — Sign-up role is mandatory
 
@@ -208,7 +209,8 @@ attempts, and clients can select `code_hash`.
   return exactly `{"status":"invalid"}`; nothing in the response reveals whether a code exists or
   expired. Which calls are *evaluated failures* (audited and counted):
   - not evaluated, not audited, not counted: malformed (non-six-digit) input; callers with no
-    active profile, a deactivated account, or the caregiver role — they can never match an invite;
+    active profile (including deactivated accounts) or the caregiver role; an elder who already has
+    an active manager — none of them can ever match an invite;
   - evaluated, audited, counted: an active elder or family member presenting a well-formed code
     when no open invite matches, the match is expired, the invite grants the other role, the email
     binding rejects the caller, or there are no open invites at all.
@@ -231,9 +233,10 @@ attempts, and clients can select `code_hash`.
 - `retry_after_seconds` is `max(1, ceil(oldest counted failure + 15 minutes − now()))`; refusals
   write nothing, so they cannot extend the cooldown.
 - Each evaluated failure appends one `audit_events` row
-  (`action = 'care_link_invite.redeem_failed'`, `actor_id` = redeemer, `elder_id` null) with an
-  internal reason in `after_summary` (`no_match` / `email_mismatch`); the audit row is visible to
-  its actor only, under the existing RLS policy. Cooldown refusals are not audited.
+  (`action = 'care_link_invite.redeem_failed'`, `actor_id` = redeemer, `elder_id` null) with a
+  uniform internal reason (`no_match`). The actor can read their own rows, so the summary must not
+  reveal that a code matched an email-bound invite; failure classes are indistinguishable in the
+  audit trail too. Cooldown refusals are not audited.
 - Unchanged: six-digit codes, bcrypt hashes only, 24-hour expiry, single-use with idempotent
   replay by the same redeemer, authenticated redeemer only.
 - Hardening: table-level SELECT on `care_link_invites` is revoked and `authenticated` is granted
@@ -250,8 +253,8 @@ attempts, and clients can select `code_hash`.
    `retry_after_seconds`; the call does not evaluate or consume a code; repeated refused calls do
    not extend the cooldown.
 3. All failure outcomes listed above return byte-identical `{"status":"invalid"}`.
-4. Every evaluated failure appends exactly one audit row, visible to its actor and no one else;
-   cooldown refusals append none.
+4. Every evaluated failure appends exactly one audit row, visible to its actor and no one else,
+   with the same summary for every failure class; cooldown refusals append none.
 5. A correct code below the limit still activates or links exactly as before; a replay by the same
    redeemer returns the same `link_id` and creates no second link; if that link was revoked since,
    the replay returns `{"status":"revoked"}` with the same id.
@@ -259,13 +262,15 @@ attempts, and clients can select `code_hash`.
    the metadata columns remain selectable under the existing invite SELECT policy.
 7. Sequential tests cover the countable-failure rules, the rolling window (aged-out rows stop
    counting), the retry value and the untouched-invite invariant; the per-account advisory lock
-   and the invite `for update` re-check are reviewed by `@challenger`, because pgTAP cannot race
-   two sessions.
+   and the invite `for update` re-check were reviewed in the 2026-09-27 adversarial pass, because
+   pgTAP cannot race two sessions.
 
 ### Tests and evidence
 
 - Baseline before correction: `npx supabase test db` → **26/26 PASS** (re-run and confirmed
   2026-09-27).
+- Final locally verified total after the review fixes: **124/124 PASS** (44 + 80), with
+  `npx supabase db reset` re-applying all migrations and the seed first.
 - The existing suite is updated where it encodes retired behavior (the "wrong code burns an
   attempt on the open invite" assertion) and where the re-auth guard applies (consent, revoke and
   deactivation calls gain `amr` claims). New assertions cover SC-1, SC-2 and SC-3; the closeout
@@ -274,8 +279,25 @@ attempts, and clients can select `code_hash`.
   trigger forbids moving existing rows across the window.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm format:check` and `pnpm check:contrast` stay
   green (the mobile app is untouched).
-- The adversarial pass (`@challenger`) targets the new redemption path and the audit-derived rate
-  limiter before the Thursday checkpoint; `@gemini-reviewer` reviews the diff.
+- The adversarial pass (`@challenger`) and `@gemini-reviewer` reviewed the implementation on
+  2026-09-27; their findings ship as the review-fix migration: accounts with no active profile are
+  no longer evaluated, failure audit summaries are uniform, and tests cover the
+  deactivated/no-profile/malformed/caregiver non-counting classes, audit uniformity and the
+  non-extending cooldown. The Thursday checkpoint re-confirms on the frozen branch.
+
+### Hand-off notes for Sprint 1b
+
+- `care_link_invites` no longer grants table-level SELECT: the client must enumerate the metadata
+  columns and must never use `select('*')` (a default `select()` in supabase-js expands to all
+  columns and raises `42501`).
+- `redeem_care_link_code` answers HTTP 200 with a `status` field and does not raise for invalid or
+  rate-limited outcomes; the three sensitive RPCs raise `42501` ("re-authentication required")
+  once the 300 s window has passed. The client re-authenticates in-flow with `signInWithPassword`
+  at the moment of the action, then calls the RPC.
+- `service_role` cannot call the three sensitive RPCs (they fail closed without an `amr` claim);
+  administrative maintenance needs its own RPCs if it ever exists.
+- Elder-client UX: a password prompt at the moment of consent/revoke; a cooldown countdown built
+  from `retry_after_seconds`; a generic message for invalid codes; invite codes are shown once.
 
 ### Residual risks (accepted for this closeout)
 
@@ -284,6 +306,9 @@ attempts, and clients can select `code_hash`.
   failure limit; revisit with an indexed lookup (or an inviter hint) if open invites ever grow
   past demo scale.
 - **Hosted `amr` behavior.** Verified locally only; Sprint 1b re-verifies before cutover.
+- **Replayed code collision.** If a re-issued code equals an earlier consumed code for the same
+  account, the replay path answers with the earlier link (revoked included) rather than the new
+  invite (~1e-6 per invite). Re-issuing a fresh code resolves it; revisit only if the space grows.
 
 ### Out of scope for the closeout
 

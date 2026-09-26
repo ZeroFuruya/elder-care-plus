@@ -15,7 +15,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(70);
+select plan(80);
 
 -- JWT claims helper: p_pw_age_seconds null omits amr entirely; otherwise it is
 -- a password entry that many seconds old.
@@ -450,8 +450,8 @@ select is(
 
 -- 38.
 select ok(
-  ((public.redeem_care_link_code('000000') ->> 'retry_after_seconds')::int between 1 and 900),
-  'the rate limit reports a positive retry window');
+  ((public.redeem_care_link_code('000000') ->> 'retry_after_seconds')::int between 870 and 900),
+  'the rate limit reports the remaining 15-minute cooldown');
 
 -- 39.
 select is(
@@ -574,7 +574,7 @@ select is(
       and action = 'care_link_invite.redeem_failed'
     order by created_at desc
     limit 1),
-  'email_mismatch', 'the audit records the mismatch reason');
+  'no_match', 'the audit reason does not reveal an email mismatch');
 
 select pg_temp.set_claims('baaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
 select set_config(
@@ -761,6 +761,90 @@ select is(
     where actor_id = 'bddddddd-dddd-4ddd-8ddd-dddddddddddd'
       and action = 'care_link_invite.redeem_failed'),
   1::bigint, 'the refusal is audited as an evaluated failure');
+
+-- ---------------------------------------------------------------------------
+-- Review fixes (2026-09-27): callers who can never match an invite are not
+-- evaluated, failure audit summaries are uniform, and refusals do not extend
+-- the cooldown.
+-- ---------------------------------------------------------------------------
+
+-- A deactivated account cannot be evaluated.
+select pg_temp.set_claims('b8888888-8888-4888-8888-888888888888');
+
+-- 71.
+select is(
+  public.redeem_care_link_code('000000'), '{"status": "invalid"}'::jsonb,
+  'a deactivated account cannot redeem');
+
+-- 72.
+select is(
+  (select count(*) from public.audit_events
+    where actor_id = 'b8888888-8888-4888-8888-888888888888'
+      and action = 'care_link_invite.redeem_failed'),
+  0::bigint, 'a deactivated account is not audited as a failure');
+
+-- Malformed input is not evaluated or counted.
+select pg_temp.set_claims('baaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+
+-- 73.
+select is(
+  public.redeem_care_link_code('12345'), '{"status": "invalid"}'::jsonb,
+  'a short code is uniformly invalid');
+
+-- 74.
+select is(
+  public.redeem_care_link_code(null), '{"status": "invalid"}'::jsonb,
+  'a null code is uniformly invalid');
+
+-- 75.
+select is(
+  (select count(*) from public.audit_events
+    where actor_id = 'baaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
+      and action = 'care_link_invite.redeem_failed'),
+  0::bigint, 'malformed codes are not counted as failures');
+
+-- A caregiver can never match an invite.
+select pg_temp.set_claims('bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+
+-- 76.
+select is(
+  public.redeem_care_link_code('000000'), '{"status": "invalid"}'::jsonb,
+  'a caregiver cannot redeem');
+
+-- 77.
+select is(
+  (select count(*) from public.audit_events
+    where actor_id = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'
+      and action = 'care_link_invite.redeem_failed'),
+  0::bigint, 'a caregiver attempt is not counted as a guess');
+
+-- Every failure class records the same summary for its actor.
+select pg_temp.set_claims('b7777777-7777-4777-8777-777777777777');
+
+-- 78.
+select is(
+  (select count(distinct after_summary) from public.audit_events
+    where actor_id = 'b7777777-7777-4777-8777-777777777777'
+      and action = 'care_link_invite.redeem_failed'),
+  1::bigint, 'failure audit summaries are uniform');
+
+-- Refusals do not extend the cooldown.
+select pg_temp.set_claims('b4444444-4444-4444-8444-444444444444');
+select set_config(
+  'closeout.rl_a', public.redeem_care_link_code('000000')::text, true);
+select set_config(
+  'closeout.rl_b', public.redeem_care_link_code('000000')::text, true);
+
+-- 79.
+select is(
+  (current_setting('closeout.rl_a')::jsonb ->> 'status'), 'rate_limited',
+  'the account is still rate limited');
+
+-- 80.
+select ok(
+  (current_setting('closeout.rl_b')::jsonb ->> 'retry_after_seconds')::int
+    <= (current_setting('closeout.rl_a')::jsonb ->> 'retry_after_seconds')::int,
+  'repeated refusals do not extend the cooldown');
 
 select * from finish();
 rollback;

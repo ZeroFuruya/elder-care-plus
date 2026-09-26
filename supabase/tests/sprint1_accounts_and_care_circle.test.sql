@@ -19,7 +19,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(38);
+select plan(44);
 
 -- JWT claims helper: p_pw_age_seconds null omits amr entirely; otherwise it is
 -- a password entry that many seconds old. Timestamps come from the clock.
@@ -389,6 +389,54 @@ select throws_ok(
   $$ delete from public.audit_events $$,
   '42501', 'audit_events is append-only (DELETE is not permitted)',
   'the audit trail rejects deletes');
+
+-- ---------------------------------------------------------------------------
+-- SC-1 review additions (2026-09-27): remaining rejected metadata shapes.
+-- ---------------------------------------------------------------------------
+
+-- 39.
+select throws_ok(
+  $$ insert into auth.users (
+       instance_id, id, aud, role, email, encrypted_password,
+       email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+     values ('00000000-0000-0000-0000-000000000000', 'a3333333-3333-3333-3333-333333333333',
+       'authenticated', 'authenticated', 'nullrole@example.test',
+       extensions.crypt('demo1234', extensions.gen_salt('bf')), now(),
+       '{"provider":"email","providers":["email"]}',
+       '{"role":null,"full_name":"Null Role"}', now(), now()) $$,
+  '23514', 'sign-up role is required', 'a JSON-null role is rejected');
+
+-- 40.
+select is(
+  (select count(*) from auth.users where id = 'a3333333-3333-3333-3333-333333333333'),
+  0::bigint, 'the JSON-null-role sign-up creates no auth user');
+
+-- 41.
+select is(
+  (select count(*) from public.profiles where id = 'a3333333-3333-3333-3333-333333333333'),
+  0::bigint, 'the JSON-null-role sign-up creates no profile');
+
+-- 42.
+select throws_ok(
+  $$ insert into auth.users (
+       instance_id, id, aud, role, email, encrypted_password,
+       email_confirmed_at, raw_app_meta_data, raw_user_meta_data, created_at, updated_at)
+     values ('00000000-0000-0000-0000-000000000000', 'a4444444-4444-4444-4444-444444444444',
+       'authenticated', 'authenticated', 'nometa@example.test',
+       extensions.crypt('demo1234', extensions.gen_salt('bf')), now(),
+       '{"provider":"email","providers":["email"]}',
+       null, now(), now()) $$,
+  '23514', 'sign-up role is required', 'missing user metadata is rejected');
+
+-- 43.
+select is(
+  (select count(*) from auth.users where id = 'a4444444-4444-4444-4444-444444444444'),
+  0::bigint, 'the missing-metadata sign-up creates no auth user');
+
+-- 44.
+select is(
+  (select count(*) from public.profiles where id = 'a4444444-4444-4444-4444-444444444444'),
+  0::bigint, 'the missing-metadata sign-up creates no profile');
 
 select * from finish();
 rollback;

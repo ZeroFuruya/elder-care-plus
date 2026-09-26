@@ -4,7 +4,7 @@
 
 **Scaffolded and running locally.** `main` includes the working mobile demo and Sprint 1 schema work. `apps/mobile/` is a two-role app backed by a local **`expo-sqlite`** database with seeded synthetic fixtures, local auth, real caregiver/elder screens, a repeatable medication loop, and a read-only database viewer (see `DEMO.md`). `services/ai/` is still a contract only — `/health` is real, `/ocr` and `/embed/text` return `501`. `packages/shared/` holds the zod schemas and the status-presentation contract. The current Android demo package/version is documented in `apps/mobile/app.json` and `DEMO.md`.
 
-**Verified green:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (22 passing), `pnpm format:check`, and `pnpm check:contrast`. Sprint 1's live local Supabase test also passes: `npx supabase test db` — 26/26 pgTAP assertions.
+**Verified green:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (22 passing), `pnpm format:check`, and `pnpm check:contrast`. Sprint 1's live local Supabase tests pass: `npx supabase test db` — **124/124** pgTAP assertions after the security closeout.
 
 **Current architecture boundary:** the mobile build is still a **local-database demo**, not the RLS-backed design. Sprint 1's Supabase product schema, Auth trigger, care-circle RPCs, RLS, audit trail, seed, and tests are implemented, but the mobile cutover is not done. Sprint 1 acceptance is the next owner decision; Sprint 1b replaces the local auth/data path with Supabase Auth/Postgres. Appointments remain an empty state. Do not start another feature sprint without its approved spec and an explicit owner request (`docs/specs/README.md`).
 
