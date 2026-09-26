@@ -2,11 +2,11 @@
 
 ## Status
 
-**Scaffolded and running locally.** `main` is at `db675f7`, pushed to the private GitHub repo `ZeroFuruya/elder-care-plus`. `apps/mobile/` is no longer a skeleton: it is a working two-role app backed by a local **`expo-sqlite`** database with seeded synthetic fixtures, local auth, and real screens for both roles (see `DEMO.md` for how to run it and the demo accounts). `services/ai/` is still a contract only — `/health` is real, `/ocr` and `/embed/text` return `501`. `packages/shared/` holds the zod schemas and the status-presentation contract. `supabase/` holds config plus the bootstrap extension migration and **no product schema**.
+**Scaffolded and running locally.** `main` includes the working mobile demo and Sprint 1 schema work. `apps/mobile/` is a two-role app backed by a local **`expo-sqlite`** database with seeded synthetic fixtures, local auth, real caregiver/elder screens, a repeatable medication loop, and a read-only database viewer (see `DEMO.md`). `services/ai/` is still a contract only — `/health` is real, `/ocr` and `/embed/text` return `501`. `packages/shared/` holds the zod schemas and the status-presentation contract. The current Android demo package/version is documented in `apps/mobile/app.json` and `DEMO.md`.
 
-**Verified green on 2026-09-24:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (22 passing), `pnpm format:check`, `pnpm check:contrast`.
+**Verified green:** `pnpm typecheck`, `pnpm lint`, `pnpm test` (22 passing), `pnpm format:check`, and `pnpm check:contrast`. Sprint 1's live local Supabase test also passes: `npx supabase test db` — 26/26 pgTAP assertions.
 
-**Not built yet:** no Supabase product schema, no Supabase Auth, no RLS, and no appointments (the Calendar tabs show a deliberate empty state). The mobile build is a **local-database demo**, not the RLS-backed design — moving to Supabase means replacing `apps/mobile/src/db/users.ts` and `db/doses.ts` and adding RLS; the screens do not change. Docker Desktop is installed and the local Supabase stack runs; Sprint 1 (accounts, care circle, RLS) is in progress under `docs/specs/sprint-1.md`. Do not start any other sprint without its approved spec and an explicit owner request (`docs/specs/README.md`).
+**Current architecture boundary:** the mobile build is still a **local-database demo**, not the RLS-backed design. Sprint 1's Supabase product schema, Auth trigger, care-circle RPCs, RLS, audit trail, seed, and tests are implemented, but the mobile cutover is not done. Sprint 1 acceptance is the next owner decision; Sprint 1b replaces the local auth/data path with Supabase Auth/Postgres. Appointments remain an empty state. Do not start another feature sprint without its approved spec and an explicit owner request (`docs/specs/README.md`).
 
 **Scope baseline resolved (2026-09-25).** The four conflicts between the approved design PDFs and
 `docs/00-product-flow.md` (`docs/02-ui-ux-standard.md` §20.2, C-R1…C-R4) are decided: the
@@ -50,7 +50,7 @@ The two approved design PDFs (`docs/ElderCare_Plus_System_Documentation_and_User
 - All schema changes go through migration files; never edit an applied migration or hand-change the production schema.
 - Env vars live in git-ignored `.env*`; only public values may use the `EXPO_PUBLIC_` prefix.
 - One feature per branch: `sprint-N-short-name`.
-- Main coder is DeepSeek V4.1 Flash. The specialists (`@architect`, `@gemini-reviewer`, `@challenger`, `@final-reviewer`) are **manual, analyze-only** subagents (edit/bash denied) defined in `opencode.json` — which does not exist yet, so they will not resolve until it is created from `docs/01-dev-environment.md` §7.
+- Main coder is DeepSeek V4 Flash. The specialists (`@architect`, `@gemini-reviewer`, `@challenger`, `@final-reviewer`) are **manual, analyze-only** subagents (edit/bash denied) defined in `opencode.json`.
 - When a tooling decision changes, update `docs/01-dev-environment.md` and add a line to its changelog (§16).
 
 ## Workflow
@@ -59,7 +59,44 @@ Spec first: owner writes `docs/specs/sprint-N.md` → `@architect` critiques it 
 
 **Definition of done:** meets the spec's acceptance criteria, passes typecheck/lint/tests, respects the hard rules above, ships any migration and its RLS policy together, and comes with a plain-English summary.
 
-## Commands (planned — not runnable until scaffolded)
+## Delivery plan — owner checkpoint Thursdays
+
+**Planning horizon:** 2026-09-27 through **Thursday 2026-10-22**, with a major checkpoint every Thursday evening. This is a compressed delivery plan, not a promise that each official sprint receives a full sprint cycle. The official dependency map remains in `docs/01-dev-environment.md` §11; each new feature still requires its own approved spec.
+
+| Checkpoint | Milestone | Required outcome |
+|---|---|---|
+| Thu **Oct 1** | Sprint 1 accepted; Sprint 1b started | 26/26 DB tests green; Supabase cutover spec approved; Auth/client foundation ready |
+| Thu **Oct 8** | Sprint 1b + Sprint 2 | Supabase-backed login/linking; caregiver, elder and family roles represented; elder profile and emergency contacts usable |
+| Thu **Oct 15** | Sprint 3 + Sprint 4 MVP | Medication plans, schedules, due-dose confirmation, offline pending/retry behavior, missed doses, and DB-level idempotency demonstrable |
+| Thu **Oct 22** | Safety/integration release | Inventory/expiry safety, prescription evidence review, basic appointments, final security/idempotency checks, evidence, and APK/demo build |
+
+**Scope priority if time compresses:** Supabase Auth/RLS → care linking → elder/emergency profile → medication adherence → inventory/expiry → prescription evidence → appointments → family UI → reports/retrieval. Family UI, advanced reports/embeddings, and nonessential appointment polish are stretch items for the final checkpoint.
+
+**Weekly rhythm:** finalize/specify Friday–Saturday; architecture and implementation Sunday–Wednesday; stop new scope Wednesday evening; test, review, document, and accept Thursday. October 15 is the critical core-product checkpoint: the medication confirmation loop must be secure, repeatable, and demonstrable by then.
+
+## Current execution decisions — confirmed 2026-09-27
+
+- **Sprint 1 security correction:** signup role is mandatory. Missing or unknown roles fail; never default a missing role to `elder`.
+- **Re-authentication:** consent, unlink/revoke, account deactivation, and evidence-access changes must be enforced by a server-verifiable recent-authentication state. A client boolean is never sufficient. Confirm the concrete Supabase Auth mechanism during Sprint 1 review.
+- **Invite-code abuse protection:** invalid attempts must not burn another user's invite. Keep six-digit codes, require an authenticated redeemer, rate-limit by redeemer/session with cooldowns, avoid existence/expiry leakage, never store plaintext codes, and audit failed attempts.
+- **Mobile cutover:** use the incremental approach for Sprint 1b. Supabase is authoritative for identity, roles, care links, confirmed doses, inventory changes, and audit events. SQLite may remain only as cache/outbox storage for offline behavior.
+- **Authentication:** Sprint 1b uses email/password only. Existing dummy accounts may be used for local/phone testing, but credentials remain synthetic, local/ignored, and are never committed or sent to AI tools.
+- **Demo scope:** the class-checking demo and database viewer are no longer constraints on the production cutover plan; do not expand them during Sprint 1b.
+- **Family role:** add the family-member authentication/profile/care-circle foundation in Sprint 1b; defer the complete read-only family UI, help requests, and availability to Sprint 8.
+
+### This week's Sprint 1 closeout — checkpoint Thu 2026-10-01
+
+This week is **Sprint 1 security closeout plus Sprint 1b planning**, not medication, appointments, OCR, reports, or APK work.
+
+1. **Sun Sep 27:** freeze the three security corrections and acceptance criteria.
+2. **Mon Sep 28:** confirm the Supabase re-authentication mechanism and invite-code rate-limit design.
+3. **Tue Sep 29:** implement the corrections and regression tests.
+4. **Wed Sep 30:** run typecheck/lint/tests, review RLS/RPC behavior, and perform adversarial security review. Stop new scope Wednesday evening.
+5. **Thu Oct 1:** review the diff, demonstrate the flows, accept or reject Sprint 1, and approve the Sprint 1b specification.
+
+Sprint 1 is done only when the existing tests still pass, new tests cover all three corrections, sensitive writes remain RPC/RLS guarded, and the owner has a plain-English acceptance summary. The old **26/26** result is the baseline; after adding tests, report the new total. If the re-auth mechanism is blocked by a verified Supabase limitation, document the blocker explicitly rather than claiming it is enforced.
+
+## Useful commands
 
 ```bash
 pnpm install

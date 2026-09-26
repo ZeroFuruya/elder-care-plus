@@ -7,5 +7,6 @@ A spec contains: goal, user stories, acceptance criteria, screens, data touched,
 and out-of-scope.
 
 `sprint-1.md` exists (accounts, roles, care circle, consent — schema first). It was written and
-implemented at the owner's request on 2026-09-25; the owner's review and acceptance are still
-outstanding.
+implemented at the owner's request on 2026-09-25; the security closeout addendum (frozen
+2026-09-27) adds three owner-required corrections. The owner's review and acceptance are still
+outstanding — checkpoint 2026-10-01.
