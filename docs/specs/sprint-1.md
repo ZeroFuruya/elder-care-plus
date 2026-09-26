@@ -106,6 +106,8 @@ files: profiles → care circle → RLS/helpers/RPCs.
 - **Weak code entropy.** Six digits is brute-forceable without a rate limit; the per-account
   limit (5 evaluated failures per 15 minutes) plus the 24-hour expiry is the mitigation, and it
   must not be raised or removed. See the closeout addendum (SC-3).
+- **Re-auth was advisory.** Superseded 2026-09-27 by the closeout addendum: the three sensitive
+  RPCs now require a server-verifiable recent password authentication.
 
 ---
 
@@ -118,8 +120,14 @@ freezes the corrections, their acceptance criteria and their tests. It supersede
 
 The base migrations are already applied locally, so the corrections ship as **one new migration**
 plus test updates; the existing migration files are not edited (`docs/01-dev-environment.md`
-§8.1). Implementation is scheduled for Tue 2026-09-29; the mechanism confirmation the plan
-expected on Mon 2026-09-28 is already done (see SC-2).
+§8.1). The redemption function changes its return type, so the migration drops and recreates it
+(`CREATE OR REPLACE` cannot change a return type) and re-grants execute to `authenticated` only.
+Implementation is scheduled for Tue 2026-09-29; the mechanism confirmation the plan expected on
+Mon 2026-09-28 is already done (see SC-2).
+
+Revised 2026-09-27 after the `@architect` critique; the three required outcomes are unchanged and
+the additions below are the build contract (locking, exact result shapes, countable-failure rules,
+malformed-claim handling).
 
 ### SC-1 — Sign-up role is mandatory
 
@@ -162,13 +170,17 @@ requirement forces it).
 **Frozen fix.** An internal helper
 `public.assert_recent_password_auth(p_max_age_seconds int default 300)` raises
 `insufficient_privilege` ("re-authentication required") when unsatisfied, and is called first by
-`consent_to_care_link`, `revoke_care_link` and `deactivate_account`. The helper is not executable
-by `authenticated`. Every future consent, unlink, deactivation and evidence-access RPC must call
-it (including the Sprint 6 evidence-review flow).
+`consent_to_care_link`, `revoke_care_link` and `deactivate_account`. It fails closed on a missing,
+empty or malformed `amr` (not an array, missing `password` entry, non-numeric timestamp) and
+rejects a password timestamp more than 60 seconds in the future, so a malformed trusted claim
+cannot widen the window. The helper is not executable by `authenticated`. Every future consent,
+unlink, deactivation and evidence-access RPC must call it (including the Sprint 6 evidence-review
+flow).
 
 **Acceptance criteria**
 
-1. With no `amr`, no `password` entry, or a password timestamp older than 300 s, each of the three
+1. With no `amr`, an empty or malformed `amr`, no `password` entry, a non-numeric timestamp, a
+   password timestamp older than 300 s, or one more than 60 s in the future, each of the three
    RPCs raises `insufficient_privilege` and changes nothing.
 2. With a password timestamp no older than 300 s, each RPC performs its normal authorization and
    effect; callers who are not the elder/manager still fail exactly as before.
@@ -194,21 +206,40 @@ attempts, and clients can select `code_hash`.
   cannot extend its own cooldown.
 - Failures are uniform. Wrong, expired, role-mismatched, email-mismatched and unknown codes all
   return exactly `{"status":"invalid"}`; nothing in the response reveals whether a code exists or
-  expired. Malformed codes and callers whose profile role cannot redeem (a caregiver) also return
-  `invalid` and are neither audited nor counted, because they can never match an invite.
-- The result contract changes from `uuid` to `jsonb`:
-  `{"status": "active" | "invited" | "invalid" | "rate_limited", "link_id": uuid | null,
-  "retry_after_seconds": int | null}`; `retry_after_seconds` is present only for `rate_limited`,
-  and `link_id` only for `active` / `invited`. Replay by the same redeemer returns the existing
-  link's id with its current status. No mobile caller exists until Sprint 1b.
+  expired. Which calls are *evaluated failures* (audited and counted):
+  - not evaluated, not audited, not counted: malformed (non-six-digit) input; callers with no
+    active profile, a deactivated account, or the caregiver role — they can never match an invite;
+  - evaluated, audited, counted: an active elder or family member presenting a well-formed code
+    when no open invite matches, the match is expired, the invite grants the other role, the email
+    binding rejects the caller, or there are no open invites at all.
+- Concurrency and replay. The limiter and the redemption are serialized per account with a
+  transaction-scoped advisory lock (nothing global). A matched invite is re-read `for update`
+  before it is consumed and its state is re-checked after the lock; the created link id is stored
+  on the invite (`consumed_link_id`, new column), so an idempotent replay returns exactly the link
+  that redemption created — with that link's current status. The replay lookup runs after the
+  cooldown gate, so a replay attempted during a cooldown gets `rate_limited`, consistent with the
+  rule that cooldown refusals do not evaluate.
+- Email binding compares `lower(trim(auth.users.email))` with the invite's already-normalized
+  address; a missing email counts as a mismatch. A mismatch never consumes or edits the invite,
+  and the audit row records no email or code.
+- The result contract changes from `uuid` to `jsonb`, with exact shapes:
+  `{"status":"active","link_id":…}`, `{"status":"invited","link_id":…}`,
+  `{"status":"revoked","link_id":…}` (replay after the link was revoked),
+  `{"status":"invalid"}`, and `{"status":"rate_limited","retry_after_seconds":n}`. A consumed
+  invite whose recorded link is missing, and a run with no match, return the uniform invalid
+  object rather than raising. No mobile caller exists until Sprint 1b.
+- `retry_after_seconds` is `max(1, ceil(oldest counted failure + 15 minutes − now()))`; refusals
+  write nothing, so they cannot extend the cooldown.
 - Each evaluated failure appends one `audit_events` row
   (`action = 'care_link_invite.redeem_failed'`, `actor_id` = redeemer, `elder_id` null) with an
   internal reason in `after_summary` (`no_match` / `email_mismatch`); the audit row is visible to
   its actor only, under the existing RLS policy. Cooldown refusals are not audited.
 - Unchanged: six-digit codes, bcrypt hashes only, 24-hour expiry, single-use with idempotent
   replay by the same redeemer, authenticated redeemer only.
-- Hardening: clients lose SELECT on `code_hash` (column-level grant); invite metadata stays
-  readable under the existing RLS policy.
+- Hardening: table-level SELECT on `care_link_invites` is revoked and `authenticated` is granted
+  SELECT only on the metadata columns (`id, created_by, elder_id, grants_member_role,
+  invitee_email, expires_at, consumed_at, consumed_by, created_at`) — a later column-level revoke
+  would not remove an existing table-level grant, so the grant itself is replaced.
 
 **Acceptance criteria**
 
@@ -222,9 +253,14 @@ attempts, and clients can select `code_hash`.
 4. Every evaluated failure appends exactly one audit row, visible to its actor and no one else;
    cooldown refusals append none.
 5. A correct code below the limit still activates or links exactly as before; a replay by the same
-   redeemer returns the same `link_id` and creates no second link.
-6. `code_hash` cannot be selected by `authenticated`, while the existing invite SELECT policy
-   still returns the metadata columns.
+   redeemer returns the same `link_id` and creates no second link; if that link was revoked since,
+   the replay returns `{"status":"revoked"}` with the same id.
+6. `code_hash` cannot be selected by `authenticated` (tested with `has_column_privilege`), while
+   the metadata columns remain selectable under the existing invite SELECT policy.
+7. Sequential tests cover the countable-failure rules, the rolling window (aged-out rows stop
+   counting), the retry value and the untouched-invite invariant; the per-account advisory lock
+   and the invite `for update` re-check are reviewed by `@challenger`, because pgTAP cannot race
+   two sessions.
 
 ### Tests and evidence
 
@@ -233,7 +269,9 @@ attempts, and clients can select `code_hash`.
 - The existing suite is updated where it encodes retired behavior (the "wrong code burns an
   attempt on the open invite" assertion) and where the re-auth guard applies (consent, revoke and
   deactivation calls gain `amr` claims). New assertions cover SC-1, SC-2 and SC-3; the closeout
-  reports the new total, per `AGENTS.md`.
+  reports the new total, per `AGENTS.md`. Claims are generated dynamically from the clock, never
+  hard-coded. Window-expiry tests insert old failure rows as the test owner; the append-only
+  trigger forbids moving existing rows across the window.
 - `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm format:check` and `pnpm check:contrast` stay
   green (the mobile app is untouched).
 - The adversarial pass (`@challenger`) targets the new redemption path and the audit-derived rate
@@ -251,5 +289,3 @@ attempts, and clients can select `code_hash`.
 
 - Mobile/client changes; Sprint 1b wires re-authentication and the new result shape.
 - MFA/AAL2, account recovery, and the `(family)` UI (Sprint 8).
-- **Re-auth was advisory.** Superseded 2026-09-27 by the closeout addendum: the three sensitive
-  RPCs now require a server-verifiable recent password authentication.
