@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 
 export type AsyncState<T> =
@@ -25,21 +25,27 @@ export function useAsyncData<T>(loader: () => Promise<T>): AsyncResult<T> {
     message: null,
   });
   const [refreshing, setRefreshing] = useState(false);
+  // Last-write-wins guard: focus and pull-to-refresh can overlap, and a stale
+  // response must not overwrite a newer one (review finding).
+  const runIdRef = useRef(0);
 
   const run = useCallback(
     async (mode: 'initial' | 'refresh' = 'initial') => {
+      const runId = (runIdRef.current += 1);
       if (mode === 'refresh') setRefreshing(true);
       try {
         const data = await loader();
+        if (runId !== runIdRef.current) return;
         setState({ status: 'ready', data, message: null });
       } catch (error: unknown) {
+        if (runId !== runIdRef.current) return;
         setState({
           status: 'error',
           data: null,
           message: error instanceof Error ? error.message : 'Could not load this screen.',
         });
       } finally {
-        if (mode === 'refresh') setRefreshing(false);
+        if (runId === runIdRef.current && mode === 'refresh') setRefreshing(false);
       }
     },
     [loader],

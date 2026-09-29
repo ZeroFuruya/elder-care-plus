@@ -4,13 +4,13 @@ import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
-import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { DoseCard } from '@/components/dose-card';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
+import { ScreenError } from '@/components/screen-error';
 import { colors, fontSize, lineHeight, radius, spacing, statusColors } from '@/constants/theme';
 import {
   getLinkedElder,
@@ -84,11 +84,7 @@ export default function CaregiverDashboardScreen() {
 
   if (state.status === 'loading') return <LoadingScreen message="Loading the dashboard…" />;
   if (state.status === 'error') {
-    return (
-      <Screen title="Dashboard" showBell>
-        <Banner tone="error" message={state.message} />
-      </Screen>
-    );
+    return <ScreenError title="Dashboard" showBell message={state.message} onRetry={reload} />;
   }
 
   const { link, today, todaySummary, recent, weekSummary } = state.data;
@@ -231,7 +227,7 @@ const styles = StyleSheet.create({
   },
   tileLabel: {
     color: colors.textMuted,
-    fontSize: fontSize.tabLabel,
+    fontSize: fontSize.caption,
     fontWeight: '600',
     textAlign: 'center',
   },

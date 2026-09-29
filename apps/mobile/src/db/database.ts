@@ -22,6 +22,10 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
 }
 
 const SCHEMA = `
+-- Legacy tables. Identity and care links moved to Supabase (RLS-scoped) in
+-- Sprint 1b; these survive only because the fallback tag's demo build reads
+-- them. The users role CHECK predates the third (family member) role and must
+-- not be copied into anything new.
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,

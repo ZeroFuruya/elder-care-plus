@@ -12,6 +12,8 @@ import { redeemCareLinkCode } from '@/db';
 
 interface EnterCodeScreenProps {
   role: 'elder' | 'family_member';
+  /** Stack (non-tab) screens clear the bottom inset themselves. */
+  safeBottom?: boolean;
 }
 
 const COPY = {
@@ -50,7 +52,7 @@ function formatCountdown(totalSeconds: number): string {
  * member (invite code). Invalid codes are answered uniformly by the server, so
  * the screen can only repeat one message.
  */
-export function EnterCodeScreen({ role }: EnterCodeScreenProps) {
+export function EnterCodeScreen({ role, safeBottom = false }: EnterCodeScreenProps) {
   const copy = COPY[role];
 
   const [code, setCode] = useState('');
@@ -75,7 +77,11 @@ export function EnterCodeScreen({ role }: EnterCodeScreenProps) {
     cooldownUntil === null ? 0 : Math.max(0, Math.ceil((cooldownUntil - now) / 1000));
 
   const submit = async () => {
-    if (busy || linked || code.length !== 6 || remaining > 0) return;
+    if (busy || linked || remaining > 0) return;
+    if (code.length !== 6) {
+      setMessage({ tone: 'error', text: 'Enter all six digits of the code.' });
+      return;
+    }
 
     setBusy(true);
     setMessage(null);
@@ -119,7 +125,7 @@ export function EnterCodeScreen({ role }: EnterCodeScreenProps) {
   };
 
   return (
-    <Screen title={copy.title} subtitle={copy.subtitle} showBack>
+    <Screen title={copy.title} subtitle={copy.subtitle} showBack safeBottom={safeBottom}>
       <Card>
         <Text style={styles.body}>{copy.intro}</Text>
       </Card>
@@ -165,7 +171,7 @@ export function EnterCodeScreen({ role }: EnterCodeScreenProps) {
               void submit();
             }}
             loading={busy}
-            disabled={code.length !== 6 || remaining > 0}
+            disabled={remaining > 0}
           />
 
           <Text style={styles.note}>

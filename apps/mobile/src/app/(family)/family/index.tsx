@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
+import { ScreenError } from '@/components/screen-error';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
 import { listMyLinks } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
@@ -27,11 +28,7 @@ export default function FamilyHomeScreen() {
 
   if (state.status === 'loading') return <LoadingScreen message="Loading your record…" />;
   if (state.status === 'error') {
-    return (
-      <Screen title="Family view">
-        <Banner tone="error" message={state.message} />
-      </Screen>
-    );
+    return <ScreenError title="Family view" message={state.message} onRetry={reload} safeBottom />;
   }
 
   const links = state.data;
@@ -46,6 +43,7 @@ export default function FamilyHomeScreen() {
         subtitle="Read-only access"
         onRefresh={reload}
         refreshing={refreshing}
+        safeBottom
       >
         <Card title="You can see">
           <Text style={styles.name}>{active.elderName ?? 'Your older adult'}</Text>
@@ -75,6 +73,7 @@ export default function FamilyHomeScreen() {
         subtitle="Waiting for approval"
         onRefresh={reload}
         refreshing={refreshing}
+        safeBottom
       >
         <Banner
           tone="info"
@@ -91,7 +90,7 @@ export default function FamilyHomeScreen() {
   }
 
   return (
-    <Screen title="Family view" onRefresh={reload} refreshing={refreshing}>
+    <Screen title="Family view" onRefresh={reload} refreshing={refreshing} safeBottom>
       <EmptyState
         title={wasRevoked ? 'Your access was removed' : 'No record is shared with you'}
         description={

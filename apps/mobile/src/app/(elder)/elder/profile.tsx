@@ -31,8 +31,9 @@ export default function ElderProfileScreen() {
 
       <Card title="Your data">
         <Text style={styles.body}>
-          Doses you confirm are recorded on the ElderCare+ server and shared with the caregiver and
-          family members you approved. Nothing is deleted — a record is only added.
+          Your care circle is stored on the ElderCare+ server: only the caregiver and family members
+          you approve can see your record, and only read-only. Nothing is deleted — a record is only
+          added.
         </Text>
       </Card>
 

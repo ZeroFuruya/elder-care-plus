@@ -7,11 +7,12 @@ import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
 
 export default function WelcomeScreen() {
   return (
-    <Screen title="ElderCare+" subtitle="Family care coordination">
+    <Screen title="ElderCare+" subtitle="Family care coordination" safeBottom>
       <View style={styles.hero}>
         <Text style={styles.headline}>Medicines, appointments and peace of mind.</Text>
         <Text style={styles.body}>
-          One shared record between an older adult and the family member who looks after them.
+          One shared record between an older adult, their caregiver and the family members they
+          trust.
         </Text>
       </View>
 

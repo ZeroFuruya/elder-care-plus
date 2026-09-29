@@ -1,14 +1,17 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
 import { Banner, type BannerTone } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { EmptyState } from '@/components/empty-state';
 import { Field } from '@/components/field';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
+import { ScreenError } from '@/components/screen-error';
+import { SensitiveActionDialog } from '@/components/sensitive-action-dialog';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
 import {
   createElderLinkInvite,
@@ -16,6 +19,7 @@ import {
   inviteFamilyMember,
   isLinkingError,
   listMyInvites,
+  revokeCareLink,
   type MyInvite,
   type MyLink,
 } from '@/db';
@@ -44,7 +48,7 @@ function inviteState(invite: MyInvite): string {
   return `Open · expires ${formatDateTime(invite.expiresAt)}`;
 }
 
-/** Caregiver side of the care circle: the elder link code, family invites, invite state. */
+/** Caregiver side of the care circle: the elder link code, family invites, revoke. */
 export default function CaregiverLinkScreen() {
   const user = useSessionUser();
   const loader = useCallback(async (): Promise<LinkData> => {
@@ -57,8 +61,15 @@ export default function CaregiverLinkScreen() {
   const [familyEmail, setFamilyEmail] = useState('');
   const [busy, setBusy] = useState<'elder' | 'family_member' | null>(null);
   const [banner, setBanner] = useState<{ tone: BannerTone; message: string } | null>(null);
+  const [confirmingRevoke, setConfirmingRevoke] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  // State is async: a double tap can pass the `busy` check before React
+  // re-renders, so the ref is the real lock (two codes must not be issued).
+  const busyRef = useRef(false);
 
   const createElderCode = async () => {
+    if (busyRef.current) return;
+    busyRef.current = true;
     setBusy('elder');
     setBanner(null);
     try {
@@ -68,17 +79,20 @@ export default function CaregiverLinkScreen() {
     } catch (cause) {
       setBanner({ tone: 'error', message: messageFor(cause) });
     } finally {
+      busyRef.current = false;
       setBusy(null);
     }
   };
 
   const createFamilyCode = async () => {
+    if (busyRef.current) return;
     const email = familyEmail.trim();
     if (!/.+@.+\..+/.test(email)) {
       setBanner({ tone: 'error', message: 'Enter the family member’s email address first.' });
       return;
     }
 
+    busyRef.current = true;
     setBusy('family_member');
     setBanner(null);
     try {
@@ -89,17 +103,14 @@ export default function CaregiverLinkScreen() {
     } catch (cause) {
       setBanner({ tone: 'error', message: messageFor(cause) });
     } finally {
+      busyRef.current = false;
       setBusy(null);
     }
   };
 
   if (state.status === 'loading') return <LoadingScreen message="Loading your care links…" />;
   if (state.status === 'error') {
-    return (
-      <Screen title="Care links" showBack>
-        <Banner tone="error" message={state.message} />
-      </Screen>
-    );
+    return <ScreenError title="Care links" showBack message={state.message} onRetry={reload} />;
   }
 
   const { link, invites } = state.data;
@@ -137,6 +148,12 @@ export default function CaregiverLinkScreen() {
         <Card title="Linked older adult">
           <Text style={styles.name}>{link.elderName ?? 'Your older adult'}</Text>
           <Text style={styles.body}>Their medicine plan is managed from the Meds tab.</Text>
+          <Button
+            label="Remove this link"
+            variant="secondary"
+            onPress={() => setConfirmingRevoke(true)}
+            accessibilityHint="Asks for confirmation and your password before removing the link"
+          />
         </Card>
       ) : (
         <Card title="Link an older adult">
@@ -204,6 +221,36 @@ export default function CaregiverLinkScreen() {
           ))
         )}
       </View>
+
+      <ConfirmDialog
+        visible={confirmingRevoke}
+        title="Remove the link to this older adult?"
+        description="Their record stays in the system and keeps its history, but your account will no longer see it. You can link again with a new code."
+        confirmLabel="Remove link"
+        danger
+        onCancel={() => setConfirmingRevoke(false)}
+        onConfirm={() => {
+          setConfirmingRevoke(false);
+          setRevoking(true);
+        }}
+      />
+
+      {link ? (
+        <SensitiveActionDialog
+          visible={revoking}
+          title="Enter your password"
+          description="For your safety, removing a care link needs your password. The history is kept."
+          confirmLabel="Remove link"
+          danger
+          action={() => revokeCareLink(link.linkId)}
+          onCancel={() => setRevoking(false)}
+          onSuccess={() => {
+            setRevoking(false);
+            setBanner({ tone: 'success', message: 'The care link was removed.' });
+            void reload();
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

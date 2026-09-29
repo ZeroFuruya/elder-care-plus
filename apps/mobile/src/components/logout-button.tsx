@@ -11,8 +11,9 @@ interface LogoutButtonProps {
 }
 
 /**
- * Sign out with the required confirmation: "Are you sure you want to logout/sign out?"
- * The confirmation renders in-app, never as a system dialog.
+ * Sign out with an in-app confirmation that names the action and states the
+ * consequence (docs/02-ui-ux-standard.md: never "Yes", never an unedited
+ * "Are you sure?"). The confirmation renders in-app, never as a system dialog.
  */
 export function LogoutButton({ size = 'default' }: LogoutButtonProps) {
   const { signOut } = useAuth();
@@ -21,7 +22,7 @@ export function LogoutButton({ size = 'default' }: LogoutButtonProps) {
   return (
     <>
       <Button
-        label="Log out"
+        label="Sign out"
         variant="danger"
         size={size}
         onPress={() => setConfirming(true)}
@@ -31,9 +32,9 @@ export function LogoutButton({ size = 'default' }: LogoutButtonProps) {
 
       <ConfirmDialog
         visible={confirming}
-        title="Sign out"
-        description="Are you sure you want to logout/sign out?"
-        confirmLabel="Yes, sign out"
+        title="Sign out?"
+        description="You will need your email and password to sign in again on this device."
+        confirmLabel="Sign out"
         danger
         onCancel={() => setConfirming(false)}
         onConfirm={() => {

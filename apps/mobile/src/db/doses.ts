@@ -1,3 +1,12 @@
+/**
+ * Legacy local dose store (expo-sqlite).
+ *
+ * Supabase is authoritative for medication data; this module exists only for
+ * the tagged local-demo fallback and to keep the current screens' empty states
+ * honest while the medication plan is built. `confirmDose` is no longer
+ * reachable from any screen: a local write must never look like a server
+ * record (docs/specs/sprint-1b.md criterion 9).
+ */
 import { randomUUID } from 'expo-crypto';
 
 import { deriveDoseStatus, type DoseStatus } from '@eldercare/shared';

@@ -1,6 +1,11 @@
 /**
- * Synthetic emergency profile for the demo elder. Committed fixtures only — never real
- * health data (see AGENTS.md, "Data safety and AI use").
+ * Synthetic emergency profile for the tagged local-demo fallback.
+ *
+ * Supabase-backed builds no longer import this: the elder emergency screen
+ * shows an honest empty state until the real profile lands (Sprint 2), so a
+ * demo stranger is never presented as the signed-in older adult. Committed
+ * fixtures only — never real health data (see AGENTS.md, "Data safety and AI
+ * use").
  */
 export const demoEmergencyProfile = {
   fullName: 'Ana Reyes',

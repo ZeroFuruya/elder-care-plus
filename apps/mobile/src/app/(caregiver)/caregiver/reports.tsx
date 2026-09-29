@@ -2,11 +2,11 @@ import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
-import { Banner } from '@/components/banner';
 import { Card } from '@/components/card';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
+import { ScreenError } from '@/components/screen-error';
 import { colors, fontSize, lineHeight, radius, spacing } from '@/constants/theme';
 import { getLinkedElder, listDoses, summarise, type AdherenceSummary, type MyLink } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
@@ -59,11 +59,7 @@ export default function CaregiverReportsScreen() {
 
   if (state.status === 'loading') return <LoadingScreen message="Building the report…" />;
   if (state.status === 'error') {
-    return (
-      <Screen title="Reports">
-        <Banner tone="error" message={state.message} />
-      </Screen>
-    );
+    return <ScreenError title="Reports" message={state.message} onRetry={reload} />;
   }
 
   const { link, overall, days } = state.data;

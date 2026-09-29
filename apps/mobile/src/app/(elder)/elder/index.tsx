@@ -1,18 +1,17 @@
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
-import { Banner, type BannerTone } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { DoseCard } from '@/components/dose-card';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
+import { ScreenError } from '@/components/screen-error';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
 import {
-  confirmDose,
   listDosesForDay,
   listElderCircle,
   summarise,
@@ -20,7 +19,14 @@ import {
   type ElderCircleLink,
 } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
-import { formatLongDate, formatTime, greeting } from '@/lib/format';
+import { formatLongDate, greeting } from '@/lib/format';
+
+/**
+ * The older adult's day. Dose confirmation is deliberately absent in this
+ * build: the real confirmation loop writes to Supabase (Sprint 3/4), and a
+ * local-only write must never look like the caregiver can see it
+ * (docs/specs/sprint-1b.md, "Legacy store").
+ */
 
 interface HomeData {
   doses: DoseView[];
@@ -38,31 +44,9 @@ export default function ElderHomeScreen() {
   }, [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
-  const [banner, setBanner] = useState<{ tone: BannerTone; message: string } | null>(null);
-  const [markingId, setMarkingId] = useState<string | null>(null);
-
-  const markTaken = async (doseId: string, medicine: string) => {
-    setMarkingId(doseId);
-    const recorded = await confirmDose(doseId, user.id);
-    setMarkingId(null);
-
-    setBanner({
-      tone: recorded ? 'success' : 'error',
-      message: recorded
-        ? `${medicine} marked as taken at ${formatTime(new Date())}. Your family caregiver can see this now.`
-        : 'That dose was already recorded, so nothing changed.',
-    });
-
-    await reload();
-  };
-
   if (state.status === 'loading') return <LoadingScreen message="Loading today's doses…" />;
   if (state.status === 'error') {
-    return (
-      <Screen title="Today" showBell>
-        <Banner tone="error" message={state.message} />
-      </Screen>
-    );
+    return <ScreenError title="Today" showBell message={state.message} onRetry={reload} />;
   }
 
   const doses = state.data.doses;
@@ -99,8 +83,6 @@ export default function ElderHomeScreen() {
         </Text>
       </Card>
 
-      {banner ? <Banner tone={banner.tone} message={banner.message} /> : null}
-
       {awaitingConsent.length > 0 ? (
         <Button
           label={`Review ${awaitingConsent.length === 1 ? 'a family member’s access' : `${awaitingConsent.length} family members’ access`}`}
@@ -117,20 +99,7 @@ export default function ElderHomeScreen() {
             description="There is nothing to take today. Your family caregiver sets the schedule."
           />
         ) : (
-          doses.map((dose) => (
-            <DoseCard
-              key={dose.id}
-              dose={dose}
-              marking={markingId === dose.id}
-              onMarkTaken={
-                dose.status === 'due'
-                  ? () => {
-                      void markTaken(dose.id, dose.medicine);
-                    }
-                  : undefined
-              }
-            />
-          ))
+          doses.map((dose) => <DoseCard key={dose.id} dose={dose} />)
         )}
       </View>
 
