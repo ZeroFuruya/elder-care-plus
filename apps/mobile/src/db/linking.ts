@@ -37,7 +37,7 @@ const GENERIC_MESSAGE = 'The action could not be completed. Please try again.';
 
 function networkError(cause: unknown): LinkingError {
   return new LinkingError(
-    cause instanceof Error && /network|fetch/i.test(cause.message)
+    cause instanceof Error && /network|fetch|timed? ?out|too long/i.test(cause.message)
       ? OFFLINE_MESSAGE
       : GENERIC_MESSAGE,
     'network',
@@ -48,7 +48,9 @@ function mapPostgrestError(error: PostgrestError): LinkingError {
   const message = error.message ?? '';
   const code = error.code ?? '';
 
-  if (/fetch|network/i.test(message)) return new LinkingError(OFFLINE_MESSAGE, 'network');
+  if (/fetch|network|timed? ?out|too long/i.test(message)) {
+    return new LinkingError(OFFLINE_MESSAGE, 'network');
+  }
 
   // The SC-2 guard raises exactly this; any other 42501 is a plain permission denial.
   if (code === '42501' && /re-?authentication required/i.test(message)) {

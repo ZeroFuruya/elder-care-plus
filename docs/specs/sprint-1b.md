@@ -127,14 +127,17 @@ re-run the runbook with fresh synthetic addresses.
 adapter is a pure factory in `packages/shared` (unit-testable) that takes a
 `{ getItem, setItem, deleteItem }` backend and implements Supabase's `SupportedStorage`:
 
-- Keys: `<prefix>manifest` and `<prefix>chunk.<n>`; chunk payload ≤ 1800 characters; manifest is
-  `{"v":1,"chunks":n}` written **last** (commit point).
-- `setItem` writes the chunks, then the manifest, then deletes orphaned chunks from a previous
-  longer value.
+- Keys: `<prefix><key>.manifest` and `<prefix><key>.<generation>.<n>`; chunk payload ≤ 1800
+  characters, at most 8 chunks; the manifest `{"version":1,"generation":g,"chunks":n}` is written
+  **last** (commit point).
+- `setItem` writes the new generation's chunks, commits the manifest, then deletes the previous
+  generation's chunks. Because the generation changes on every write, an interrupted write can
+  never overwrite the committed generation: the previous value stays readable.
 - `getItem` returns null when the manifest is missing; a malformed, unknown-version or incomplete
-  manifest (any chunk missing) is treated as corrupt: everything under the prefix is removed and
+  manifest (any chunk missing) is treated as corrupt: the manifest and its chunks are removed and
   null is returned (fail closed, no half-session).
-- `removeItem` deletes the manifest and all chunks, bounded by the manifest.
+- `removeItem` deletes the manifest and its committed chunks. A value over the configured maximum
+  is refused with a clear error instead of growing without bound.
 - Tests (Vitest, in `packages/shared` with an in-memory backend): small and oversized round-trip;
   overwrite shrinking; corruption; a missing chunk; interrupted write leaves the previous session
   readable; remove cleans everything. Verified on Expo Go and the preview APK, not only in tests.
@@ -153,8 +156,9 @@ Atomic states, resolved before anything renders:
 - The authoritative profile is `select id, role, full_name, deactivated_at from profiles where id
   = <session.user.id>` (own row under RLS). Routing uses that role, validated against the shared
   schema; auth metadata is only ever used to **submit** the sign-up role, never to route.
-- Fail closed: missing profile, unknown role, `deactivated_at` set, or a fetch error → sign out
-  and show an in-app message. No protected screen renders on partial state.
+- Fail closed on bad identity: missing profile, unknown role or `deactivated_at` set → sign out
+  and show an in-app message. A transient fetch error keeps the session and shows a retryable
+  startup error instead of signing the user out. No protected screen renders on partial state.
 - Role → route map: `caregiver → /caregiver`, `elder → /elder`, `family_member → /family`. Each
   group layout independently guards its role and redirects the other two, so a stale navigation
   state cannot open the wrong shell.

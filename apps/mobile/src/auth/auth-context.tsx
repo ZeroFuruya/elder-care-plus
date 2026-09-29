@@ -87,7 +87,7 @@ function isNetworkError(error: AuthError): boolean {
   return (
     error.status === 0 ||
     error.name === 'AuthRetryableFetchError' ||
-    /fetch|network|timed? ?out/i.test(error.message)
+    /fetch|network|timed? ?out|too long/i.test(error.message)
   );
 }
 
