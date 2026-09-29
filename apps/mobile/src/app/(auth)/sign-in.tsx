@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
-import { homeRouteFor } from '@/auth/routes';
 import { validateEmail, validateSignIn, type FieldErrors } from '@/auth/validation';
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
@@ -40,9 +39,9 @@ export default function SignInScreen() {
     }
 
     setFormError(null);
-    setSuccess('Signed in successfully. Opening your dashboard…');
-    const target = homeRouteFor(outcome.user.role);
-    setTimeout(() => router.replace(target), 900);
+    setSuccess('Signed in successfully.');
+    // The (auth) layout redirects to this role's home as soon as the session
+    // lands, so the screen never navigates on its own.
   };
 
   return (
@@ -50,7 +49,7 @@ export default function SignInScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen title="Sign in" subtitle="Enter the account details to continue" showBack>
+      <Screen title="Sign in" subtitle="Enter the account details to continue" showBack safeBottom>
         {success ? <Banner tone="success" message={success} /> : null}
         {formError ? <Banner tone="error" message={formError} /> : null}
 

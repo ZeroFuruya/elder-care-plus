@@ -117,12 +117,13 @@ async function fetchProfile(session: Session): Promise<SessionUser> {
 
 function signInErrorMessage(error: AuthError): string {
   if (isNetworkError(error)) return OFFLINE_MESSAGE;
-  if (error.code === 'email_not_confirmed') {
-    return 'This account still needs email confirmation, so sign-in is not available yet.';
-  }
-  if (error.status === 400 || error.code === 'invalid_credentials') {
-    // Deliberate collapse: unknown email and wrong password share one message
-    // (no account enumeration; docs/specs/sprint-1b.md criterion 3).
+  if (
+    error.status === 400 ||
+    error.code === 'invalid_credentials' ||
+    error.code === 'email_not_confirmed'
+  ) {
+    // Deliberate collapse: unknown email, wrong password and an unconfirmed
+    // account share one message (no account enumeration; sprint-1b criterion 3).
     return SIGN_IN_FAILED;
   }
   return SIGN_IN_ERROR;
@@ -155,6 +156,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadedUserIdRef = useRef<string | null>(null);
   const userRef = useRef<SessionUser | null>(null);
+  /**
+   * Monotonic guard for auth mutations: a profile fetch that started before a
+   * newer sign-in or sign-out must never write state over the newer result.
+   */
+  const generationRef = useRef(0);
 
   const setSessionUser = useCallback((next: SessionUser | null) => {
     userRef.current = next;
@@ -189,6 +195,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      const generation = generationRef.current;
       if (loadedUserIdRef.current === session.user.id) {
         setReady(true);
         return;
@@ -196,13 +203,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const profile = await fetchProfile(session);
-        if (!active) return;
+        if (!active || generation !== generationRef.current) return;
         loadedUserIdRef.current = profile.id;
         setSessionUser(profile);
         setStartupError(null);
         setReady(true);
       } catch (cause) {
-        if (!active) return;
+        if (!active || generation !== generationRef.current) return;
         loadedUserIdRef.current = null;
         setSessionUser(null);
         setStartupError(profileErrorMessage(cause));
@@ -260,24 +267,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signIn = useCallback(
     async (email: string, password: string): Promise<Outcome> => {
+      const generation = (generationRef.current += 1);
       const client = getSupabase();
       const { data, error } = await client.auth.signInWithPassword({
         email: normaliseEmail(email),
         password,
       });
 
+      // A newer sign-in/sign-out started while this request was in flight.
+      if (generation !== generationRef.current) return { ok: false, message: SIGN_IN_ERROR };
       if (error) return { ok: false, message: signInErrorMessage(error) };
       if (!data.session) return { ok: false, message: SIGN_IN_ERROR };
 
       try {
         const profile = await fetchProfile(data.session);
+        if (generation !== generationRef.current) return { ok: false, message: SIGN_IN_ERROR };
         loadedUserIdRef.current = profile.id;
         setSessionUser(profile);
         setStartupError(null);
         setReady(true);
         return { ok: true, user: profile };
       } catch (cause) {
-        await client.auth.signOut();
+        if (generation === generationRef.current) await client.auth.signOut();
         return { ok: false, message: profileErrorMessage(cause) };
       }
     },
@@ -286,6 +297,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = useCallback(
     async (input: SignUpInput): Promise<Outcome> => {
+      const generation = (generationRef.current += 1);
       const client = getSupabase();
       const role = userRoleSchema.safeParse(input.role);
       if (!role.success) return { ok: false, message: 'Choose who will use this account.' };
@@ -299,6 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
+      if (generation !== generationRef.current) return { ok: false, message: SIGN_IN_ERROR };
       if (error) return { ok: false, message: signUpErrorMessage(error) };
       if (!data.session) {
         return {
@@ -310,13 +323,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       try {
         const profile = await fetchProfile(data.session);
+        if (generation !== generationRef.current) return { ok: false, message: SIGN_IN_ERROR };
         loadedUserIdRef.current = profile.id;
         setSessionUser(profile);
         setStartupError(null);
         setReady(true);
         return { ok: true, user: profile };
       } catch (cause) {
-        await client.auth.signOut();
+        if (generation === generationRef.current) await client.auth.signOut();
         return { ok: false, message: profileErrorMessage(cause) };
       }
     },
@@ -324,14 +338,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Bump first: a profile fetch already in flight sees a stale generation and
+    // must not put the old user back (review finding).
+    generationRef.current += 1;
     loadedUserIdRef.current = null;
     setSessionUser(null);
     setStartupError(null);
     if (supabaseConfigError) return;
+
+    const client = getSupabase();
     try {
-      await getSupabase().auth.signOut();
+      await client.auth.signOut();
     } catch {
-      // Local state is already cleared; a failed network sign-out must not trap anyone.
+      // Offline or timed out; the local clear below is the guarantee that matters.
+    }
+    // Local-first guarantee (contract 4): never leave a restorable session on
+    // this device when the network revoke failed or timed out.
+    try {
+      await client.auth.signOut({ scope: 'local' });
+    } catch {
+      // Nothing more the client can do; React state was already cleared.
     }
   }, [setSessionUser]);
 
@@ -342,20 +368,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAttempt((current) => current + 1);
   }, []);
 
-  const reauthenticate = useCallback(async (password: string): Promise<ReauthResult> => {
-    const email = userRef.current?.email;
-    if (!email) return { ok: false, message: 'Your session has ended. Sign in again.' };
+  const reauthenticate = useCallback(
+    async (password: string): Promise<ReauthResult> => {
+      const current = userRef.current;
+      if (!current) return { ok: false, message: 'Your session has ended. Sign in again.' };
 
-    const client = getSupabase();
-    const { error } = await client.auth.signInWithPassword({ email, password });
+      const client = getSupabase();
+      const { data, error } = await client.auth.signInWithPassword({
+        email: current.email,
+        password,
+      });
 
-    if (!error) return { ok: true };
-    if (isNetworkError(error)) return { ok: false, message: OFFLINE_MESSAGE };
-    if (error.status === 400 || error.code === 'invalid_credentials') {
-      return { ok: false, message: 'That password is not correct.' };
-    }
-    return { ok: false, message: 'The password could not be checked just now. Please try again.' };
-  }, []);
+      if (error) {
+        if (isNetworkError(error)) return { ok: false, message: OFFLINE_MESSAGE };
+        if (error.status === 400 || error.code === 'invalid_credentials') {
+          return { ok: false, message: 'That password is not correct.' };
+        }
+        return {
+          ok: false,
+          message: 'The password could not be checked just now. Please try again.',
+        };
+      }
+
+      if (!data.session || data.user?.id !== current.id) {
+        // The password belonged to a different account. Fail closed: end the
+        // session rather than let a guarded RPC run as the wrong user.
+        await signOut();
+        return { ok: false, message: 'That password is not correct.' };
+      }
+
+      return { ok: true };
+    },
+    [signOut],
+  );
 
   const value = useMemo<AuthValue>(
     () => ({

@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
 import { Button } from '@/components/button';
 import { Field } from '@/components/field';
 import { ModalCard } from '@/components/modal-card';
+import { colors, fontSize, lineHeight } from '@/constants/theme';
 import { isLinkingError } from '@/db';
 
 interface SensitiveActionDialogProps {
@@ -37,27 +39,36 @@ export function SensitiveActionDialog({
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // State updates are async, so a double tap can pass the `busy` check before
+  // React re-renders. The ref is the actual lock.
+  const busyRef = useRef(false);
+
+  const finish = () => {
+    busyRef.current = false;
+    setBusy(false);
+  };
 
   const close = () => {
-    if (busy) return;
+    if (busyRef.current) return;
     setPassword('');
     setError(null);
     onCancel();
   };
 
   const submit = async () => {
-    if (busy) return;
+    if (busyRef.current) return;
     if (!password) {
       setError('Enter your password to continue.');
       return;
     }
 
+    busyRef.current = true;
     setBusy(true);
     setError(null);
 
     const reauth = await reauthenticate(password);
     if (!reauth.ok) {
-      setBusy(false);
+      finish();
       setError(reauth.message);
       return;
     }
@@ -65,7 +76,7 @@ export function SensitiveActionDialog({
     try {
       await action();
     } catch (cause) {
-      setBusy(false);
+      finish();
       setPassword('');
       if (isLinkingError(cause) && cause.kind === 'reauth') {
         setError('The password check expired before the action ran. Enter your password again.');
@@ -79,7 +90,7 @@ export function SensitiveActionDialog({
       return;
     }
 
-    setBusy(false);
+    finish();
     setPassword('');
     setError(null);
     onSuccess();
@@ -87,17 +98,24 @@ export function SensitiveActionDialog({
 
   return (
     <ModalCard visible={visible} title={title} description={description} onRequestClose={close}>
+      {user?.email ? (
+        <Text style={styles.email} accessibilityLabel={`Signed in as ${user.email}`}>
+          {user.email}
+        </Text>
+      ) : null}
+
       <Field
         label="Your password"
         value={password}
         onChangeText={setPassword}
         error={error ?? undefined}
         isPassword
-        placeholder={user?.email ? `Password for ${user.email}` : 'Your password'}
+        placeholder="Your password"
         autoCapitalize="none"
         autoCorrect={false}
         textContentType="password"
         returnKeyType="done"
+        editable={!busy}
         onSubmitEditing={() => {
           void submit();
         }}
@@ -115,3 +133,11 @@ export function SensitiveActionDialog({
     </ModalCard>
   );
 }
+
+const styles = StyleSheet.create({
+  email: {
+    color: colors.textMuted,
+    fontSize: fontSize.caption,
+    lineHeight: lineHeight.caption,
+  },
+});

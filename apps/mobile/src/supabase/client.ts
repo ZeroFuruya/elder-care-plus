@@ -18,21 +18,42 @@ const REQUEST_TIMEOUT_MS = 15_000;
 
 /**
  * A hung request must surface as a retryable in-app banner, never as a frozen
- * button. React Native's fetch understands AbortController.
+ * button. The caller's own AbortSignal (Supabase Auth uses one to cancel
+ * overlapping work) is combined rather than overwritten.
  */
 async function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, REQUEST_TIMEOUT_MS);
+
+  const callerSignal = init?.signal ?? null;
+  const signal = callerSignal ? combineSignals(controller.signal, callerSignal) : controller.signal;
+
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    return await fetch(input, { ...init, signal });
   } catch (cause) {
-    if (controller.signal.aborted) {
+    if (timedOut) {
       throw new Error('The server took too long to answer (request timed out).');
     }
     throw cause;
   } finally {
     clearTimeout(timer);
   }
+}
+
+/** `AbortSignal.any` is not available everywhere yet; two signals is all we need. */
+function combineSignals(primary: AbortSignal, secondary: AbortSignal): AbortSignal {
+  const controller = new AbortController();
+  if (primary.aborted || secondary.aborted) {
+    controller.abort();
+  } else {
+    primary.addEventListener('abort', () => controller.abort(), { once: true });
+    secondary.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  return controller.signal;
 }
 
 function findConfigError(url: string, anonKey: string): string | null {
