@@ -3,8 +3,9 @@ import type { ColorValue } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
 import { homeRouteFor } from '@/auth/routes';
-import { Icon, type AppIconName } from '@/components/icon';
+import type { AppIconName } from '@/components/icon';
 import { LoadingScreen } from '@/components/loading-screen';
+import { TabIcon } from '@/components/tab-icon';
 import { fontSize } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
@@ -17,10 +18,10 @@ const TAB_ICONS: Record<string, AppIconName> = {
 };
 
 function tabIcon(name: keyof typeof TAB_ICONS) {
-  function TabIcon({ color }: { color: ColorValue }) {
-    return <Icon name={TAB_ICONS[name]} size={24} color={color} />;
+  function TabIconFor({ color, focused }: { color: ColorValue; focused: boolean }) {
+    return <TabIcon name={TAB_ICONS[name]} color={color} focused={focused} />;
   }
-  return TabIcon;
+  return TabIconFor;
 }
 
 /** Elder tabs: Home, Meds, Calendar, Emergency, Profile (docs/02-ui-ux-standard.md section 8). */

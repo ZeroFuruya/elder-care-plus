@@ -3,7 +3,14 @@ import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
-import { fontSize, lineHeight, spacing, touchTarget, type AppThemeColors } from '@/constants/theme';
+import {
+  fontSize,
+  lineHeight,
+  radius,
+  spacing,
+  touchTarget,
+  type AppThemeColors,
+} from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface AppBarProps {
@@ -73,6 +80,8 @@ function createStyles(colors: AppThemeColors) {
     },
     iconButton: {
       alignItems: 'center',
+      backgroundColor: colors.surfaceMuted,
+      borderRadius: radius.pill,
       height: touchTarget.min,
       justifyContent: 'center',
       width: touchTarget.min,

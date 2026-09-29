@@ -195,12 +195,57 @@ export const fontSize = {
   tabLabel: 13,
 } as const;
 
+/**
+ * Corner radii.
+ *
+ * `docs/02-ui-ux-standard.md` §8.1 requires **16-24 dp** for cards and §20 flags conflict **R5**:
+ * `radius.md` was 12, below that range. `md` (controls) and `lg` (cards) now sit inside it. The
+ * soft-UI technique reference (owner-approved 2026-09-30) rounds further still, which is why the
+ * controls are at the top of the range rather than the bottom.
+ */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 20,
+  sm: 10,
+  md: 16,
+  lg: 24,
   pill: 999,
 } as const;
+
+/**
+ * Soft-UI elevation, per theme.
+ *
+ * Technique reference: the Figma "Soft UI Design - Neumorphism" community file, read from its
+ * public cover (owner-approved 2026-09-30). Cards float over a tinted field on a soft diffuse
+ * shadow instead of relying on a hard border.
+ *
+ * Implemented with the modern `boxShadow` style (React Native New Architecture), never the legacy
+ * `shadow*` props or `elevation`: those are platform-split and deprecated, and mixing them makes a
+ * shadow that only exists on one OS.
+ *
+ * What is deliberately **not** adopted: neumorphism's low-contrast *controls*. Inset shadows and
+ * near-invisible edges would fail §5 — control outlines stay >= 3:1 (`borderStrong`) and text
+ * >= 4.5:1, enforced by `pnpm run check:contrast`. Softness is bought with radius and elevation,
+ * never by lowering contrast.
+ */
+export interface AppElevation {
+  /** Resting card. */
+  card: string;
+  /** Sheets, modals and the one raised element on a screen. */
+  raised: string;
+}
+
+export const lightElevation: AppElevation = {
+  card: '0px 2px 8px rgba(36, 67, 109, 0.08)',
+  raised: '0px 10px 28px rgba(36, 67, 109, 0.14)',
+};
+
+/**
+ * On a dark field a shadow reads much weaker, so the dark set leans on the surface tint and a
+ * deeper, tighter shadow; it is an accent, not the thing that separates card from background.
+ */
+export const darkElevation: AppElevation = {
+  card: '0px 2px 8px rgba(0, 0, 0, 0.45)',
+  raised: '0px 10px 28px rgba(0, 0, 0, 0.6)',
+};
 
 /** Line heights for the sizes in `fontSize` (docs/02-ui-ux-standard.md section 2). */
 export const lineHeight = {
