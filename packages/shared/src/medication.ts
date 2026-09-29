@@ -27,6 +27,18 @@ export const medicationFormSchema = z.enum(['tablet', 'capsule', 'liquid', 'othe
 export type MedicationForm = z.infer<typeof medicationFormSchema>;
 
 /**
+ * Display labels. Only `tablet` and `mg` appear in the approved wireframes
+ * (`C-03` `500 mg tablet`, `C-04` `1 tablet - 30 min grace`), so these labels
+ * carry the escalation recorded in `apps/mobile/src/fixtures/copy-sources.ts`.
+ */
+export const medicationFormLabels: Record<MedicationForm, string> = {
+  tablet: 'Tablet',
+  capsule: 'Capsule',
+  liquid: 'Liquid',
+  other: 'Other',
+};
+
+/**
  * The supported dose units.
  *
  * `docs/specs/sprint-3.md` open question 4 proposes exactly this list plus an
@@ -49,6 +61,37 @@ export type DoseUnit = z.infer<typeof doseUnitSchema>;
 
 /** The picker value meaning "the caregiver typed their own unit". */
 export const CUSTOM_DOSE_UNIT = 'other';
+
+/**
+ * Display labels for the unit picker. `tablet` and `mg` are wireframe vocabulary
+ * (`C-03`/`C-02`/`C-04`); the rest are escalated, because the wireframes show no
+ * unit list.
+ */
+export const doseUnitLabels: Record<DoseUnit, string> = {
+  tablet: 'Tablet',
+  capsule: 'Capsule',
+  ml: 'ml',
+  mg: 'mg',
+  drop: 'Drop',
+  puff: 'Puff',
+  sachet: 'Sachet',
+  unit: 'Unit',
+  other: 'Other',
+};
+
+/**
+ * Short weekday names, Sunday-first to match the `days_of_week` range. `C-04`
+ * draws `Mon Tue Wed Thu Fri`, so Saturday and Sunday are escalated.
+ */
+export const weekdayShortLabels: readonly string[] = [
+  'Sun',
+  'Mon',
+  'Tue',
+  'Wed',
+  'Thu',
+  'Fri',
+  'Sat',
+];
 
 /**
  * The value stored in `dose_unit`. A listed unit is stored as itself; `other`

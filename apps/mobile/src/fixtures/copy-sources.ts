@@ -15,7 +15,7 @@
  * - `owner-approved` — no approved source existed, so the wording was escalated to the owner, who
  *   approved it verbatim on 2026-09-30. `source` keeps the record of why the string was needed.
  * - `escalated` — **no approved source exists and the owner has not ruled on the wording**. The
- *   implementer proposes it and `COPY_ESCALATIONS` is exactly this list; it is empty today.
+ *   implementer proposes it and `COPY_ESCALATIONS` is exactly this list.
  *
  * Accessibility labels are not enumerated: each one is either the visible label itself or a
  * template over the visible label plus the record's own name (`Edit Ana Dela Cruz`,
@@ -37,7 +37,7 @@ export type CopySourceKind =
 export interface CopyEntry {
   /** The exact string as rendered, with `<name>`/`<record>` marking record-supplied values. */
   text: string;
-  frame: 'A-09' | 'C-10' | 'C-11' | 'E-07' | 'Profile tab';
+  frame: 'A-09' | 'C-10' | 'C-11' | 'E-07' | 'C-02' | 'C-03' | 'C-04' | 'Profile tab';
   kind: CopySourceKind;
   source: string;
 }
@@ -411,14 +411,521 @@ export const COPY_SOURCES: CopyEntry[] = [
     source: '§Approved copy (documented partial state until Sprint 3)',
   },
   { text: 'Medicines', frame: 'E-07', kind: 'existing-app', source: 'shipped card title' },
+
+  // -------------------------------------------------------------------------
+  // Sprint 3, C-02 Medication List (caregiver tab and elder read-only view)
+  // -------------------------------------------------------------------------
+  { text: 'Medications', frame: 'C-02', kind: 'wireframe', source: 'C-02 app-bar title' },
+  { text: 'Meds', frame: 'C-02', kind: 'existing-app', source: 'shipped tab title' },
+  { text: 'What you take', frame: 'C-02', kind: 'existing-app', source: 'shipped elder subtitle' },
+  {
+    text: 'Taken by <name>',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'shipped caregiver subtitle pattern',
+  },
+  {
+    text: 'No older adult linked',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'C-10 empty state',
+  },
+  { text: 'Loading medicines…', frame: 'C-02', kind: 'existing-app', source: 'shipped loader' },
+  {
+    text: 'Loading your medicines…',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'shipped elder loader',
+  },
+  { text: 'Show', frame: 'C-02', kind: 'escalated', source: 'no filter-group label exists' },
+  { text: 'Active', frame: 'C-02', kind: 'wireframe', source: 'C-02 filter and card badge' },
+  { text: 'Inactive', frame: 'C-02', kind: 'wireframe', source: 'C-02 filter' },
+  { text: 'Add medication', frame: 'C-02', kind: 'wireframe', source: 'C-02 primary action' },
+  {
+    text: 'Editing or deactivating affects future doses only. History remains available.',
+    frame: 'C-02',
+    kind: 'wireframe',
+    source: 'C-02 footer note',
+  },
+  {
+    text: 'No medicines yet',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'shipped empty-state heading',
+  },
+  {
+    text: "Add a medicine to start the older adult's plan.",
+    frame: 'C-02',
+    kind: 'escalated',
+    source: 'the shipped description promised a next dose, which Sprint 3 cannot produce',
+  },
+  {
+    text: 'Your family caregiver adds medicines and schedules here.',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'shipped elder empty state',
+  },
+  {
+    text: 'This list is read-only. It is never changed by an automatic process, and no advice about medicines is generated here.',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'shipped elder read-only note',
+  },
+  {
+    text: 'Status: <label>',
+    frame: 'C-02',
+    kind: 'existing-app',
+    source: 'shipped StatusBadge accessibility pattern',
+  },
+
+  // -------------------------------------------------------------------------
+  // Sprint 3, C-03 Add / Edit Medication
+  // -------------------------------------------------------------------------
+  { text: 'Add medication', frame: 'C-03', kind: 'wireframe', source: 'C-03 app-bar title' },
+  { text: 'Edit medication', frame: 'C-03', kind: 'spec', source: '§Screens C-03 "Add / Edit"' },
+  { text: 'Loading…', frame: 'C-03', kind: 'existing-app', source: 'shared loader copy' },
+  { text: 'Medication name', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  { text: 'Strength / form', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  { text: 'Instructions', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  {
+    text: 'Form',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the wireframe combines strength and form',
+  },
+  {
+    text: 'Tablet',
+    frame: 'C-03',
+    kind: 'wireframe',
+    source: 'C-03 sample content `500 mg tablet`',
+  },
+  {
+    text: 'Capsule',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'no capsule form in the wireframes',
+  },
+  { text: 'Liquid', frame: 'C-03', kind: 'escalated', source: 'no liquid form in the wireframes' },
+  {
+    text: 'Other',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the `other` form has no wireframe word',
+  },
+  {
+    text: 'Schedule dates',
+    frame: 'C-03',
+    kind: 'wireframe',
+    source: 'C-03 section SCHEDULE DATES',
+  },
+  { text: 'Start date', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  { text: 'End date', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  { text: 'No end date', frame: 'C-03', kind: 'wireframe', source: 'C-03 end-date value' },
+  {
+    text: 'Select date',
+    frame: 'C-03',
+    kind: 'owner-approved',
+    source: 'approved 2026-09-30 (native date picker)',
+  },
+  {
+    text: 'Dose and times',
+    frame: 'C-03',
+    kind: 'wireframe',
+    source: 'C-03 section DOSE AND TIMES',
+  },
+  { text: 'Dose amount', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  {
+    text: 'Unit',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the wireframe folds the unit into the dose',
+  },
+  {
+    text: 'ml',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 4 list, not in a frame',
+  },
+  { text: 'mg', frame: 'C-03', kind: 'wireframe', source: 'C-03/C-02 sample content' },
+  {
+    text: 'Drop',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 4 list, not in a frame',
+  },
+  {
+    text: 'Puff',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 4 list, not in a frame',
+  },
+  {
+    text: 'Sachet',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 4 list, not in a frame',
+  },
+  {
+    text: 'Type the unit',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the `other` unit carries a typed string',
+  },
+  { text: 'Time', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  {
+    text: 'Select time',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'no time-picker placeholder exists',
+  },
+  { text: 'Repeat days', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  { text: 'Sun', frame: 'C-03', kind: 'escalated', source: 'C-04 draws Mon-Fri only' },
+  { text: 'Mon', frame: 'C-03', kind: 'wireframe', source: 'C-04 weekday row' },
+  { text: 'Tue', frame: 'C-03', kind: 'wireframe', source: 'C-04 weekday row' },
+  { text: 'Wed', frame: 'C-03', kind: 'wireframe', source: 'C-04 weekday row' },
+  { text: 'Thu', frame: 'C-03', kind: 'wireframe', source: 'C-04 weekday row' },
+  { text: 'Fri', frame: 'C-03', kind: 'wireframe', source: 'C-04 weekday row' },
+  { text: 'Sat', frame: 'C-03', kind: 'escalated', source: 'C-04 draws Mon-Fri only' },
+  { text: 'Grace period', frame: 'C-03', kind: 'wireframe', source: 'C-03 field' },
+  { text: '<n> minutes', frame: 'C-03', kind: 'wireframe', source: 'C-03 value `30 minutes`' },
+  { text: 'Save medication', frame: 'C-03', kind: 'wireframe', source: 'C-03 primary action' },
+  {
+    text: 'Stock batch',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-02 build note says stock was out of scope',
+  },
+  {
+    text: 'Track stock for this medication',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the optional batch has no wireframe control',
+  },
+  {
+    text: 'Yes',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the optional batch has no wireframe control',
+  },
+  {
+    text: 'Not now',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the optional batch has no wireframe control',
+  },
+  {
+    text: 'Quantity in the pack',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label',
+  },
+  {
+    text: 'Unit on the pack',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label',
+  },
+  {
+    text: 'Lot number',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label',
+  },
+  {
+    text: 'Expiry date',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label',
+  },
+  {
+    text: 'Low-stock threshold',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label',
+  },
+  {
+    text: 'Refill contact',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label',
+  },
+  {
+    text: 'Enter the medication name',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'Enter the strength and form',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'Enter the instructions',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'Enter the dose amount',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'Choose a unit, or type one for Other',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the `other` unit rule has no wireframe copy',
+  },
+  {
+    text: 'Choose a start date',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'The end date cannot be before the start date',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'product-flow §8 rule, no wireframe wording',
+  },
+  {
+    text: 'Choose at least one repeat day',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'Choose a time',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'C-03 marks fields required with `*` but supplies no message',
+  },
+  {
+    text: 'Enter the quantity in the pack',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label or message',
+  },
+  {
+    text: 'Enter the unit written on the pack',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label or message',
+  },
+  {
+    text: 'Choose the expiry date',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'batch field has no wireframe label or message',
+  },
+  {
+    text: 'This differs from the dose unit, so stock will not reduce automatically.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 5 "warn and store", no wording',
+  },
+  {
+    text: 'This medication already has a schedule for those days and that time',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 6 recommendation, no wording',
+  },
+  {
+    text: "<name> is already on this elder's plan. You can still save.",
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'spec open question 6 phrase "already on this elder\'s plan"',
+  },
+  {
+    text: 'Some details are not valid. Check the form and try again.',
+    frame: 'C-03',
+    kind: 'existing-app',
+    source: 'Sprint 2 approved copy, reused verbatim',
+  },
+  {
+    text: 'Only the linked caregiver can change this.',
+    frame: 'C-03',
+    kind: 'existing-app',
+    source: 'Sprint 2 approved copy, reused verbatim',
+  },
+  {
+    text: 'Medication not found',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'a hidden row needs an honest empty state',
+  },
+  {
+    text: 'It may have been removed. Go back and try again.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'a hidden row needs an honest empty state',
+  },
+
+  // -------------------------------------------------------------------------
+  // Sprint 3, C-04 Medication Detail
+  // -------------------------------------------------------------------------
+  { text: 'Medication details', frame: 'C-04', kind: 'wireframe', source: 'C-04 app-bar title' },
+  { text: 'Edit', frame: 'C-04', kind: 'wireframe', source: 'C-04 primary action' },
+  { text: 'Instructions', frame: 'C-04', kind: 'wireframe', source: 'C-04 section INSTRUCTIONS' },
+  {
+    text: 'Active schedule',
+    frame: 'C-04',
+    kind: 'wireframe',
+    source: 'C-04 section ACTIVE SCHEDULE',
+  },
+  {
+    text: 'Recent adherence',
+    frame: 'C-04',
+    kind: 'wireframe',
+    source: 'C-04 section RECENT ADHERENCE',
+  },
+  { text: 'Deactivate medication', frame: 'C-04', kind: 'wireframe', source: 'C-04 action' },
+  {
+    text: 'Start: <date> - No end date',
+    frame: 'C-04',
+    kind: 'wireframe',
+    source: 'C-04 plan line',
+  },
+  {
+    text: '<dose> - <n> min grace',
+    frame: 'C-04',
+    kind: 'wireframe',
+    source: 'C-04 schedule line',
+  },
+  {
+    text: 'Activate medication',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'C-04 draws the deactivate action only',
+  },
+  {
+    text: 'Stock',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'the wireframes draw no stock section',
+  },
+  {
+    text: 'Set as active',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'the active-batch action has no wireframe wording',
+  },
+  {
+    text: 'No active schedule. Add a schedule to activate the plan.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'the draft state needs an honest note',
+  },
+  {
+    text: 'No stock batch recorded.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'the batch is optional',
+  },
+  {
+    text: 'Dose history is not shown here yet.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'the documented partial state until Sprint 4, in the Sprint 2 partial-state voice',
+  },
+  {
+    text: 'Future doses stop. The medicine and its history stay in the plan.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'the confirm description has no wireframe wording',
+  },
+  {
+    text: 'Try again',
+    frame: 'C-04',
+    kind: 'existing-app',
+    source: 'shipped ScreenError action',
+  },
+  { text: 'Cancel', frame: 'C-04', kind: 'existing-app', source: 'shipped ConfirmDialog label' },
+
+  // -------------------------------------------------------------------------
+  // Sprint 3, data-layer errors (rendered by C-02/C-03/C-04 banners)
+  // -------------------------------------------------------------------------
+  {
+    text: 'Could not load the medicines.',
+    frame: 'C-02',
+    kind: 'escalated',
+    source: 'new loader failure message',
+  },
+  {
+    text: 'Could not load the medicine.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'new loader failure message',
+  },
+  {
+    text: 'Could not load the schedules.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'new loader failure message',
+  },
+  {
+    text: 'Could not load the stock batches.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'new loader failure message',
+  },
+  {
+    text: 'Could not save the medicine.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'new RPC fallback message',
+  },
+  {
+    text: 'Could not change the medicine.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'new RPC fallback message',
+  },
+  {
+    text: 'Could not save the schedule.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'new RPC fallback message',
+  },
+  {
+    text: 'Could not change the schedule.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'new RPC fallback message',
+  },
+  {
+    text: 'Could not save the stock batch.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'new RPC fallback message',
+  },
+  {
+    text: 'Could not change the stock batch.',
+    frame: 'C-04',
+    kind: 'escalated',
+    source: 'new RPC fallback message',
+  },
+  {
+    text: 'That medicine no longer exists. Refresh and try again.',
+    frame: 'C-03',
+    kind: 'escalated',
+    source: 'the P0002 not-found mapping',
+  },
 ];
 
 /**
  * The strings with no approved source and no owner ruling yet. Sprint 2 says such a string "is
  * escalated to the owner, never invented". The owner approved all 18 entries raised for Sprint 2
  * on 2026-09-30 (they now read `owner-approved`), and approved the two added by the native date
- * picker the same day, so this list is empty; it stays as the mechanism for the next unapproved
- * string.
+ * picker the same day.
+ *
+ * Sprint 3's strings are the second batch. The owner ruled on 2026-09-30 that they be written,
+ * listed here and approved in bulk, so this list is the pending set rather than an empty mechanism:
+ * the medication frames supply their own labels, but the batch section, the validation sentences
+ * and the RPC fallbacks have no approved source.
  */
 export const COPY_ESCALATIONS: CopyEntry[] = COPY_SOURCES.filter(
   (entry) => entry.kind === 'escalated',

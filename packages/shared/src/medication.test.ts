@@ -5,10 +5,12 @@ import {
   canonicalizeDaysOfWeek,
   CUSTOM_DOSE_UNIT,
   daysOfWeekSchema,
+  doseUnitLabels,
   doseUnitSchema,
   graceMinutesSchema,
   hasUsableActiveBatch,
   isoDaySchema,
+  medicationFormLabels,
   medicationFormSchema,
   medicationInputSchema,
   resolveDoseUnit,
@@ -16,6 +18,7 @@ import {
   stockStatusFromBatch,
   timeOfDaySchema,
   weekdaySchema,
+  weekdayShortLabels,
   type BatchLike,
 } from './medication';
 
@@ -337,6 +340,29 @@ describe('hasUsableActiveBatch', () => {
     expect(hasUsableActiveBatch(ACTIVE_BATCH, 'mg', TODAY)).toBe(false);
     expect(hasUsableActiveBatch({ ...ACTIVE_BATCH, unit: 'Tablet' }, 'tablet', TODAY)).toBe(false);
     expect(hasUsableActiveBatch({ ...ACTIVE_BATCH, unit: 'tab' }, 'tablet', TODAY)).toBe(false);
+  });
+});
+
+describe('weekdayShortLabels', () => {
+  it('names every day the column range allows', () => {
+    expect(weekdayShortLabels).toHaveLength(7);
+    for (let day = 0; day <= 6; day += 1) {
+      expect(weekdayShortLabels[day]).toBeTruthy();
+    }
+    expect(weekdayShortLabels[0]).toBe('Sun');
+    expect(weekdayShortLabels[6]).toBe('Sat');
+  });
+});
+
+describe('label maps', () => {
+  it('labels every form and every unit, so a chip can never render undefined', () => {
+    for (const value of medicationFormSchema.options) {
+      expect(medicationFormLabels[value]).toBeTruthy();
+    }
+    for (const value of doseUnitSchema.options) {
+      expect(doseUnitLabels[value]).toBeTruthy();
+    }
+    expect(doseUnitLabels[CUSTOM_DOSE_UNIT]).toBe('Other');
   });
 });
 

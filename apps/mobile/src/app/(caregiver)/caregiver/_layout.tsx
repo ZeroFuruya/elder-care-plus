@@ -57,6 +57,11 @@ export default function CaregiverTabsLayout() {
       <Tabs.Screen name="elder" options={{ href: null }} />
       <Tabs.Screen name="elder-edit" options={{ href: null }} />
       <Tabs.Screen name="elder-new" options={{ href: null }} />
+      {/* Sprint 3 medication plan: C-02 is the `meds` tab above; C-03 add/edit and C-04 detail are
+          pushed screens, hidden from the tab bar. */}
+      <Tabs.Screen name="med-new" options={{ href: null }} />
+      <Tabs.Screen name="med-edit" options={{ href: null }} />
+      <Tabs.Screen name="med" options={{ href: null }} />
     </Tabs>
   );
 }

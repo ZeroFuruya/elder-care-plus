@@ -1,3 +1,5 @@
+import { weekdayShortLabels } from '@eldercare/shared';
+
 const MONTHS_SHORT = [
   'Jan',
   'Feb',
@@ -144,4 +146,16 @@ export function greeting(now: Date = new Date()): string {
   if (hours < 12) return 'Good morning';
   if (hours < 18) return 'Good afternoon';
   return 'Good evening';
+}
+
+/**
+ * `Mon Tue Wed Thu Fri` - the weekday abbreviations the approved `C-04` wireframe draws, in the
+ * `days_of_week` 0-6 order. An empty set renders as an empty string, never a stand-in word.
+ */
+export function formatDaysOfWeek(days: readonly number[]): string {
+  return [...new Set(days)]
+    .sort((a, b) => a - b)
+    .map((day) => weekdayShortLabels[day] ?? '')
+    .filter((label) => label.length > 0)
+    .join(' ');
 }
