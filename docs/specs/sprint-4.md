@@ -1,11 +1,14 @@
 # Sprint 4 — Daily medication adherence (Flow C)
 
-- **Status:** Draft for owner approval, written 2026-09-29 at the owner's request and planned with
-  `@architect` (2026-09-29). Revised the same day to fold in the `@challenger` review: grace and
+- **Status:** Approved by the owner 2026-09-30. Written 2026-09-29 at the owner's request and planned
+  with `@architect` (2026-09-29). Revised the same day to fold in the `@challenger` review: grace and
   active-state enforced inside `confirm_dose`, an authorized and window-capped generator, atomic
   batch decrement with unique side-effect keys, server-only missed transitions, outbox terminal
-  states, DST policy and a due-now checking runbook. Implementation has not started. This is the
-  **2026-10-15/16 instructor checking deliverable of record**.
+  states, DST policy and a due-now checking runbook. Open questions 2–8 were resolved by the owner
+  on 2026-09-30; **question 6 chose full family plan visibility** (see below), so the narrow
+  `family_*_summary` views are dropped and family access stays row-level RLS on the base tables.
+  Implementation started 2026-09-30. This is the **2026-10-15/16 instructor checking deliverable of
+  record**.
   **Availability verified 2026-09-29:** `pg_cron 1.6.4` and `pg_net 0.20.4` are both present in the
   hosted Free project's extension list (not yet installed), so the every-five-minutes missed-dose
   job is feasible. The Sprint 4 migration enables the extension and schedules the job; if
@@ -18,8 +21,12 @@
 - **Depends on:** Sprint 1/1b accepted, Sprint 3's medication/schedule/batch schema and its
   normative hand-off contracts accepted, and the hosted Supabase project available. Synthetic demo
   accounts only.
-- **In-scope exception:** a minimal connected-family read-only adherence summary is included by
-  explicit owner decision; the full family UI remains Sprint 8.
+- **In-scope exception:** the connected family member gets a read-only view of the elder's
+  medication plan **and** their dose events, by explicit owner decision (2026-09-30). The owner chose
+  *full plan visibility* over narrow summary views: family reads the same plan and adherence rows a
+  manager can read — including the free-text `instructions` — through care-link-scoped RLS, and can
+  write nothing. The full family UI remains Sprint 8. This overrides the "summary columns only"
+  wording that questions 6 and 8 and the family acceptance criteria originally carried.
 
 ## Goal
 
@@ -32,7 +39,8 @@ Prove one secure, repeatable medication transaction end to end:
    active and unexpired, and the quantity covers the dose), with exactly one
    `inventory_transactions` row.
 5. Exactly one `audit_events` row and one caregiver `notifications` row are created.
-6. The caregiver sees the confirmation in the app; the family member sees a read-only summary.
+6. The caregiver sees the confirmation in the app; the family member sees a read-only view of the
+   plan and the same adherence record.
 7. An offline confirmation shows a persistent, non-blocking `Pending sync` and retries safely.
 8. A dose not confirmed by its grace period becomes `missed` once, with one needs-attention
    notification; history is never altered to hide a miss.
@@ -50,7 +58,8 @@ browser or system dialogs — every message is in-app.
    in-app notification.
 6. As a caregiver, I receive one needs-attention notification when a dose becomes missed, and I
    cannot silently alter history.
-7. As a connected family member, I see a read-only adherence summary with no management controls.
+7. As a connected family member, I see the elder's medication plan and adherence record read-only,
+   with no management controls.
 8. As an unrelated account, I see nothing and cannot write anything.
 
 ## Screens
@@ -72,10 +81,11 @@ browser or system dialogs — every message is in-app.
   `ElderCare+ does not advise whether a late dose should be taken.`
 - **`S-01` Notification Center** — `Unread` / `Read`, `Mark all read`, tap to open the related
   record; in-app only, no messaging.
-- **Family adherence summary** — the `(family)` shell shows a read-only summary from
-  `family_dose_summary`: medication name, strength, scheduled time and the derived state plus
-  taken/missed timestamps and counts. It never shows the free-text instructions or clinical notes,
-  and renders no control.
+- **Family medication and adherence view** — the `(family)` shell shows the linked elder's plan
+  (medicine, strength, form, dose, instructions, schedules, batches) and their dose events (scheduled
+  time, derived state, taken/missed timestamps and counts), reading the same base tables a manager
+  reads through care-link-scoped RLS. It renders no control of any kind. Full plan visibility is the
+  owner's 2026-09-30 decision (open question 6); the full family UI remains Sprint 8.
 
 Exact copy comes from `docs/02-ui-ux-standard.md` §10; no `Alert.alert`, browser alert or system
 dialog is permitted. If Expo local reminders ship, the notification body stays minimal (no medicine
@@ -130,11 +140,14 @@ Flow D is Sprint 5):
 - RLS: select only `recipient_id = auth.uid()`; the only client write is marking read through RPCs
   `mark_notifications_read(p_ids uuid[])` and `mark_all_notifications_read()`.
 
-RLS on `dose_events`: direct select via `public.can_view_profile(elder_id)` for the elder and
-manager; no direct write grants. `inventory_transactions`: select via the owning batch's elder, no
-client writes. `notifications`: recipient-only select and read-state RPCs. Family reads go through
-the `family_dose_summary` view, which exposes only the allowed columns (see open question 6); if it
-is accepted, Sprint 3's family read is narrowed to a matching `family_medication_summary` view.
+RLS on `dose_events`: direct select via `public.can_view_profile(elder_id)` for the elder, the
+manager and — by the owner's 2026-09-30 decision — the active connected family member; no direct
+write grants. `inventory_transactions`: select via the owning batch's elder, no client writes.
+`notifications`: recipient-only select and read-state RPCs. Family reads use the **base tables**
+(`medications`, `medication_schedules`, `medicine_batches` and now `dose_events`) through the same
+`can_view_profile` policy the manager uses; the `family_dose_summary`/`family_medication_summary`
+views are **not** created, and Sprint 3's family read is unchanged. The boundary is proven by
+row-level RLS tests instead of by column selection (acceptance criteria 8 and 14).
 
 ### RPCs (all `security definer`, `set search_path = public, pg_temp`)
 
@@ -236,8 +249,9 @@ Run on the installed preview APK against hosted, both apps signed in, with conne
    and one notification per event; a second run is a no-op; `authenticated` and `anon` cannot
    execute it; a confirm in the same tick leaves exactly one terminal state.
 8. pgTAP (RLS): an unrelated account sees no `dose_events`, `inventory_transactions` or
-   notifications; a family member sees only the care-linked summary columns and can update nothing;
-   a recipient can mark only their own notifications read.
+   notifications; a family member sees **exactly** the care-linked elder's `medications`,
+   `medication_schedules`, `medicine_batches` and `dose_events` rows (and the same rows only), and
+   can update nothing in any of them; a recipient can mark only their own notifications read.
 9. pgTAP: direct inserts/updates to the three tables from `authenticated` are rejected with `42501`;
    the unique indexes on `(schedule_id, scheduled_at)`, `(source_dose_event_id)` and
    `(recipient_id, event_type, target_id)` all exist and hold.
@@ -253,8 +267,8 @@ Run on the installed preview APK against hosted, both apps signed in, with conne
 13. Mobile: `Mark as taken` is a 56 dp target with the §14 accessibility label, shown only while
     `due` and disabled synchronously on press.
 14. Mobile: the caregiver sees the confirmation, timestamp, stock outcome and an unread in-app
-    notification, and `S-01` marks read and opens the record; the family summary is read-only with
-    no management control.
+    notification, and `S-01` marks read and opens the record; the family view is read-only — it shows
+    the plan and adherence rows and renders no management control.
 15. Mobile: no PHI appears in a local notification body; no `Alert.alert`/system dialog is used.
 16. Checking runbook executed and recorded: steps 1–4 above pass on the installed APK against
     hosted.
@@ -292,10 +306,14 @@ Run on the installed preview APK against hosted, both apps signed in, with conne
 4. **Elder timezone vs schedule timezone.** *Recommendation:* the schedule's stored IANA zone governs
    conversion; store UTC; display local time.
 5. **Notification retention.** *Recommendation:* keep all notifications; mark read, never delete.
-6. **Family field scope.** *Recommendation:* family reads the `family_dose_summary` (and
-   `family_medication_summary`) view — name, strength, scheduled time, state, timestamps and counts
-   only, never free-text instructions or clinical notes. Confirm, or choose full-plan visibility
-   and the AC are replaced by row-level tests.
+6. **Family field scope.** *Resolved 2026-09-30: **full plan visibility**.* The family member reads
+   the base tables (`medications`, `medication_schedules`, `medicine_batches`, `dose_events`) through
+   the same care-link-scoped `can_view_profile` policy a manager reads, including the free-text
+   `instructions`, and can write nothing. No `family_dose_summary`/`family_medication_summary` view is
+   created, and Sprint 3's family read is unchanged. This is consistent with `00-product-flow.md` §2
+   ("View only" on plan, schedules, stock and expiry) and replaces the earlier
+   "summary columns only" wording: the boundary is proven by row-level RLS tests (criteria 8 and 14),
+   not by column selection.
 7. **Outbox storage.** *Recommendation:* Expo SQLite (the app already has it; the payload is not a
    secret). Note the reinstall case: an unsynced confirmation is lost locally and the server may go
    `missed` — accepted for the demo.
