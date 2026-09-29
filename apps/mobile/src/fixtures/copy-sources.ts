@@ -940,7 +940,9 @@ export const COPY_SOURCES: CopyEntry[] = [
   // Sprint 4 dose-confirmation loop (docs/specs/sprint-4.md)
   //
   // The acceptance-critical copy is named by the approved spec. Anything with no
-  // approved source is `escalated` and is proposed to the owner, never invented.
+  // approved source was `escalated` and proposed to the owner, never invented; the
+  // owner approved all 26 Sprint 4 entries verbatim on 2026-09-30, so they now read
+  // `owner-approved` (each keeps its `source` as the record of why it was needed).
   // -------------------------------------------------------------------------
 
   // Elder Today (E-01) and the offline banner (V-03)
@@ -985,12 +987,17 @@ export const COPY_SOURCES: CopyEntry[] = [
     kind: 'spec',
     source: '§Screens E-04 copy',
   },
-  { text: 'Done', frame: 'E-04', kind: 'escalated', source: 'closes the E-04 confirmation state' },
+  {
+    text: 'Done',
+    frame: 'E-04',
+    kind: 'owner-approved',
+    source: 'closes the E-04 confirmation state',
+  },
   { text: 'Missed', frame: 'C-05', kind: 'shared-package', source: '`doseStatusLabels.missed`' },
   {
     text: 'Missed dose',
     frame: 'C-05',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'E-03/C-05 missed section title',
   },
   {
@@ -1002,27 +1009,32 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'This dose is no longer available',
     frame: 'E-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'a dose that RLS hides or a plan edit removed',
   },
   {
     text: 'It may have been removed when the medicine plan changed. Pull to refresh the list.',
     frame: 'E-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'explains the missing-dose empty state',
   },
   {
     text: 'It may have been removed when the medicine plan changed.',
     frame: 'C-05',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'explains the missing-dose empty state',
   },
-  { text: 'Back to today', frame: 'E-03', kind: 'escalated', source: 'returns to the day list' },
-  { text: 'Back', frame: 'C-05', kind: 'escalated', source: 'returns to the dashboard' },
+  {
+    text: 'Back to today',
+    frame: 'E-03',
+    kind: 'owner-approved',
+    source: 'returns to the day list',
+  },
+  { text: 'Back', frame: 'C-05', kind: 'owner-approved', source: 'returns to the dashboard' },
   {
     text: 'Only the older adult records a confirmation. This view never changes the record.',
     frame: 'C-05',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'states the read-only rule on the caregiver dose view',
   },
 
@@ -1043,7 +1055,7 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'Open notifications',
     frame: 'C-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'opens S-01 from the dashboard',
   },
   {
@@ -1056,17 +1068,22 @@ export const COPY_SOURCES: CopyEntry[] = [
   // Notification Center (S-01)
   { text: 'Read', frame: 'S-01', kind: 'spec', source: '§Screens S-01 `Unread` / `Read`' },
   { text: 'Mark all read', frame: 'S-01', kind: 'spec', source: '§Screens S-01 copy' },
-  { text: 'No notifications yet', frame: 'S-01', kind: 'escalated', source: 'S-01 empty state' },
+  {
+    text: 'No notifications yet',
+    frame: 'S-01',
+    kind: 'owner-approved',
+    source: 'S-01 empty state',
+  },
   {
     text: 'A dose confirmation or a missed dose appears here for the family caregiver.',
     frame: 'S-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'S-01 empty-state description',
   },
   {
     text: 'Notifications stay in the app. ElderCare+ does not send medical detail by message.',
     frame: 'S-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'states the in-app-only rule from the instructor requirement',
   },
 
@@ -1080,25 +1097,25 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'Dose activity',
     frame: 'Family view',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'family adherence section',
   },
   {
     text: 'No medicines on the plan',
     frame: 'Family view',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'family empty state',
   },
   {
     text: 'The family caregiver sets up each medicine and its schedule.',
     frame: 'Family view',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'family empty-state description',
   },
   {
     text: 'Stock <quantity> <unit> · expires <date>',
     frame: 'Family view',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'family batch row; values are record data',
   },
   {
@@ -1136,61 +1153,61 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'Could not load the doses.',
     frame: 'E-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new dose data-layer error',
   },
   {
     text: 'Could not load the dose.',
     frame: 'E-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new dose data-layer error',
   },
   {
     text: 'Could not load the confirmations.',
     frame: 'C-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new dose data-layer error',
   },
   {
     text: 'Could not prepare today’s doses.',
     frame: 'E-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new generation error',
   },
   {
     text: 'This dose is not available to you.',
     frame: 'E-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'the 42501 mapping for the dose RPCs',
   },
   {
     text: 'Those dates are outside the allowed range.',
     frame: 'E-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'the generation window-cap mapping',
   },
   {
     text: 'Could not record the confirmation.',
     frame: 'E-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new confirmation error fallback',
   },
   {
     text: 'Could not load the notifications.',
     frame: 'S-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new notification data-layer error',
   },
   {
     text: 'Could not update the notifications.',
     frame: 'S-01',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'new notification read-state error',
   },
   {
     text: 'waiting to reach the server',
     frame: 'V-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'the second half of the pending-sync meta row',
   },
 ];
@@ -1204,7 +1221,9 @@ export const COPY_SOURCES: CopyEntry[] = [
  * Sprint 3's strings were the second batch: the batch section, the validation sentences and the
  * RPC fallbacks have no approved source. The owner delegated approval of those 60 entries on
  * 2026-09-30 and they now read `owner-approved` (each keeping its `source` as the record of why it
- * was needed), so this list is empty. It stays as the mechanism for the next batch.
+ * was needed). Sprint 4's 26 entries were the third batch — empty states, retry fallbacks, section
+ * titles and the `waiting to reach the server` meta — approved verbatim by the owner on 2026-09-30.
+ * This list is therefore empty; it stays as the mechanism for the next batch.
  */
 export const COPY_ESCALATIONS: CopyEntry[] = COPY_SOURCES.filter(
   (entry) => entry.kind === 'escalated',

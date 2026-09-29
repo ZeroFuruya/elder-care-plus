@@ -40,6 +40,10 @@ supabase/.temp/
 supabase/.branches/
 supabase/.env
 
+# Database dumps (contain real auth rows; never commit a backup)
+backup.sql
+*.dump
+
 # Test / coverage
 coverage/
 

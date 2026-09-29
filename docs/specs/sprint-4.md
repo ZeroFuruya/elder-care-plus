@@ -360,7 +360,8 @@ Recorded as the code landed, so the review has one place to check deviations.
    happened. No sentence was invented to describe a missing row.
 6. **Copy escalations.** The acceptance-critical copy (`E-04`, `V-03`, `C-05`, `S-01`) is named by
    this spec. The remaining new strings — empty states, retry fallbacks, section titles and the
-   `waiting to reach the server` meta — have no approved source and are listed as `escalated` in
-   `apps/mobile/src/fixtures/copy-sources.ts` for the owner to approve verbatim, exactly as the
-   Sprint 3 batch was handled.
+   `waiting to reach the server` meta — had no approved source, were recorded as `escalated` in
+   `apps/mobile/src/fixtures/copy-sources.ts`, and were approved verbatim by the owner on
+   2026-09-30 (the third batch, after Sprint 2's 18 and Sprint 3's 60). `COPY_ESCALATIONS` is empty
+   again and keeps its meaning as the mechanism for the next batch.
 
