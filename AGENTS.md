@@ -20,8 +20,9 @@ the dedicated family sprint (`docs/01-dev-environment.md` §11).
 1. `docs/00-product-flow.md` — product source of truth (roles, screens, flows, data model, hard rules). **Wins on product scope.**
 2. `docs/01-dev-environment.md` — tooling source of truth (stack, services, workflow, model roster). **Wins on tooling.**
 3. `docs/02-ui-ux-standard.md` — UI/UX source of truth (tokens, status presentation, accessibility, copy rules). **Wins on UI/UX.** Required before touching anything under `apps/mobile/src/`.
+4. `docs/UI_theme_palette.pptx.pdf` — the owner's visual standard (palette, logo, icon set, button variants). **Wins on visual identity**, and the app must work in **both light and dark mode** (owner instruction 2026-09-29). Its fonts are subset-encoded, so read it as images with `node scripts/pdf-text.mjs` + the page JPEGs, not from extracted text.
 
-These are long and full of **decided** choices (do not silently swap tools, services, or models). Read all three in full before feature or setup work. The summary below is not a substitute.
+These are long and full of **decided** choices (do not silently swap tools, services, or models). Read all four in full before feature or setup work. The summary below is not a substitute.
 
 The two approved design PDFs (`docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf`, `docs/ElderCare_Plus_Complete_Wireframes_Connected_Family_v1.2.pdf`) are also authoritative on screens and visual identity. Read them with the checked-in, dependency-free extractor — `node scripts/pdf-text.mjs <pdf> --out <txt>` — and trust the PDF, not the extracted `.txt` (regenerate it rather than treating it as a source). `docs/02-ui-ux-standard.md` §5 and §20 digest them and record where they disagree with `00-product-flow.md`.
 
@@ -51,6 +52,8 @@ The two approved design PDFs (`docs/ElderCare_Plus_System_Documentation_and_User
 - Env vars live in git-ignored `.env*`; only public values may use the `EXPO_PUBLIC_` prefix.
 - One feature per branch: `sprint-N-short-name`.
 - Main coder is DeepSeek V4 Flash. The specialists (`@architect`, `@gemini-reviewer`, `@challenger`, `@final-reviewer`) are **manual, analyze-only** subagents (edit/bash denied) defined in `opencode.json`.
+- **Ask the owner for approval before invoking any subagent/agent** (the specialists above, plus `explore`/`general`). Do not spawn one unprompted, even for analysis. (Owner instruction 2026-09-29.)
+- **UI visual standard:** `docs/UI_theme_palette.pptx.pdf` is authoritative for palette, logo, icon set and buttons. Style new UI with its tokens, **light and dark mode compatible**, and keep the accessibility rules in `docs/02-ui-ux-standard.md` (§5 contrast, 48/56 dp targets, never colour alone). Validate token changes with `pnpm check:contrast`. (Owner instruction 2026-09-29.)
 - When a tooling decision changes, update `docs/01-dev-environment.md` and add a line to its changelog (§16).
 
 ## Workflow

@@ -111,35 +111,37 @@ re-verifying every screen at 200 % scale — not a new native module.
 
 ## 5. Colour and contrast
 
-Contrast ratios below were computed from `theme.ts` on 2026-09-24. Recompute, do not trust
-memory, if a token changes.
+Contrast ratios below were recomputed from `theme.ts` on 2026-09-29 (light set). Recompute, do
+not trust memory, if a token changes: `pnpm run check:contrast` checks light **and** dark.
 
 | Foreground | on `background` | on `surface` | Verdict |
 | --- | --- | --- | --- |
-| `text` | 16.67 | 17.75 | pass AA + AAA |
-| `textMuted` | 5.64 | 6.00 | pass AA; **fails AAA** |
-| `primary` | **4.48** | 4.77 | **fails AA on `background`** |
-| `danger` | 6.18 | 6.57 | pass AA |
-| `warning` | 5.57 | 5.93 | pass AA |
-| `success` | 6.40 | 6.81 | pass AA |
-| `border` (as a boundary) | 1.29 | — | **decorative only** |
+| `text` | 10.00 | 10.46 | pass AA + AAA |
+| `textTitle` | 9.56 | 10.01 | pass AAA |
+| `textMuted` | 4.75 | 4.97 | pass AA; **fails AAA** |
+| `primary` | 9.56 | 10.01 | pass AAA |
+| `danger` | 6.28 | 6.57 | pass AA |
+| `warning` | 5.17 | 5.41 | pass AA |
+| `success` | 5.08 | 5.32 | pass AA |
+| `border` (as a boundary) | 1.12 | — | **decorative only** |
 
 Rules:
 
 - Normal text (< 18 dp, or < 14 dp bold) needs **≥ 4.5:1**. Large text needs **≥ 3:1**.
-  UI boundaries and icons need **≥ 3:1**.
-- **Do not put `colors.primary` text on `colors.background`** — 4.48:1 fails. The current
-  codebase has **no** such pairing (`primary` text sits on `surface` at 4.77:1, and is used
-  for the tab active tint), so the token is **not** changed. The rule stands for new code.
-  _(D2 resolved 2026-09-24: keep the token, restrict primary text to `surface`. Reopen only if
-  a screen genuinely needs `primary` on `background`, in which case darken the token instead.)_
+  UI boundaries and icons need **≥ 3:1**. `borderStrong` (Medium Gray) is for input and control
+  outlines; `border` (Light Gray) is for dividers only.
+- **`primary` is a text-safe token** (Navy `#24436D`) and passes on both surfaces, so interactive
+  text, links and the active tab tint may use it anywhere. The bright brand fills are **not**
+  text — see §5.2. _(D2 resolved 2026-09-24, superseded 2026-09-29: `primary` is now the palette
+  Navy, and the earlier 4.48:1 restriction no longer applies.)_
 - `textMuted` is for **meta only** (timestamps, helper text). Never for a medicine name,
   dose or instruction. It fails AAA, so it is not for content that must be read.
 - `colors.border` is **decorative**. It may never be the only boundary of a control, nor the
-  only way a state is shown. At 1.29:1 it carries no meaning.
-- Our three semantic colours are all dark and close in luminance (6.57 / 5.93 / 6.81). A
+  only way a state is shown. At 1.12:1 it carries no meaning.
+- Our three semantic colours are all dark and close in luminance (6.57 / 5.41 / 5.32). A
   colour-blind user cannot separate them. **This is why §6's label + icon is mandatory.**
-- Never place text on `primary` as a background without recomputing the ratio first.
+- Never place text on `primaryFill`/`accent` without recomputing the ratio first; use
+  `onPrimaryFill`, which is enforced by `pnpm run check:contrast`.
 
 ### 5.1 The approved brand palette (system documentation §5.1)
 
@@ -161,10 +163,10 @@ palette; it is not a text palette (see §5.2).
 | Neutral | Dark Gray / Charcoal | `#667085` / `#344054` | Secondary and primary body text |
 | Semantic | Success / Warning / Error | `#1F7A4D` / `#9A5B13` / `#B42318` | Taken, caution, missed/error — **always with text/icon** |
 
-`theme.ts` currently deviates from this palette (a different blue for `primary`, different
-neutrals, and no teal, purple, lavender, mint, sky-blue or slate-blue token at all). That is
-conflict **R8** (§20.2). Do not adopt the approved hexes ad hoc, and do not "fix" `theme.ts` by
-pasting them in — the palette and the contrast rule below pull in opposite directions.
+`theme.ts` now implements this palette (2026-09-29): `brand` holds the raw approved hexes, and
+`lightColors`/`darkColors` map them to semantic roles with a **fills vs text split** (conflict
+**R8**, decision **D9** — both resolved). Bright brand colours are `primaryFill`/`accent`/
+`accentSoft`; text roles are taken from the palette's text-safe greys and navy. See §5.3.
 
 ### 5.2 Why the bright palette cannot carry text
 
@@ -172,7 +174,7 @@ Computed against `#FFFFFF` on 2026-09-24:
 
 | Approved colour | Contrast on white | Verdict as text |
 | --- | --- | --- |
-| Teal `#49C3B2` | **1.94** | decorative fill only |
+| Teal `#49C3B2` | **2.16** | decorative fill only |
 | Mint `#8DE0D1` | **1.53** | decorative fill only |
 | Sky Blue `#78B7F3` | **2.13** | decorative fill only |
 | Lavender `#C69AF6` | **2.24** | decorative fill only |
@@ -190,8 +192,8 @@ Text **on** the bright fills is the trap:
 
 | Pair | Contrast | Verdict |
 | --- | --- | --- |
-| Navy text on Teal fill | 5.15 | pass AA — **the correct teal button** |
-| White text on Teal fill | 1.94 | **fails** |
+| Navy text on Teal fill | 4.64 | pass AA — **the correct teal button** |
+| White text on Teal fill | 2.16 | **fails** |
 | White text on Blue fill | 3.38 | large text only; **fails** a 16 dp button label |
 | White text on Purple fill | 3.63 | large text only |
 | White text on Navy fill | 10.01 | pass AAA |
@@ -207,6 +209,38 @@ Rules that follow:
   documentation §5.3) but also requires ≥ 4.5:1 for normal text (§5.4). Those two clauses
   cannot both hold for white-on-teal; this section resolves the ambiguity in favour of the
   contrast rule, because it is the accessibility requirement.
+
+### 5.3 Light and dark token sets (implemented 2026-09-29)
+
+`theme.ts` exports the raw palette as `brand`, and two semantic sets — `lightColors` and
+`darkColors` — shaped by `AppThemeColors`. Screens read the active set from `useAppTheme()`
+(`src/hooks/use-app-theme.ts`), which follows `useColorScheme()`. `colors`/`statusColors` remain
+as **light-only compatibility aliases** while screens migrate; new code must not import them.
+
+| Role | Light | Dark |
+| --- | --- | --- |
+| `background` | Off-White `#F8FAFC` | `#0F1620` |
+| `surface` | White `#FFFFFF` | `#18212E` |
+| `surfaceMuted` | Light Gray `#E8EDF4` | `#212C3B` |
+| `border` / `borderStrong` | `#E8EDF4` / `#B6C0CE` | `#2A3646` / `#3A4757` |
+| `text` | Charcoal `#344054` | `#E2E8F0` |
+| `textTitle` | Navy `#24436D` | `#F1F5F9` |
+| `textMuted` | Dark Gray `#667085` | `#A9B6C6` |
+| `textInverse` | White `#FFFFFF` | `#0F1620` |
+| `primary` (text/tint) | Navy `#24436D` | Sky Blue `#78B7F3` |
+| `primaryFill` / `onPrimaryFill` | Teal `#49C3B2` / Navy `#24436D` | Teal `#49C3B2` / `#16202C` |
+| `accent` / `accentSoft` | Purple `#9B6FE3` / Lavender `#C69AF6` | `#A78BFA` / Lavender `#C69AF6` |
+| `info` / `focus` | Blue `#4A8FD8` | Sky Blue `#78B7F3` |
+| `danger` / `warning` / `success` | `#B42318` / `#9A5B13` / `#1F7A4D` | `#F87171` / `#FBBF24` / `#4ADE80` |
+
+The dark set is derived from the same palette because the source PDF has no dark page; the owner
+approved these values on **2026-09-29**. `pnpm run check:contrast` enforces AA for every text
+token and status tone on both surfaces in **both** themes, plus the `onPrimaryFill`/`primaryFill`
+and `textInverse`/`danger` fill pairs.
+
+**Migration status.** `app.json` still pins `userInterfaceStyle: "light"` and `_layout.tsx`
+still renders `<StatusBar style="dark" />`, so the app renders light today. Flip both to
+`automatic` as the per-screen migration completes (decision **D1**, reopened 2026-09-29).
 
 ---
 
@@ -793,17 +827,11 @@ rename it for the elder role contradicted the approved design. Withdrawn.
 `S-03` states no location is collected. Most likely it is manually entered availability text,
 but it must not become geolocation.
 
-**R8 — `theme.ts` does not use the approved brand palette.**
-The approved palette is §5.1 above. `theme.ts` ships `primary #1D6FE0` (approved Blue is
-`#4A8FD8`), `background #F6F8FA` (approved Off-White `#F8FAFC`), `text #101828` (approved
-Charcoal `#344054`), and has **no token at all** for teal, purple, lavender, mint, sky blue,
-slate blue or navy. It also darkens `warning` (`#8A5A00` vs approved `#9A5B13`) and `success`
-(`#17683C` vs approved `#1F7A4D`).
-
-This looks deliberate — the darkening is what makes those colours pass AA (§5.2) — but it was
-never recorded. **Do not paste the approved hexes into `theme.ts`**: several fail the
-project's own 4.5:1 rule as text. Decide the reconciliation (adopt a `fills`/`text` split with
-the approved hue family, or keep the darkened tokens and record the deviation). _Decision D9._
+**R8 — `theme.ts` does not use the approved brand palette. RESOLVED 2026-09-29.**
+`theme.ts` now exports the approved palette as `brand`, and maps it to `lightColors` /
+`darkColors` with a `fills` vs `text` split (Teal/Purple/Lavender/Mint/Sky/Blue are fills;
+Navy/Charcoal/Dark Gray are text). `warning` and `success` now use the approved
+`#9A5B13` / `#1F7A4D`, which pass AA. See §5.1 and §5.3. _Decision D9 — resolved._
 
 **R9 — Typography scale and font families differ from the approved scale.**
 System documentation §5.2 specifies Fredoka (logo 40, screen heading 32) + Poppins
@@ -827,15 +855,15 @@ forbidden. §4.1 also makes Emergency a *profile action* for the caregiver and a
 
 | # | Decision | Status |
 | --- | --- | --- |
-| **D1** | Dark mode: **resolved 2026-09-24 — lock to light.** The approved design has no dark frames, and `userInterfaceStyle: "automatic"` with `StatusBar style="auto"` produced an unstyled OS-dark rendering. `app.json` now sets `"userInterfaceStyle": "light"` and `_layout.tsx` sets `<StatusBar style="dark" />`. Reversible; revisit only if the owner commissions a dark palette. | **resolved** |
-| **D2** | `primary` 4.48:1 on `background`: **resolved 2026-09-24 — keep the token**, restrict `primary` text to `surface` (4.77:1). No current code violates this. | **resolved** |
+| **D1** | Dark mode: **reopened 2026-09-29 — the owner requires light *and* dark.** The token sets and `useAppTheme()` are implemented (§5.3); `app.json` stays `"userInterfaceStyle": "light"` and `_layout.tsx` stays `<StatusBar style="dark" />` until the per-screen migration is done, because `automatic` on partially-migrated screens produced an unstyled OS-dark rendering. Then flip both to `automatic`. | **reopened** |
+| **D2** | `primary` contrast: **superseded 2026-09-29.** `primary` is now the palette Navy `#24436D` (9.56:1 on `background`, 10.01:1 on `surface`), so the old "restrict `primary` text to `surface`" rule no longer applies. | **resolved** |
 | **D3** | Top app bar: **confirmed required by both documents.** A "how", not a "whether". | confirmed |
 | **D4** | Elder tab labels: **resolved** — `Home · Meds · Calendar · Emergency · Profile` | resolved |
 | **D5** | `Missed` wording per role: **resolved** — keep `Missed` for both | resolved |
 | **D6** | Enforce §6 + §5: **resolved 2026-09-24 — implemented.** `packages/shared/src/status-presentation.ts`, the extended `status.test.ts` guard, `statusColors` in `theme.ts`, and `scripts/check-contrast.mjs` now exist and run under `pnpm test` / `pnpm run check:contrast`. | **resolved** |
 | **D7** | Which document wins where the sources disagree (C-R1–C-R4). **Decision briefs written**: `docs/adr/adr-001`…`adr-004`. The owner still has to choose and sign each one. | **blocking** |
 | **D8** | Typography (R9): adopt the approved Fredoka/Poppins 32/20/16/12 scale (`expo-font` is already installed; the fonts are OFL-licensed), or keep the larger system-font scale and record the deviation. | open |
-| **D9** | Palette (R8): reconcile `theme.ts` with the approved brand palette — a `fills` vs `text` split, or keep the darkened tokens and document it. | open |
+| **D9** | Palette (R8): **resolved 2026-09-29 — `fills`/`text` split implemented.** `theme.ts` exports `brand` + `lightColors`/`darkColors`; bright colours are fills only, text uses Navy/Charcoal/Dark Gray. `scripts/check-contrast.mjs` enforces it for both themes. | **resolved** |
 
 ---
 
@@ -859,3 +887,12 @@ forbidden. §4.1 also makes Emergency a *profile action* for the caregiver and a
   (light-mode lock) and **D2** (keep `primary`); implemented **D6** (status presentation, the
   label/icon/tone test guard, `statusColors`, and `scripts/check-contrast.mjs`). Opened **D8**
   and **D9**. Wrote scope decision briefs `docs/adr/adr-001`…`adr-004` (D7).
+- 2026-09-29: Read the owner's `docs/UI_theme_palette.pptx.pdf` (extracted as page images — its
+  subset fonts scramble text) and adopted it as the visual standard. Implemented the approved
+  palette in `theme.ts` as `brand` + `lightColors`/`darkColors` (a `fills`/`text` split) with the
+  owner-approved dark set, added `useAppTheme()` for `useColorScheme()`, and taught
+  `scripts/check-contrast.mjs` to enforce AA in **both** themes plus the fill/label pairs. Closed
+  **R8**/**D9**, superseded **D2**, and **reopened D1** (light+dark required; config flips to
+  `automatic` after the screen migration). Corrected the §5.2 Teal figures (1.94/5.15 →
+  2.16/4.64). The primary button is now Teal with a Navy label, and input outlines use
+  `borderStrong`.
