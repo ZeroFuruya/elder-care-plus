@@ -1,13 +1,28 @@
 export { getDatabase } from './database';
 export {
-  ensureDemoData,
-  ensureDemoSchedule,
-  loadDemoSafeDay,
-  DEMO_CAREGIVER,
-  DEMO_ELDER,
-  DEMO_PASSWORD,
-} from './demo';
-export { getLinkedElder, linkCaregiverToElder, type CareLink } from './care-links';
+  getLinkedElder,
+  listElderCircle,
+  listMyInvites,
+  listMyLinks,
+  type ElderCircleLink,
+  type LinkStatus,
+  type MemberRole,
+  type MyInvite,
+  type MyLink,
+} from './care-links';
+export {
+  consentToCareLink,
+  createElderLinkInvite,
+  deactivateAccount,
+  inviteFamilyMember,
+  isLinkingError,
+  LinkingError,
+  parseRedeemPayload,
+  redeemCareLinkCode,
+  revokeCareLink,
+  type LinkingErrorKind,
+  type RedeemOutcome,
+} from './linking';
 export {
   confirmDose,
   createDose,
@@ -22,15 +37,3 @@ export {
   type NewDose,
 } from './doses';
 export { inspectDatabase, type TableDump } from './inspect';
-export {
-  authenticate,
-  countUsers,
-  createUser,
-  emailExists,
-  findUserByEmail,
-  normaliseEmail,
-  type PublicUser,
-  type SignInFailure,
-  type SignInResult,
-  type StoredUser,
-} from './users';

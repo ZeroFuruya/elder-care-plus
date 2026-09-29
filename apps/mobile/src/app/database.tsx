@@ -10,9 +10,11 @@ import { inspectDatabase } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
 
 /**
- * Read-only view of the on-device SQLite database, for demonstrating the data layer. Reached from
- * the caregiver Profile. `eldercare.db` is the only datastore the app uses — it is not connected
- * to Supabase yet (see DEMO.md, "Known limits").
+ * Retired legacy viewer: a read-only dump of the on-device SQLite store.
+ *
+ * Supabase is authoritative for the app now, so no screen links here any more.
+ * It stays until the Sprint 4 cleanup deletes the legacy store
+ * (docs/specs/sprint-1b.md, "Legacy store").
  */
 export default function DatabaseScreen() {
   const loader = useCallback(() => inspectDatabase(), []);

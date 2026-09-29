@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, radius, spacing } from '@/constants/theme';
-import { getLinkedElder, listDoses, summarise, type AdherenceSummary, type CareLink } from '@/db';
+import { getLinkedElder, listDoses, summarise, type AdherenceSummary, type MyLink } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { addDays, endOfDay, formatShortDate, isSameDay, startOfDay } from '@/lib/format';
 
@@ -19,7 +19,7 @@ interface DayReport {
 }
 
 interface ReportData {
-  link: CareLink | null;
+  link: MyLink | null;
   overall: AdherenceSummary;
   days: DayReport[];
 }
@@ -82,7 +82,7 @@ export default function CaregiverReportsScreen() {
   return (
     <Screen
       title="Reports"
-      subtitle={`Last 7 days · ${link.elderName}`}
+      subtitle={`Last 7 days · ${link.elderName ?? 'your older adult'}`}
       onRefresh={reload}
       refreshing={refreshing}
     >

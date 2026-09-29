@@ -11,13 +11,31 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
-import { confirmDose, loadDemoSafeDay, summarise } from '@/db';
+import {
+  confirmDose,
+  listDosesForDay,
+  listElderCircle,
+  summarise,
+  type DoseView,
+  type ElderCircleLink,
+} from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { formatLongDate, formatTime, greeting } from '@/lib/format';
 
+interface HomeData {
+  doses: DoseView[];
+  circle: ElderCircleLink[];
+}
+
 export default function ElderHomeScreen() {
   const user = useSessionUser();
-  const loader = useCallback(() => loadDemoSafeDay(user.id), [user.id]);
+  const loader = useCallback(async (): Promise<HomeData> => {
+    const [doses, circle] = await Promise.all([
+      listDosesForDay(user.id, new Date()),
+      listElderCircle(user.id),
+    ]);
+    return { doses, circle };
+  }, [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
   const [banner, setBanner] = useState<{ tone: BannerTone; message: string } | null>(null);
@@ -47,9 +65,14 @@ export default function ElderHomeScreen() {
     );
   }
 
-  const doses = state.data;
+  const doses = state.data.doses;
   const summary = summarise(doses);
   const firstName = user.name.split(' ')[0];
+
+  const caregiver =
+    state.data.circle.find((link) => link.memberRole === 'caregiver' && link.status === 'active') ??
+    null;
+  const awaitingConsent = state.data.circle.filter((link) => link.status === 'invited');
 
   const parts = [`${doses.length} ${doses.length === 1 ? 'dose' : 'doses'} today`];
   if (summary.due > 0) parts.push(`${summary.due} due now`);
@@ -69,9 +92,22 @@ export default function ElderHomeScreen() {
           {greeting()}, {firstName}
         </Text>
         <Text style={styles.summary}>{parts.join(' · ')}</Text>
+        <Text style={styles.summary}>
+          {caregiver
+            ? `Linked caregiver: ${caregiver.memberLabel}`
+            : 'No caregiver is linked to this account yet.'}
+        </Text>
       </Card>
 
       {banner ? <Banner tone={banner.tone} message={banner.message} /> : null}
+
+      {awaitingConsent.length > 0 ? (
+        <Button
+          label={`Review ${awaitingConsent.length === 1 ? 'a family member’s access' : `${awaitingConsent.length} family members’ access`}`}
+          onPress={() => router.push('/elder/circle')}
+          accessibilityHint="Opens the care circle so you can approve or refuse access"
+        />
+      ) : null}
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Your doses today</Text>
@@ -97,6 +133,17 @@ export default function ElderHomeScreen() {
           ))
         )}
       </View>
+
+      <Button
+        label={caregiver ? 'Care circle' : 'Enter a caregiver’s code'}
+        variant="secondary"
+        onPress={() => router.push(caregiver ? '/elder/circle' : '/elder/link')}
+        accessibilityHint={
+          caregiver
+            ? 'Shows who can see your record and lets you remove access'
+            : 'Opens the screen where you enter the six-digit code from your caregiver'
+        }
+      />
 
       <Button
         label="Emergency information"

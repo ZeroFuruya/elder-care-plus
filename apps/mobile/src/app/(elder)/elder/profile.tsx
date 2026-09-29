@@ -4,6 +4,7 @@ import { userRoleLabels } from '@eldercare/shared';
 
 import { useSessionUser } from '@/auth/auth-context';
 import { Card } from '@/components/card';
+import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
@@ -30,10 +31,12 @@ export default function ElderProfileScreen() {
 
       <Card title="Your data">
         <Text style={styles.body}>
-          Doses you confirm are stored in the local database on this device and are shown to the
-          family caregiver you are linked to. Nothing is deleted — a record is only added.
+          Doses you confirm are recorded on the ElderCare+ server and shared with the caregiver and
+          family members you approved. Nothing is deleted — a record is only added.
         </Text>
       </Card>
+
+      <DeactivateAccount />
 
       <LogoutButton size="large" />
     </Screen>

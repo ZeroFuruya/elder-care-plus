@@ -1,12 +1,11 @@
-import { router } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { userRoleLabels } from '@eldercare/shared';
 
 import { useSessionUser } from '@/auth/auth-context';
-import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
@@ -37,7 +36,9 @@ export default function CaregiverProfileScreen() {
 
       <Card title="Linked older adult">
         <Text style={styles.value}>
-          {state.status === 'ready' && state.data ? state.data.elderName : 'None linked'}
+          {state.status === 'ready' && state.data
+            ? (state.data.elderName ?? 'Linked')
+            : 'None linked'}
         </Text>
         <Text style={styles.body}>
           A caregiver account follows exactly one older adult in this release, so the dashboard
@@ -45,18 +46,7 @@ export default function CaregiverProfileScreen() {
         </Text>
       </Card>
 
-      <Card title="Local database">
-        <Text style={styles.body}>
-          Everything the app stores lives in a SQLite database on this device. Open the read-only
-          viewer to show its tables and rows.
-        </Text>
-        <Button
-          label="View database"
-          variant="secondary"
-          onPress={() => router.push('/database')}
-          accessibilityHint="Opens a read-only list of the local database tables and their rows"
-        />
-      </Card>
+      <DeactivateAccount />
 
       <LogoutButton size="large" />
     </Screen>

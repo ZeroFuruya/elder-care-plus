@@ -1,5 +1,6 @@
 import { doseStatusPresentation, type DoseStatus } from '@eldercare/shared';
-import { useCallback, useState } from 'react';
+import { router } from 'expo-router';
+import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -12,23 +13,21 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, radius, spacing, statusColors } from '@/constants/theme';
 import {
-  ensureDemoData,
   getLinkedElder,
-  linkCaregiverToElder,
   listDoses,
   listDosesForDay,
   listRecentConfirmations,
   summarise,
   type AdherenceSummary,
-  type CareLink,
   type DoseView,
+  type MyLink,
 } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { addDays, endOfDay, formatRelative, formatTime, startOfDay } from '@/lib/format';
 import { statusGlyph } from '@/lib/status-glyph';
 
 interface DashboardData {
-  link: CareLink | null;
+  link: MyLink | null;
   today: DoseView[];
   todaySummary: AdherenceSummary;
   recent: DoseView[];
@@ -82,15 +81,6 @@ export default function CaregiverDashboardScreen() {
   }, [user.id]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
-  const [linking, setLinking] = useState(false);
-
-  const linkDemoElder = async () => {
-    setLinking(true);
-    const { elderId } = await ensureDemoData();
-    await linkCaregiverToElder(user.id, elderId);
-    setLinking(false);
-    await reload();
-  };
 
   if (state.status === 'loading') return <LoadingScreen message="Loading the dashboard…" />;
   if (state.status === 'error') {
@@ -108,9 +98,9 @@ export default function CaregiverDashboardScreen() {
       <Screen title="Dashboard" showBell onRefresh={reload} refreshing={refreshing}>
         <EmptyState
           title="No older adult linked yet"
-          description="A caregiver account is linked to one older adult. Link the demonstration account to continue."
+          description="Link an older adult with a six-digit code so their doses can be recorded here."
         />
-        <Button label="Link the demo older adult" onPress={linkDemoElder} loading={linking} />
+        <Button label="Link an older adult" onPress={() => router.push('/caregiver/link')} />
       </Screen>
     );
   }
@@ -127,11 +117,18 @@ export default function CaregiverDashboardScreen() {
       refreshing={refreshing}
     >
       <Card>
-        <Text style={styles.elderName}>{link.elderName}</Text>
+        <Text style={styles.elderName}>{link.elderName ?? 'Your older adult'}</Text>
         <Text style={styles.elderMeta}>
           Linked older adult · {todaySummary.taken} of {today.length} doses confirmed today
         </Text>
       </Card>
+
+      <Button
+        label="Care links and invites"
+        variant="secondary"
+        onPress={() => router.push('/caregiver/link')}
+        accessibilityHint="Opens the code you share with the older adult, and family member invites"
+      />
 
       <View style={styles.tiles}>
         <StatTile status="taken" value={todaySummary.taken} />
@@ -140,7 +137,9 @@ export default function CaregiverDashboardScreen() {
       </View>
 
       <Card title="Seven-day adherence">
-        <Text style={styles.adherence}>{weekSummary.percent}%</Text>
+        <Text style={styles.adherence}>
+          {weekSummary.taken + weekSummary.missed === 0 ? '—' : `${weekSummary.percent}%`}
+        </Text>
         <Text style={styles.elderMeta}>
           {weekSummary.taken} confirmed · {weekSummary.missed} missed in the last seven days
         </Text>

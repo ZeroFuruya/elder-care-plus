@@ -1,10 +1,18 @@
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
 import { demoEmergencyProfile } from '@/fixtures/emergency';
+
+interface CallTarget {
+  title: string;
+  name: string;
+  number: string;
+}
 
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
@@ -15,20 +23,9 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function callContact(alertTitle: string, name: string, number: string) {
-  Alert.alert(alertTitle, `${name}\n${number}`, [
-    { text: 'Cancel', style: 'cancel' },
-    {
-      text: 'Call',
-      onPress: () => {
-        void Linking.openURL(`tel:${number.replace(/[^+\d]/g, '')}`);
-      },
-    },
-  ]);
-}
-
 export default function ElderEmergencyScreen() {
   const profile = demoEmergencyProfile;
+  const [callTarget, setCallTarget] = useState<CallTarget | null>(null);
 
   return (
     <Screen title="Emergency" subtitle="Show this to anyone helping you">
@@ -58,7 +55,11 @@ export default function ElderEmergencyScreen() {
           label={`Call ${profile.physician.name}`}
           variant="secondary"
           onPress={() =>
-            callContact('Call the doctor?', profile.physician.name, profile.physician.number)
+            setCallTarget({
+              title: 'Call the doctor?',
+              name: profile.physician.name,
+              number: profile.physician.number,
+            })
           }
           accessibilityLabel={`Call ${profile.physician.name} at ${profile.physician.number}`}
         />
@@ -68,11 +69,11 @@ export default function ElderEmergencyScreen() {
           label="Call my emergency contact"
           variant="danger"
           onPress={() =>
-            callContact(
-              'Call your emergency contact?',
-              profile.emergencyContact.name,
-              profile.emergencyContact.number,
-            )
+            setCallTarget({
+              title: 'Call your emergency contact?',
+              name: profile.emergencyContact.name,
+              number: profile.emergencyContact.number,
+            })
           }
           accessibilityLabel={`Call ${profile.emergencyContact.name} at ${profile.emergencyContact.number}`}
         />
@@ -81,6 +82,19 @@ export default function ElderEmergencyScreen() {
       <Text style={styles.note}>
         Sample emergency information for the demonstration. It is stored on this device only.
       </Text>
+
+      <ConfirmDialog
+        visible={callTarget !== null}
+        title={callTarget?.title ?? ''}
+        description={callTarget ? `${callTarget.name}\n${callTarget.number}` : ''}
+        confirmLabel="Call"
+        onCancel={() => setCallTarget(null)}
+        onConfirm={() => {
+          const target = callTarget;
+          setCallTarget(null);
+          if (target) void Linking.openURL(`tel:${target.number.replace(/[^+\d]/g, '')}`);
+        }}
+      />
     </Screen>
   );
 }
