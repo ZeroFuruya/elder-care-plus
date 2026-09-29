@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import type { UserRole } from '@eldercare/shared';
@@ -10,7 +10,15 @@ import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Field } from '@/components/field';
 import { Screen } from '@/components/screen';
-import { colors, fontSize, lineHeight, radius, spacing, touchTarget } from '@/constants/theme';
+import {
+  fontSize,
+  lineHeight,
+  radius,
+  spacing,
+  touchTarget,
+  type AppThemeColors,
+} from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 const ROLE_OPTIONS: { role: UserRole; title: string; description: string }[] = [
   {
@@ -32,6 +40,8 @@ const ROLE_OPTIONS: { role: UserRole; title: string; description: string }[] = [
 
 export default function SignUpScreen() {
   const { signUp } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -177,66 +187,68 @@ export default function SignUpScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  roleGroup: {
-    gap: spacing.sm,
-  },
-  roleHeading: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '600',
-    lineHeight: lineHeight.caption,
-  },
-  roleCard: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.xs,
-    minHeight: touchTarget.min,
-    padding: spacing.md,
-  },
-  roleCardSelected: {
-    borderColor: colors.primary,
-    borderWidth: 2,
-  },
-  roleCardPressed: {
-    opacity: 0.85,
-  },
-  roleTitle: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    lineHeight: lineHeight.body,
-  },
-  roleDescription: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  roleState: {
-    color: colors.primary,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-  },
-  roleErrorRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  roleErrorGlyph: {
-    color: colors.danger,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-  },
-  roleErrorText: {
-    color: colors.danger,
-    flex: 1,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    flex: {
+      flex: 1,
+    },
+    roleGroup: {
+      gap: spacing.sm,
+    },
+    roleHeading: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      lineHeight: lineHeight.caption,
+    },
+    roleCard: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.xs,
+      minHeight: touchTarget.min,
+      padding: spacing.md,
+    },
+    roleCardSelected: {
+      borderColor: colors.primary,
+      borderWidth: 2,
+    },
+    roleCardPressed: {
+      opacity: 0.85,
+    },
+    roleTitle: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '700',
+      lineHeight: lineHeight.body,
+    },
+    roleDescription: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    roleState: {
+      color: colors.primary,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+    },
+    roleErrorRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: spacing.xs,
+    },
+    roleErrorGlyph: {
+      color: colors.danger,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+    },
+    roleErrorText: {
+      color: colors.danger,
+      flex: 1,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

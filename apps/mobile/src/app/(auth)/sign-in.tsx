@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
@@ -8,10 +8,13 @@ import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Field } from '@/components/field';
 import { Screen } from '@/components/screen';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function SignInScreen() {
   const { signIn } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -105,16 +108,18 @@ export default function SignInScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  flex: {
-    flex: 1,
-  },
-  hint: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  footer: {
-    paddingTop: spacing.sm,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    flex: {
+      flex: 1,
+    },
+    hint: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    footer: {
+      paddingTop: spacing.sm,
+    },
+  });
+}
