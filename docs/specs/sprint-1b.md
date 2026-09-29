@@ -4,7 +4,8 @@
   2026-09-29 decision that the 2026-10-15/16 class checking demonstrates the Supabase-backed app.
   Revised the same day to fold in the `@architect` critique (2026-09-29): the transitional SQLite
   strategy, the session-storage and auth state-machine contracts, the hosted evidence checklist,
-  the synthetic setup runbook and the sequencing gates are now part of the build contract.
+  the synthetic setup runbook and the sequencing gates are now part of the build contract. Hosted
+  verification evidence appended 2026-09-29.
 - **Branch:** `sprint-1b-supabase-cutover`.
 - **Flow:** `docs/00-product-flow.md` Flow A (first use and care linking); `docs/adr/adr-001`
   (third role, care-circle membership).
@@ -80,6 +81,27 @@ without leaving a second working identity path behind. The strategy is explicit:
 - [ ] Backup (`npx supabase db dump -f <path>`) created **outside the repository**, non-empty,
       date + project ref recorded; `git status` shows no dump file.
 - [ ] Preview APK installed on the owner's phone; sign-in as each of the three roles recorded.
+
+### Hosted evidence — 2026-09-29, project `buwwkdhzansbyeytsufj`
+
+Measured against hosted with only public client values and the three synthetic accounts. Covers
+checklist items 1–2 and the account/RLS parts of 3–4; items 5–8 stay owner actions.
+
+- **Item 1** — `npx supabase migration list --linked`: all six migrations applied.
+- **Item 2** — hosted Auth has confirm email off (`mailer_autoconfirm: true`) and a 5-character
+  sign-up probe fails `422 weak_password` ("at least 6 characters"), applied from
+  `supabase/config.toml` with `npx supabase config push` (auth group only).
+- **Item 3 (accounts)** — `node scripts/provision-demo-accounts.mjs` signs in each role and reads
+  its own `profiles` row; credentials live in the git-ignored `apps/mobile/.env.demo-accounts`.
+- **Item 4 (partial)** — each role sees exactly one profile row (its own) and `care_links` is
+  empty while unlinked; a direct `care_links` insert and a `profiles.role` update are rejected
+  with `42501`; `create_elder_link_invite` returns a six-digit code. The remaining guarded RPCs
+  are covered by the runbook below.
+- **Acceptance criterion 7** — `amr`: a fresh password grant passes `assert_recent_password_auth`
+  (a bogus link id then fails `P0002`), and the same token 310 s later is rejected `42501`
+  "re-authentication required".
+- **Leave-behind** — one unconsumed elder invite for the demo caregiver, expiring
+  `2026-09-30 08:32Z`; the first runbook invite supersedes it.
 
 ## Synthetic demo setup runbook (hosted, repeatable)
 
