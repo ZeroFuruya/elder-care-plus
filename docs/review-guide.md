@@ -60,7 +60,7 @@ looks the way it does.
 pnpm install
 pnpm typecheck        # strict TS across the monorepo
 pnpm lint
-pnpm test             # workspace tests: 22 at the Sprint 1 tag, 35 on the Sprint 1b branch
+pnpm test             # workspace tests: 22 at the Sprint 1 tag, 36 on the Sprint 1b branch
 pnpm format:check
 pnpm check:contrast   # token contrast checker, scripts/check-contrast.mjs
 ```
