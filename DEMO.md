@@ -1,5 +1,12 @@
 # ElderCare+ — class checking demo
 
+> **Branch note (2026-09-29).** This document describes the local-SQLite demo, preserved
+> by the tag `demo-sqlite-fallback`. On the `sprint-1b-supabase-cutover` branch the app
+> signs in against Supabase and the product tables live in `supabase/migrations/`; demo
+> accounts are no longer seeded on the device, and the caregiver medicine form is
+> read-only until the medication-plan sprint. Server-backed run notes land with that
+> sprint.
+
 This build answers the Mobile Application Development individual-project brief: login and logout,
 authentication against a database, validation messages, UX extras, a logout confirmation, and **two
 connected user roles with one working transaction between them**.

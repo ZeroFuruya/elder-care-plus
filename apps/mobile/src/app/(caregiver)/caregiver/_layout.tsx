@@ -2,6 +2,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { Text, type ColorValue } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
+import { homeRouteFor } from '@/auth/routes';
 import { LoadingScreen } from '@/components/loading-screen';
 import { colors, fontSize } from '@/constants/theme';
 
@@ -26,7 +27,7 @@ export default function CaregiverTabsLayout() {
 
   if (!ready) return <LoadingScreen message="Starting ElderCare+…" />;
   if (!user) return <Redirect href="/sign-in" />;
-  if (user.role !== 'caregiver') return <Redirect href="/elder" />;
+  if (user.role !== 'caregiver') return <Redirect href={homeRouteFor(user.role)} />;
 
   return (
     <Tabs
@@ -46,6 +47,8 @@ export default function CaregiverTabsLayout() {
       />
       <Tabs.Screen name="reports" options={{ title: 'Reports', tabBarIcon: tabIcon('reports') }} />
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('profile') }} />
+      {/* Reachable from the dashboard and profile; hidden from the tab bar. */}
+      <Tabs.Screen name="link" options={{ href: null }} />
     </Tabs>
   );
 }

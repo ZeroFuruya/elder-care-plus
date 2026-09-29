@@ -14,6 +14,8 @@ interface ScreenProps {
   onRefresh?: () => void;
   refreshing?: boolean;
   scroll?: boolean;
+  /** Stack (non-tab) screens must clear the bottom inset themselves. */
+  safeBottom?: boolean;
 }
 
 /** Standard screen frame: safe area, top app bar, scrollable body. */
@@ -26,6 +28,7 @@ export function Screen({
   onRefresh,
   refreshing = false,
   scroll = true,
+  safeBottom = false,
 }: ScreenProps) {
   const body = scroll ? (
     <ScrollView
@@ -49,7 +52,10 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView
+      style={styles.safeArea}
+      edges={safeBottom ? ['top', 'left', 'right', 'bottom'] : ['top', 'left', 'right']}
+    >
       <AppBar title={title} subtitle={subtitle} showBack={showBack} showBell={showBell} />
       {body}
     </SafeAreaView>

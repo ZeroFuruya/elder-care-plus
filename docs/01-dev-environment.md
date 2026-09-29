@@ -75,7 +75,7 @@
 |---|---|---|
 | Agent tool | OpenCode | Reads `AGENTS.md`. Config in `opencode.json` (Section 7). |
 | Autocomplete | GitHub Copilot Student | Autocomplete only. **[verify]** it is active on the owner's account. |
-| Client | React Native + Expo, TypeScript, Expo Router | **Mobile-only.** Both caregiver and elder use the same app with role-specific tab sets — there is no separate moderator/admin web app for this product. Free EAS plan: 15 Android + 15 iOS builds per month. |
+| Client | React Native + Expo, TypeScript, Expo Router | **Mobile-only.** Caregiver, elder and connected family member use the same app with role-specific tab sets — there is no separate moderator/admin web app for this product. Free EAS plan: 15 Android + 15 iOS builds per month. |
 | Backend | Supabase Free: Postgres, Auth, Storage, RLS, Realtime/Edge Functions, pgvector | Region: Singapore. |
 | AI service | FastAPI in a Hugging Face Space (Docker SDK, free CPU) | Port 7860. Lighter footprint than a photo-matching product: **OCR and text embeddings only**, no image-similarity model. |
 | Prescription OCR | PaddleOCR (standard model first); RapidOCR-ONNX fallback | Extracts text from a prescription photo for the caregiver to reference. Never auto-fills a field. |
@@ -89,7 +89,7 @@
 ## 5. Architecture
 
 ```
-[Expo mobile app: caregiver + elder roles] ──► Supabase (Auth, Postgres+RLS, Storage,
+[Expo mobile app: caregiver + elder + family roles] ──► Supabase (Auth, Postgres+RLS, Storage,
                                                  Realtime, pgvector, RPC/Edge Functions)
                                                          │
                                                          ▼
@@ -97,7 +97,7 @@
                                     /ocr   /embed/text   /health
 ```
 
-No web client, no moderator role — this product only has the two roles in Section 2. Clients talk to Supabase with the **anon key + user JWT**; RLS is the security boundary. The AI service is called by trusted server-side logic (Edge Function or backend job) using a shared-secret header and never holds user data. Embeddings for `document_chunks` are written only after the caregiver has approved the extracted text, not automatically at OCR time.
+No web client, no moderator role — this product only has the three roles in Section 2. Clients talk to Supabase with the **anon key + user JWT**; RLS is the security boundary. The AI service is called by trusted server-side logic (Edge Function or backend job) using a shared-secret header and never holds user data. Embeddings for `document_chunks` are written only after the caregiver has approved the extracted text, not automatically at OCR time.
 
 ---
 
@@ -105,7 +105,7 @@ No web client, no moderator role — this product only has the two roles in Sect
 
 ```
 eldercare-plus/
-├─ apps/mobile/        Expo (TypeScript, Expo Router; (auth), (caregiver), (elder) route groups)
+├─ apps/mobile/        Expo (TypeScript, Expo Router; (auth), (caregiver), (elder), (family) route groups)
 ├─ services/ai/        FastAPI: OCR + text embeddings
 ├─ packages/shared/    shared types + zod schemas
 ├─ supabase/           config.toml, migrations, seed.sql
@@ -357,13 +357,14 @@ After Sprint 9: integration and security pass, system testing, user evaluation, 
 - [ ] Supabase linked, first migration pushed, keep-alive running
 - [ ] Idempotency test written for dose confirmation (offline retry does not duplicate)
 - [ ] AI service `/health` reachable from a Hugging Face Space
-- [ ] Mobile hello-world on phone reading from Supabase, for both caregiver and elder roles
+- [ ] Mobile hello-world on phone reading from Supabase, for caregiver, elder and family roles
 - [ ] Sprint 1 spec written, first feature reviewed and merged
 
 ---
 
 ## 16. Changelog
 
+- 2026-09-29: Removed the remaining two-role wording that contradicted the 2026-09-25 scope decision: §4.2 (client row), §5 (diagram and boundary paragraph), §6 (mobile route groups) and §15 (hello-world checklist). No stack decision changed; this only aligns the tooling doc with `docs/00-product-flow.md` §2 and `docs/adr/adr-001`…`adr-004`.
 - 2026-09-25: The owner decided all four scope conflicts (`docs/adr/adr-001`…`adr-004`, now Accepted): the product-flow scope wins, and "Connected Family Member" is a third role modelled as care-circle membership on `care_links` (one manager + N view-only family members, elder consent required). Section 11 gained a family-UI sprint (8) and a mobile cutover sprint (1b); reports/audit moved to 9. `docs/00-product-flow.md` §2 now lists three roles. Consequence: the approved system documentation and wireframes must be revised to match.
 - 2026-09-24: Corrected §7's installed-tooling list against the actual machine: **GitHub CLI, Docker Desktop and Bruno are not installed**; pnpm is now enabled via `corepack enable` (it previously was not on PATH); Python 3.12 comes from uv, not a system Python. Recorded the consequences for `npx supabase start` and for repo creation. No stack decision changed.
 - 2026-09-24: Read the approved `docs/ElderCare_Plus_System_Documentation_and_User_Manual_v1.0.pdf` (28 pages; previously believed to have no extractable text). It is the **approved baseline** and it agrees with the wireframe pack, not with `docs/00-product-flow.md`, on scope: two roles, no prescriptions/OCR, no stock/expiry, one emergency contact. `docs/02-ui-ux-standard.md` §5/§20 were updated with its palette, contrast math and evidence; scope decision briefs were added as `docs/adr/adr-001`…`adr-004`; `AGENTS.md`'s blocking-unknown note was rewritten. No sprint-map change yet — Sprint 2/3/5/6 depend on the open decisions.

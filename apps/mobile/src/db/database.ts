@@ -1,12 +1,11 @@
 import * as SQLite from 'expo-sqlite';
 
 /**
- * Local database (expo-sqlite). The professor's brief allows "a local database or a cloud
- * database"; this is the local one, chosen because it needs no network, no Docker and no
- * credentials, so a live demo cannot fail on connectivity.
+ * Legacy local store (expo-sqlite), kept as the offline cache/outbox while the
+ * app moves to Supabase (docs/specs/sprint-1b.md).
  *
- * Swapping to Supabase later means replacing the functions in `db/users.ts` and `db/doses.ts`
- * and adding RLS — the screens do not change.
+ * Identity and care links no longer live here; doses and the inspection helper
+ * still use it until the medication plan replaces them in Sprint 4.
  */
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -23,6 +22,10 @@ async function openDatabase(): Promise<SQLite.SQLiteDatabase> {
 }
 
 const SCHEMA = `
+-- Legacy tables. Identity and care links moved to Supabase (RLS-scoped) in
+-- Sprint 1b; these survive only because the fallback tag's demo build reads
+-- them. The users role CHECK predates the third (family member) role and must
+-- not be copied into anything new.
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY NOT NULL,
   name TEXT NOT NULL,

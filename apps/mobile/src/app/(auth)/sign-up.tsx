@@ -23,6 +23,11 @@ const ROLE_OPTIONS: { role: UserRole; title: string; description: string }[] = [
     title: 'Family caregiver',
     description: 'I look after someone and follow their record.',
   },
+  {
+    role: 'family_member',
+    title: 'Connected family member',
+    description: 'I follow an older adult’s record read-only, once they approve.',
+  },
 ];
 
 export default function SignUpScreen() {
@@ -58,9 +63,9 @@ export default function SignUpScreen() {
       return;
     }
 
-    setSuccess('Account created successfully. Opening your dashboard…');
-    const target = outcome.user.role === 'elder' ? '/elder' : '/caregiver';
-    setTimeout(() => router.replace(target), 900);
+    setSuccess('Account created successfully.');
+    // The (auth) layout redirects to this role's home as soon as the session
+    // lands, so the screen never navigates on its own.
   };
 
   return (
@@ -68,7 +73,12 @@ export default function SignUpScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen title="Create account" subtitle="Stored locally on this device" showBack>
+      <Screen
+        title="Create account"
+        subtitle="Your account is protected by a password"
+        showBack
+        safeBottom
+      >
         {success ? <Banner tone="success" message={success} /> : null}
         {formError ? <Banner tone="error" message={formError} /> : null}
 

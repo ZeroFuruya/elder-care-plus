@@ -7,6 +7,7 @@ import { userRoleLabels } from '@eldercare/shared';
 import { useSessionUser } from '@/auth/auth-context';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
+import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
 import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
@@ -37,26 +38,25 @@ export default function CaregiverProfileScreen() {
 
       <Card title="Linked older adult">
         <Text style={styles.value}>
-          {state.status === 'ready' && state.data ? state.data.elderName : 'None linked'}
+          {state.status !== 'ready'
+            ? 'Checking…'
+            : state.data
+              ? (state.data.elderName ?? 'Linked')
+              : 'None linked'}
         </Text>
         <Text style={styles.body}>
-          A caregiver account follows exactly one older adult in this release, so the dashboard
-          shows that person&apos;s doses and confirmations.
-        </Text>
-      </Card>
-
-      <Card title="Local database">
-        <Text style={styles.body}>
-          Everything the app stores lives in a SQLite database on this device. Open the read-only
-          viewer to show its tables and rows.
+          A caregiver account follows one older adult. Their doses and confirmations appear on the
+          dashboard and in reports.
         </Text>
         <Button
-          label="View database"
+          label="Care links and invites"
           variant="secondary"
-          onPress={() => router.push('/database')}
-          accessibilityHint="Opens a read-only list of the local database tables and their rows"
+          onPress={() => router.push('/caregiver/link')}
+          accessibilityHint="Opens the link code and family member invites"
         />
       </Card>
+
+      <DeactivateAccount />
 
       <LogoutButton size="large" />
     </Screen>
