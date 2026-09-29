@@ -705,9 +705,16 @@ The system documentation's §6 catalogue is the **same 34 frames** as wireframe 
 (`A-01`…`A-12`, `E-01`…`E-08`, `C-01`…`C-11`, `S-01`…`S-03`) plus `V-01`…`V-07`. The v1.2
 pack is what adds `E-09`…`E-15`, `C-12`…`C-15` and the 15 `F-` frames.
 
-### 20.2 Conflicts the owner must resolve (blocking — do not implement around these)
+### 20.2 Conflicts the owner resolved (2026-09-25)
 
-**Which sources agree, per conflict** — the owner's decision is really "which document is the
+**Status: all four conflicts are decided.** `docs/adr/adr-001`…`adr-004` are **Accepted**; the
+product-flow scope wins in every case (three roles, prescriptions/evidence + OCR, stock/expiry,
+five ordered emergency contacts). The register below is kept as the decision record — read each
+conflict together with its ADR. Where it describes the code as it stood on 2026-09-24 (two roles
+in `packages/shared/src/role.ts`, an `(auth)/role-select.tsx` screen), the code has since moved to
+the decided scope.
+
+**Which sources agreed, per conflict** — the owner's decision was really "which document is the
 scope baseline?":
 
 | Conflict | Approved system doc v1.0 | Wireframe pack v1.2 | `00-product-flow.md` v1.1 + code |
