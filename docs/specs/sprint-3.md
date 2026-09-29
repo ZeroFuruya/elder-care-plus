@@ -4,9 +4,11 @@
   `@architect` (2026-09-29). Revised the same day to fold in the `@architect` critique: restrictive
   foreign keys, the "no active medication without a valid schedule" rule, schedule/timezone
   validation, the expired-batch rule, server-derived manager checks and locks, the per-RPC audit
-  contract, blank/numeric validation and normative Sprint 4 hand-off keys. Implementation has not
-  started. Sprint 1b removed the local "Add a medicine" form; this spec restores that flow against
-  Supabase.
+  contract, blank/numeric validation and normative Sprint 4 hand-off keys. Sprint 1b removed the
+  local "Add a medicine" form; this spec restores that flow against Supabase. *Implementation ran
+  2026-09-30: the migration, its pgTAP suite, the shared contracts and the `C-02`/`C-03`/`C-04`
+  screens are on the branch. Owner approval is still outstanding, so the spec stays a draft and the
+  deviations it left open are itemised under "Implementation notes" at the end.*
 - **Branch:** `sprint-3-medication-setup`.
 - **Flow:** `docs/00-product-flow.md` §4 B (medication, inventory and expiry setup), §7 data model,
   §8 validation.
@@ -254,3 +256,36 @@ These are binding contracts, because Sprint 4's idempotency depends on them:
   alert thresholds and `inventory_transactions` are not.
 - **Schema duplication.** Do not recreate the legacy SQLite tables' shape; the Supabase schema is
   authoritative and the legacy modules remain unreachable.
+
+## Implementation notes (added by the implementer 2026-09-30, for owner review)
+
+These are the places where the build had to resolve something the draft left open. Each is also
+recorded in the header of `supabase/migrations/20261008120000_sprint3_medications.sql`.
+
+1. **Schedule unique index is partial (`where is_active`).** The draft wrote the slot index
+   unconditionally, but acceptance criterion 8 requires a deactivated slot to be replaceable. The
+   single-active-batch index is partial for the same reason.
+2. **`deactivate_batch` was added.** The draft's RPC list can activate a batch but can never
+   deactivate one, while criterion 8 requires it. The audit vocabulary gains
+   `schedule.reactivated`, `batch.deactivated` and `batch.reactivated` for symmetry.
+3. **A new derived invariant.** `set_schedule_active(false)` is rejected (`23514`) on the last
+   active schedule of an active medicine, which is what keeps the draft's own "no active medication
+   without an active schedule" rule true from both directions. Deactivate the medicine first.
+4. **Family read scope.** `00-product-flow.md` section 2 grants a connected family member view-only
+   access to the medication plan, so criterion 1's read scope stands and the earlier prose about a
+   narrow `family_medication_summary` in Sprint 3 is superseded (it belongs to Sprint 4's open
+   question 6, as that question itself recommends).
+5. **Stock state.** `stockStatusFromBatch` returns the existing six `StockStatus` values. `expiring`
+   is not returned: it needs the Sprint 5 warning window. `expired` and `needs_review` are facts
+   this sprint already knows, and every value already has a `status-presentation.ts` entry.
+6. **Two acceptance criteria cannot be proven in the local pgTAP harness** and are documented in
+   the test file instead of being silently skipped: criterion 10 needs true concurrency, which the
+   single-session harness cannot create, and criterion 8's future-occurrence cancellation needs
+   `dose_events`, which is Sprint 4's table.
+7. **The duplicate warning reachable from the form is the medicine name.** A duplicate schedule slot
+   is impossible by the partial unique index, so the client check for it is a guard, not a live
+   warning.
+8. **The family member's own medication screen is not in this sprint.** The owner's 2026-09-29
+   decision defers the minimal family view to Sprint 4, so only criterion 13's elder read-only view
+   ships here.
+
