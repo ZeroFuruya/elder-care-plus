@@ -1,5 +1,5 @@
 import { doseStatusPresentation, type DoseStatus } from '@eldercare/shared';
-import { router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useCallback } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -13,6 +13,7 @@ import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { colors, fontSize, lineHeight, radius, spacing, statusColors } from '@/constants/theme';
 import {
+  getElderProfile,
   getLinkedElder,
   listDoses,
   listDosesForDay,
@@ -28,6 +29,11 @@ import { statusGlyph } from '@/lib/status-glyph';
 
 interface DashboardData {
   link: MyLink | null;
+  /**
+   * Whether the linked elder has an `elder_profiles` row yet. `false` is the caregiver setup
+   * state: `C-01` hands straight over to `A-09` (docs/specs/sprint-2.md).
+   */
+  hasElderProfile: boolean;
   today: DoseView[];
   todaySummary: AdherenceSummary;
   recent: DoseView[];
@@ -57,6 +63,7 @@ export default function CaregiverDashboardScreen() {
     if (!link) {
       return {
         link: null,
+        hasElderProfile: false,
         today: [],
         todaySummary: EMPTY_SUMMARY,
         recent: [],
@@ -65,7 +72,8 @@ export default function CaregiverDashboardScreen() {
     }
 
     const now = new Date();
-    const [today, recent, weekDoses] = await Promise.all([
+    const [profile, today, recent, weekDoses] = await Promise.all([
+      getElderProfile(link.elderId),
       listDosesForDay(link.elderId, now),
       listRecentConfirmations(link.elderId, 5),
       listDoses(link.elderId, { from: startOfDay(addDays(now, -6)), to: endOfDay(now), now }),
@@ -73,6 +81,7 @@ export default function CaregiverDashboardScreen() {
 
     return {
       link,
+      hasElderProfile: profile !== null,
       today,
       todaySummary: summarise(today),
       recent,
@@ -87,7 +96,11 @@ export default function CaregiverDashboardScreen() {
     return <ScreenError title="Dashboard" showBell message={state.message} onRetry={reload} />;
   }
 
-  const { link, today, todaySummary, recent, weekSummary } = state.data;
+  const { link, hasElderProfile, today, todaySummary, recent, weekSummary } = state.data;
+
+  // Caregiver setup: a linked elder with no profile row yet goes straight to `A-09`. Saving
+  // there creates the row, so the gate opens on its own — `useAsyncData` re-reads on focus.
+  if (link && !hasElderProfile) return <Redirect href="/caregiver/elder-new" />;
 
   if (!link) {
     return (
