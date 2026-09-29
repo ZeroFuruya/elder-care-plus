@@ -12,8 +12,10 @@
  * - `shared-package` — a label or message already exported by `@eldercare/shared`.
  * - `spec` — a column or concept named by the approved `docs/specs/sprint-2.md`.
  * - `existing-app` — shipped by an earlier sprint and reused unchanged.
- * - `escalated` — **no approved source exists**. The wording is proposed by the implementer and
- *   is awaiting owner approval. `COPY_ESCALATIONS` is exactly this list.
+ * - `owner-approved` — no approved source existed, so the wording was escalated to the owner, who
+ *   approved it verbatim on 2026-09-30. `source` keeps the record of why the string was needed.
+ * - `escalated` — **no approved source exists and the owner has not ruled on the wording**. The
+ *   implementer proposes it and `COPY_ESCALATIONS` is exactly this list; it is empty today.
  *
  * Accessibility labels are not enumerated: each one is either the visible label itself or a
  * template over the visible label plus the record's own name (`Edit Ana Dela Cruz`,
@@ -29,6 +31,7 @@ export type CopySourceKind =
   | 'shared-package'
   | 'spec'
   | 'existing-app'
+  | 'owner-approved'
   | 'escalated';
 
 export interface CopyEntry {
@@ -79,29 +82,39 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'Address line 1',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no address field vocabulary exists in the wireframes or the UI standard',
   },
   {
     text: 'Address line 2',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no address field vocabulary exists in the wireframes or the UI standard',
   },
-  { text: 'City', frame: 'A-09', kind: 'escalated', source: 'no approved address vocabulary' },
-  { text: 'Region', frame: 'A-09', kind: 'escalated', source: 'no approved address vocabulary' },
+  { text: 'City', frame: 'A-09', kind: 'owner-approved', source: 'no approved address vocabulary' },
+  {
+    text: 'Region',
+    frame: 'A-09',
+    kind: 'owner-approved',
+    source: 'no approved address vocabulary',
+  },
   {
     text: 'Postal code',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved address vocabulary',
   },
-  { text: 'Country', frame: 'A-09', kind: 'escalated', source: 'no approved address vocabulary' },
-  { text: 'YYYY-MM-DD', frame: 'A-09', kind: 'escalated', source: 'date format hint' },
+  {
+    text: 'Country',
+    frame: 'A-09',
+    kind: 'owner-approved',
+    source: 'no approved address vocabulary',
+  },
+  { text: 'YYYY-MM-DD', frame: 'A-09', kind: 'owner-approved', source: 'date format hint' },
   {
     text: 'Enter the date as YYYY-MM-DD.',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: '§11 requires an inline error; the wording is proposed',
   },
   {
@@ -147,13 +160,13 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'No emergency contacts yet.',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved empty-state string for the contacts list',
   },
   {
     text: 'Primary contact',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'names `is_primary` / ADR-004 "one dominant call action"; wording not approved',
   },
   { text: 'Verified by caregiver', frame: 'C-11', kind: 'approved-copy', source: '§Approved copy' },
@@ -167,25 +180,25 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'Move up',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: '§Screens user story 2 "order"; the wording is proposed',
   },
   {
     text: 'Move down',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: '§Screens user story 2 "order"; the wording is proposed',
   },
   {
     text: 'Add contact',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'the wireframe verb is `Add medication` (C-06); no contact equivalent exists',
   },
   {
     text: 'Enter a name for this contact.',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'the shared schema message says "A label is required", which is not caregiver copy',
   },
   {
@@ -203,7 +216,7 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'They stay in the record, but the older adult no longer sees them.',
     frame: 'C-11',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: '§12 requires naming the effect; the wording is proposed',
   },
   {
@@ -299,7 +312,7 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'Not verified yet',
     frame: 'C-10',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'the per-contact unverified state',
   },
   {
@@ -323,13 +336,13 @@ export const COPY_SOURCES: CopyEntry[] = [
   {
     text: 'No linked older adult',
     frame: 'C-10',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved no-link string on the caregiver side',
   },
   {
     text: 'Link with older adult first.',
     frame: 'C-10',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'reuses the A-10 frame name; the sentence is proposed',
   },
 
@@ -394,8 +407,10 @@ export const COPY_SOURCES: CopyEntry[] = [
 ];
 
 /**
- * The strings with no approved source. Sprint 2 says such a string "is escalated to the owner,
- * never invented", so the implementation proposes the wording and this list is the ask.
+ * The strings with no approved source and no owner ruling yet. Sprint 2 says such a string "is
+ * escalated to the owner, never invented". The owner approved all 18 entries raised for Sprint 2
+ * on 2026-09-30 (they now read `owner-approved`), so this list is empty; it stays as the mechanism
+ * for the next unapproved string.
  */
 export const COPY_ESCALATIONS: CopyEntry[] = COPY_SOURCES.filter(
   (entry) => entry.kind === 'escalated',

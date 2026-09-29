@@ -96,6 +96,27 @@ follow §10: sentence case, no exclamation marks, named actions, routed to a hum
 The dialer confirmation reuses the same "name the record and the effect" rule (§12) and is an
 in-app component, never a system dialog.
 
+### Owner-approved wording (owner, 2026-09-30)
+
+Criterion 22 escalates a string with no approved source instead of inventing one. The 18 strings
+these screens needed beyond the table above were raised to the owner on 2026-09-29 and approved
+verbatim on 2026-09-30. Each is recorded as `owner-approved` in
+`apps/mobile/src/fixtures/copy-sources.ts` together with the reason it was needed, and
+`COPY_ESCALATIONS` is therefore empty:
+
+address field labels (`Address line 1`, `Address line 2`, `City`, `Region`, `Postal code`,
+`Country`); the `YYYY-MM-DD` date hint and its inline error `Enter the date as YYYY-MM-DD.`; the
+contacts empty state `No emergency contacts yet.`; `Primary contact`; `Move up`; `Move down`;
+`Add contact`; `Enter a name for this contact.`; the deactivation effect `They stay in the record,
+but the older adult no longer sees them.`; `Not verified yet`; and the no-link pair
+`No linked older adult` / `Link with older adult first.`
+
+The owner also settled the four open build decisions on 2026-09-30: `C-10` stays strictly
+read-only, `A-09`'s `Save and continue` continues to `C-10` (the chain's `A-10`/`C-01` steps do not
+exist yet, and the Profile tab keeps its `Elder profile`/`Edit profile` entries), `Birth date` is a
+`YYYY-MM-DD` text field rather than a native picker, and `Full name` is not editable in `A-09` or
+`C-11` because the name comes from `profiles`.
+
 ### Completeness rule
 
 Product flow §8 requires the caregiver to verify the local emergency-service details for the
