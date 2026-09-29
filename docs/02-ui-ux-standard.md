@@ -238,9 +238,10 @@ approved these values on **2026-09-29**. `pnpm run check:contrast` enforces AA f
 token and status tone on both surfaces in **both** themes, plus the `onPrimaryFill`/`primaryFill`
 and `textInverse`/`danger` fill pairs.
 
-**Migration status.** `app.json` still pins `userInterfaceStyle: "light"` and `_layout.tsx`
-still renders `<StatusBar style="dark" />`, so the app renders light today. Flip both to
-`automatic` as the per-screen migration completes (decision **D1**, reopened 2026-09-29).
+**Migration status (2026-09-30).** Complete. Every screen resolves its palette from
+`useAppTheme()`, so `app.json` now sets `userInterfaceStyle: "automatic"`, `_layout.tsx` renders
+`<StatusBar style="auto" />`, and the splash screen has a dark variant, all in one change
+(decision **D1**, closed 2026-09-30). The app follows the OS light/dark setting.
 
 ---
 
@@ -313,8 +314,8 @@ label. (Decision D5, closed 2026-09-24.)
 - **8 dp spacing grid.** (§2, §15)
 - **Top app bar + bottom navigation** on every primary screen. Both are named required
   components in the pack's component guide.
-- **16–24 dp card radius.** (Note: `theme.ts` currently defines `radius.md: 12`, which is
-  below this range — see §20, conflict **R5**.)
+- **16–24 dp card radius.** `theme.ts` now sets `radius.md: 16` and `radius.lg: 24`, inside this
+  range (§20 **R5**, resolved 2026-09-30).
 - **One dominant primary action** per screen.
 - Status is always paired with **an icon and the status word**. (§6)
 
@@ -328,10 +329,12 @@ The bottom navigation is role-specific. These strings are approved design, not s
 | Family Caregiver | Dashboard · Meds · Calendar · Reports · Profile |
 | Connected Family Member | Home · Care · Requests · Family · Profile |
 
-**The current code does not match this.** `(elder)/elder/_layout.tsx` ships
-`Today · Medicines · Prescriptions · Appointments · Emergency` and
-`(caregiver)/caregiver/_layout.tsx` ships `Dashboard · Medicines · Prescriptions ·
-Appointments · Profile`. See §20, conflict **R10**.
+**Status (2026-09-30).** The elder and caregiver tab bars now match the approved strings above:
+`(elder)/elder/_layout.tsx` ships `Home · Meds · Calendar · Emergency · Profile` and
+`(caregiver)/caregiver/_layout.tsx` ships `Dashboard · Meds · Calendar · Reports · Profile`. The
+Connected Family Member has **no** bottom navigation yet: their full screens remain the Sprint 8
+deliverable, with only the minimal read-only adherence view landing earlier for the October 2026
+checking (AGENTS.md, "Class-checking decisions"). See §20 **R10** for the `Meds` wording.
 
 ### 8.3 Screen anatomy rules
 
@@ -814,10 +817,12 @@ primary caregiver, alternate family contact, doctor/clinic, optional pharmacy), 
 label, phone, `priority` and a verified timestamp, backed by the `emergency_numbers` table
 (§6).
 
-**R5 — Card radius.**
+**R5 — Card radius. Resolved 2026-09-30.**
 Both approved documents require 16–24 dp (pack "Wireframe Rules"; system documentation §5.3
-"Cards"); `theme.ts` has `radius.md: 12`. Trivial, but it is a token change, so it needs
-approval and a sweep.
+"Cards"), and `theme.ts` shipped `radius.md: 12`. The soft-UI pass raised the scale to
+`sm: 10 / md: 16 / lg: 24` (`pill: 999` unchanged), so controls sit inside the required range and
+cards use `lg` at its top. Implemented in `apps/mobile/src/constants/theme.ts`; `pnpm
+check:contrast` still passes in both themes.
 
 **R6 — `Missed` wording.** Open decision **D5 is now closed: keep `Missed` for the Older Adult
 role.** `E-02` and `E-08` both render `Missed` to the elder, so the earlier suggestion to
@@ -855,7 +860,7 @@ forbidden. §4.1 also makes Emergency a *profile action* for the caregiver and a
 
 | # | Decision | Status |
 | --- | --- | --- |
-| **D1** | Dark mode: **reopened 2026-09-29 — the owner requires light *and* dark.** The token sets and `useAppTheme()` are implemented (§5.3); `app.json` stays `"userInterfaceStyle": "light"` and `_layout.tsx` stays `<StatusBar style="dark" />` until the per-screen migration is done, because `automatic` on partially-migrated screens produced an unstyled OS-dark rendering. Then flip both to `automatic`. | **reopened** |
+| **D1** | Dark mode: **closed 2026-09-30 — the owner requires light *and* dark.** The token sets, `useAppTheme()` and the whole-app migration are done, so `app.json` is `"userInterfaceStyle": "automatic"`, `_layout.tsx` renders `<StatusBar style="auto" />`, and the splash screen has a dark variant. The earlier partial-migration hazard no longer applies: no screen imports the light-only `colors` alias. | **closed** |
 | **D2** | `primary` contrast: **superseded 2026-09-29.** `primary` is now the palette Navy `#24436D` (9.56:1 on `background`, 10.01:1 on `surface`), so the old "restrict `primary` text to `surface`" rule no longer applies. | **resolved** |
 | **D3** | Top app bar: **confirmed required by both documents.** A "how", not a "whether". | confirmed |
 | **D4** | Elder tab labels: **resolved** — `Home · Meds · Calendar · Emergency · Profile` | resolved |
@@ -896,3 +901,12 @@ forbidden. §4.1 also makes Emergency a *profile action* for the caregiver and a
   `automatic` after the screen migration). Corrected the §5.2 Teal figures (1.94/5.15 →
   2.16/4.64). The primary button is now Teal with a Navy label, and input outlines use
   `borderStrong`.
+- 2026-09-30: **Soft-UI pass; dark mode enabled.** Adopted technique references from the Figma
+  "Soft UI Design - Neumorphism" community file, read from its public cover (owner-approved): the
+  card radius moved into the required 16–24 dp range, `theme.ts` gained per-theme `elevation`
+  tokens applied with the modern `boxShadow` style, cards float on that shadow, app-bar icon
+  buttons became circular, and the bottom nav gained an active indicator. Neumorphism's
+  low-contrast controls were **rejected** — control outlines stay >= 3:1 and text >= 4.5:1, and the
+  contrast gate still passes in both themes. Closed **R5** and corrected the stale §8.2 navigation
+  status. Migrated all 19 remaining light-only screens to `useAppTheme()` and flipped `app.json` to
+  `userInterfaceStyle: "automatic"` with a dark splash variant, so **D1 is closed**.
