@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { userRoleLabels } from '@eldercare/shared';
@@ -10,12 +10,15 @@ import { Card } from '@/components/card';
 import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import { getLinkedElder } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 
 export default function CaregiverProfileScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loader = useCallback(() => getLinkedElder(user.id), [user.id]);
   const { state } = useAsyncData(loader);
 
@@ -79,24 +82,26 @@ export default function CaregiverProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  value: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '600',
-    lineHeight: lineHeight.body,
-  },
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    row: {
+      gap: spacing.xs,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    value: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '600',
+      lineHeight: lineHeight.body,
+    },
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

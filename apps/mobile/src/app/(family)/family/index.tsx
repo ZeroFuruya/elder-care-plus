@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -12,8 +12,9 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import { listMyLinks } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 
 /**
@@ -23,6 +24,8 @@ import { useAsyncData } from '@/hooks/use-async-data';
  */
 export default function FamilyHomeScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loader = useCallback(() => listMyLinks(user.id), [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -105,17 +108,19 @@ export default function FamilyHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  name: {
-    color: colors.text,
-    fontSize: fontSize.heading,
-    fontWeight: '700',
-    lineHeight: lineHeight.heading,
-  },
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    paddingBottom: spacing.xs,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    name: {
+      color: colors.text,
+      fontSize: fontSize.heading,
+      fontWeight: '700',
+      lineHeight: lineHeight.heading,
+    },
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      paddingBottom: spacing.xs,
+    },
+  });
+}
