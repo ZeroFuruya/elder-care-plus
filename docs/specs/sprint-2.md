@@ -1,16 +1,23 @@
 # Sprint 2 — Elder profile and emergency information (Flow G)
 
-- **Status:** Draft for owner approval, written 2026-09-29 at the owner's request and planned with
-  `@architect` (2026-09-29). Revised the same day to fold in the `@architect` critique:
-  restrictive foreign keys, server-derived manager checks, verification reset on edit, an explicit
-  reorder RPC, the one-primary invariant, the completeness rule and accessibility/copy
-  traceability. Implementation has not started.
-- **Branch:** `sprint-2-elder-profile-emergency`.
+- **Status:** Approved for implementation 2026-09-29. Drafted that day and planned with
+  `@architect`; the first pass folded in restrictive foreign keys, server-derived manager checks,
+  verification reset on edit, an explicit reorder RPC, the one-primary invariant, the completeness
+  rule and accessibility/copy traceability. A second `@architect` pre-implementation review found
+  three mechanics that would fail at runtime, now fixed here: the **reorder algorithm** (two-phase
+  priority reassignment), the **exactly-one-primary invariant** (elder-scoped advisory lock in
+  every mutating RPC) and the **edit/verify race** (row locking). Owner decisions recorded below:
+  the `E-07` incomplete-state strings, **no** re-authentication for profile/number writes, and
+  **state-changing-only** audit rows. Implementation has not started.
+- **Branch:** `sprint-2-elder-profile-emergency`, based on `sprint-1b-supabase-cutover`.
 - **Flow:** `docs/00-product-flow.md` Flow G (emergency), setup step A.2; `docs/adr/adr-004`
   Decision A (ordered list of emergency numbers with one dominant call action);
   `docs/adr/adr-001` (third role, care-circle membership).
-- **Depends on:** Sprint 1 accepted (schema, RLS, RPCs, 124/124 pgTAP) and the Sprint 1b cutover
-  merged, so an active caregiver → elder link and a real signed-in session exist.
+- **Depends on:** Sprint 1 accepted (schema, RLS, RPCs, 124/124 pgTAP) and the six Sprint 1b
+  migrations applied, so an active caregiver → elder link and a real signed-in session exist. This
+  migration references `profiles`, `care_links`, `can_view_profile`, `is_manager_of`,
+  `touch_updated_at` and `audit_events`, all created by the Sprint 1b migrations. **Do not apply it
+  to hosted before `npx supabase migration list` shows the cutover migrations are in.**
 
 ## Goal
 
@@ -53,8 +60,8 @@ in component names, comments and tests.
 - **`A-09` Create Elder Profile** — caregiver setup step, reached from the caregiver setup path
   (`A-02 → … → A-09 → C-01`). Fields: identity (name comes from `profiles`), date of birth, blood
   type, address, allergies, conditions (free text), care instructions, doctor name and phone, and
-  the initial emergency numbers. Label above field, phone keyboard for numbers, inline validation,
-  48 dp targets.
+  the initial emergency numbers. Label above field, phone keyboard for numbers, inline validation
+  on blur, 48 dp targets.
 - **`C-10` Elder Profile** — caregiver read view of the same data, with the emergency numbers and
   their verified state.
 - **`C-11` Edit Elder Profile** — caregiver edit view; save produces an audit row.
@@ -66,21 +73,34 @@ in component names, comments and tests.
 - **Dialer** — tapping any number shows an in-app confirmation and then calls
   `Linking.openURL('tel:<number>')`; the app never auto-calls, dispatches, or shares location.
 
-Exact copy comes from `docs/02-ui-ux-standard.md` §10/§13; the known required strings are
-`Call <name> - emergency contact` and `Verified by caregiver`. **Every rendered string and every
-interactive element's `accessibilityLabel` is traced to the UI standard before implementation; a
-string with no approved source is escalated to the owner rather than invented.** The screens also
-carry the standard loading, error and empty states, and the app-bar notification bell required by
-§6.
+Exact copy comes from `docs/02-ui-ux-standard.md` §10/§13; every rendered string and every
+interactive element's `accessibilityLabel` is traced to the UI standard before implementation. **A
+string with no approved source is escalated to the owner, never invented.** The screens also carry
+the standard loading, error and empty states, and the app-bar notification bell required by §6.
+
+### Approved copy (owner, 2026-09-29)
+
+The UI standard has no emergency-completeness string, so the owner approved these verbatim. They
+follow §10: sentence case, no exclamation marks, named actions, routed to a human.
+
+| State | String |
+| --- | --- |
+| `E-07` with no profile row (or an unrelated account's honest empty state) | `No emergency information yet. Your caregiver sets this up.` |
+| `E-07` emergency service absent **or** unverified | `The emergency service number is not verified yet. Contact your caregiver.` |
+| `E-07` active-medicines partial state (until Sprint 3) | `Medicines are not shown here yet.` |
+| Dominant call action | `Call <name> - emergency contact` |
+| Verified marker | `Verified by caregiver` |
+
+The dialer confirmation reuses the same "name the record and the effect" rule (§12) and is an
+in-app component, never a system dialog.
 
 ### Completeness rule
 
 Product flow §8 requires the caregiver to verify the local emergency-service details for the
 elder's region. The emergency set is treated as **complete** only when the `emergency_service` row
-exists, is active and is verified. Until then `E-07` shows an explicitly incomplete, non-clinical
-state (copy traced to the UI standard; if no approved string exists, the owner approves one). The
-profile may otherwise be saved partially — an elder must never be blocked from a record because an
-optional field is empty.
+exists, is active and is verified. Until then `E-07` shows the approved incomplete, non-clinical
+string above. The profile may otherwise be saved partially — an elder must never be blocked from a
+record because an optional field is empty.
 
 ## Data touched
 
@@ -88,161 +108,251 @@ optional field is empty.
 
 `public.elder_profiles` — one row per linked elder:
 
-- `elder_id uuid primary key references public.profiles(id) on delete restrict` — account deletion
-  is deactivation only; care records are never cascaded away.
-- `date_of_birth date`, `blood_type text` (check in `A+ A- B+ B- AB+ AB- O+ O- unknown`, default
-  `unknown`).
-- Address: `address_line1`, `address_line2`, `city`, `region`, `postal_code`, `country_code` (text).
-- `allergies text`, `conditions text`, `care_instructions text` — free text, rendered exactly as
-  the caregiver typed it; no clinical interpretation.
-- `doctor_name text`, `doctor_phone text`.
-- `created_by uuid references public.profiles(id)`, `created_at`, `updated_at timestamptz`.
-- Text fields reject whitespace-only values (trim check in the RPC and a `length(btrim(...)) > 0`
-  check on the required ones).
+| Column | Type | Notes |
+| --- | --- | --- |
+| `elder_id` | `uuid primary key` | `references public.profiles(id) on delete restrict` — account deletion is deactivation only |
+| `date_of_birth` | `date` | nullable |
+| `blood_type` | `text not null default 'unknown'` | check in `A+ A- B+ B- AB+ AB- O+ O- unknown` |
+| `address_line1` … `country_code` | `text` | nullable; each rejects a whitespace-only value |
+| `allergies`, `conditions`, `care_instructions` | `text` | nullable free text, repeated back exactly; whitespace-only rejected |
+| `doctor_name`, `doctor_phone` | `text` | nullable; whitespace-only rejected |
+| `created_by` | `uuid` | `references public.profiles(id) on delete restrict` |
+| `created_at`, `updated_at` | `timestamptz not null default now()` | `updated_at` via `elder_profiles_touch_updated_at` |
+
+Free-text columns carry `check (col is null or length(btrim(col)) > 0)` so a blank string can never
+be stored, while an absent optional field stays a genuine `null` (rendered as an honest empty state,
+never fabricated).
 
 `public.emergency_numbers` — the ordered list:
 
-- `id uuid primary key default gen_random_uuid()`.
-- `elder_id uuid not null references public.profiles(id) on delete restrict`.
-- `category text not null` (check in `emergency_service`, `primary_caregiver`, `alternate_family`,
-  `doctor`, `pharmacy`).
-- `label text not null`, `phone text not null`, `priority integer not null`, `priority >= 0`.
-- `is_primary boolean not null default false` — the dominant `Call` action.
-- `verified_at timestamptz`, `verified_by uuid references public.profiles(id)`.
-- `is_active boolean not null default true`, `created_by`, `created_at`, `updated_at`.
-- Partial unique index: at most one active row per `(elder_id, category)`.
-- Partial unique index: at most one active `is_primary` row per `elder_id`.
-- Partial unique index: `(elder_id, priority)` unique among active rows.
-- **Invariant (enforced by the RPCs, proven in pgTAP):** while an elder has any active number,
-  exactly one of them is primary. The first number created becomes primary unless another is
-  named; deactivating the primary promotes the highest-priority remaining active number in the same
-  transaction.
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | `uuid primary key default gen_random_uuid()` | |
+| `elder_id` | `uuid not null` | `references public.elder_profiles(elder_id) on delete restrict` — a number cannot exist without a profile |
+| `category` | `text not null` | check in `emergency_service`, `primary_caregiver`, `alternate_family`, `doctor`, `pharmacy` |
+| `label`, `phone` | `text not null` | each `length(btrim(...)) > 0` |
+| `priority` | `integer not null` | `check (priority >= 0)`; no default — the RPC rejects a null |
+| `is_primary` | `boolean not null default false` | the dominant `Call` action |
+| `verified_at` | `timestamptz` | null until verified |
+| `verified_by` | `uuid` | `references public.profiles(id) on delete restrict`; `check ((verified_at is null) = (verified_by is null))` |
+| `is_active` | `boolean not null default true` | deactivate, never delete |
+| `created_by` | `uuid` | `references public.profiles(id) on delete restrict` |
+| `created_at`, `updated_at` | `timestamptz not null default now()` | `updated_at` via `emergency_numbers_touch_updated_at` |
 
-Both tables: `enable row level security`; **no** `insert`/`update`/`delete` grants to
-`authenticated`. Select policy reuses the existing helper `public.can_view_profile(elder_id)`, which
-already admits the elder themself, the linked manager and active family members; an unrelated
-account gets zero rows. `updated_at` uses the existing `public.touch_updated_at()` trigger.
+Indexes:
 
-### RPCs (all `security definer`, `set search_path = public, pg_temp`)
+- `emergency_numbers_active_category_key` — unique `(elder_id, category)` **where `is_active`**.
+- `emergency_numbers_active_priority_key` — unique `(elder_id, priority)` **where `is_active`**.
+- `emergency_numbers_one_primary_key` — unique `(elder_id)` **where `is_active and is_primary`**.
+- `care_links_elder_member_status_idx` on `public.care_links (elder_id, member_id, status)` — backs
+  the reused `can_view_profile` helper. Existing indexes do not cover this full predicate.
 
-Every RPC derives the owning elder **server-side from the target row** (or from `p_elder_id` on
-create), then requires `is_manager_of(derived_elder_id)`; `p_id` alone is never trusted to authorize
-an update. A rejected call writes no `audit_events` row.
+**Primary invariant (proven in pgTAP):** while an elder has any active number, exactly one of them
+is primary. The partial unique index enforces *at most one*; the "at least one" half is provided by
+the elder-scoped advisory lock plus the `ensure_single_primary` normalization below. That is
+documented explicitly: the invariant holds because every client write goes through the RPCs and
+each of them takes the same lock — direct writes are revoked.
 
-- `public.upsert_elder_profile(p_elder_id uuid, p_date_of_birth date, p_blood_type text, p_address_line1 text, p_address_line2 text, p_city text, p_region text, p_postal_code text, p_country_code text, p_allergies text, p_conditions text, p_care_instructions text, p_doctor_name text, p_doctor_phone text) returns void`
-  — manager-gated; upserts; audit `elder_profile.updated`.
-- `public.upsert_emergency_number(p_elder_id uuid, p_id uuid default null, p_category text, p_label text, p_phone text, p_priority integer, p_is_primary boolean default false) returns uuid`
-  — manager-gated; validates label/phone/priority; on any change to `label`, `phone` or `category`
-  it clears `verified_at`/`verified_by`; setting `is_primary` clears the previous primary; audit
-  `emergency_number.upserted`.
+RLS: both tables `enable row level security`, with a `select` policy using
+`public.can_view_profile(elder_id)` and **no** insert/update/delete policy (default deny). The
+helper already admits the elder themself, the linked manager and active family members, and no
+unrelated account. Note it is deliberately the existing circle predicate: it also lets a member
+read another active member's `profiles` row, which is pre-existing Sprint 1 behaviour, asserted in
+`supabase/tests/sprint1_accounts_and_care_circle.test.sql`. It must only ever be passed
+`elder_id` — never `created_by` or `verified_by`.
+
+### RPCs
+
+All are `security definer`, `set search_path = public, pg_temp`, and `revoke execute … from public,
+anon; grant execute … to authenticated` (matching the Sprint 1 convention). A rejected call writes
+no `audit_events` row.
+
+**Every RPC follows this order:**
+
+1. Validate input shape.
+2. Resolve `v_elder_id` (from `p_elder_id` on create, or from the target row resolved by `p_id`).
+   With `p_id`, the row's elder is used — never a client-supplied `p_elder_id` fallback.
+3. `if not public.is_manager_of(v_elder_id) then raise … insufficient_privilege`.
+4. `perform pg_advisory_xact_lock(hashtextextended('emergency_numbers:' || v_elder_id::text, 0))`
+   (the four number RPCs).
+5. Re-read/lock the target row(s) with `for update`.
+6. Mutate, normalize the primary, and write exactly one audit row **if state changed**.
+
+- `public.upsert_elder_profile(p_elder_id uuid, p_date_of_birth date, p_blood_type text,
+  p_address_line1 text, p_address_line2 text, p_city text, p_region text, p_postal_code text,
+  p_country_code text, p_allergies text, p_conditions text, p_care_instructions text,
+  p_doctor_name text, p_doctor_phone text) returns void` — manager-gated insert/update by primary
+  key; audit `elder_profile.updated` (`target_table = 'elder_profiles'`, `target_id = p_elder_id`).
+- `public.upsert_emergency_number(p_elder_id uuid, p_category text, p_label text, p_phone text,
+  p_priority integer, p_is_primary boolean default false, p_id uuid default null) returns uuid`
+  — `p_id` is last because Postgres requires every parameter after a defaulted one to have a
+  default too; the client calls it by name, and with `p_id` the row's own elder is authoritative.
+  Manager-gated; validates the label, a non-blank phone carrying at least three digits (so `995`,
+  `999` and `112` are accepted), and a non-negative priority; on any change to `label`, `phone` or
+  `category`
+  it clears `verified_at`/`verified_by`; setting `is_primary` clears the previous primary. **A
+  category conflict is rejected** (existing row updated in place, or a new insert refused when an
+  active row already holds that category) — another contact is never silently deactivated or
+  overwritten. Audit `emergency_number.upserted`.
 - `public.reorder_emergency_numbers(p_elder_id uuid, p_order uuid[]) returns void` — manager-gated;
-  locks the elder's active rows, requires `p_order` to be exactly the set of active ids (no missing,
-  duplicated or foreign id), assigns `priority` by index, audit `emergency_numbers.reordered`.
+  validates that `p_order` is exactly the active id set (no missing, duplicated or foreign id)
+  **before** writing; then, under the lock, performs a **two-phase reassignment** because
+  `(elder_id, priority)` is uniquely indexed and a direct assign fails on any swap:
+  1. `update … set priority = priority + v_offset where elder_id = v_elder_id and is_active`
+     (`v_offset = max(active priority) + active count + 1`);
+  2. assign `0..n-1` by array index.
+  Audit `emergency_numbers.reordered`.
 - `public.set_emergency_number_verified(p_id uuid) returns void` — resolves the row's elder,
-  manager-gated; sets `verified_at = now()`, `verified_by = auth.uid()`; audit
-  `emergency_number.verified`.
+  manager-gated, locks the row `for update`; sets `verified_at = now()`, `verified_by = auth.uid()`;
+  audit `emergency_number.verified`.
 - `public.deactivate_emergency_number(p_id uuid, p_reason text default null) returns void` —
-  resolves the row's elder, manager-gated; sets `is_active = false`, never deletes; promotes the
-  next primary if needed; audit `emergency_number.deactivated`.
+  resolves the row's elder, manager-gated, locks the row; sets `is_active = false` (never deletes),
+  then promotes the highest-priority survivor if it was the primary; audit
+  `emergency_number.deactivated`.
 
-`grant select on public.elder_profiles, public.emergency_numbers to authenticated` (RLS scopes
-rows); `revoke all` from `public`/`anon`; `grant execute` on the RPCs to `authenticated` only.
+`ensure_single_primary(p_elder_id uuid)` is an **internal** helper (not granted to `authenticated`)
+called at the end of every mutating number RPC: if active rows exist and none is primary, it
+promotes the lowest-priority active row. It keeps the "exactly one" half of the invariant.
+
+Row locking makes the edit/verify interleave deterministic: an edit that commits after a verify
+clears verification; a verify that commits after an edit verifies the edited row. Both RPCs take
+`for update` under the same elder lock.
+
+### Audit rows
+
+`audit_events(actor_id, elder_id, action, target_table, target_id, before_summary, after_summary,
+created_at)`. Every state-changing RPC writes exactly one row with
+`actor_id = auth.uid()`, **`elder_id` = the resolved elder** (required — the audit select policy is
+scoped by `elder_id`), `target_table` = `elder_profiles` / `emergency_numbers`, `target_id` = the
+profile or number id, and the action string above. `before_summary`/`after_summary` carry
+non-sensitive state only — **never** phone numbers, addresses, allergies, conditions or care
+instructions. A **no-op call writes no audit row** (owner decision, 2026-09-29); acceptance
+criterion 7 is worded accordingly.
 
 ### Shared package
 
-- New `packages/shared/src/emergency.ts`: zod schemas for blood type, number category, and the
-  emergency-number input (label, phone, priority, primary), plus a `phoneLooksValid()` helper that
-  accepts a leading `+`, digits, spaces, hyphens and parentheses and rejects empty/too-short input.
-  No new status enum is introduced, so `status-presentation.ts` needs no change unless the owner
-  adds one; if a new status is added it must ship with a `status-presentation` entry and tests.
+- New `packages/shared/src/emergency.ts`: zod schemas for blood type, number category and the
+  emergency-number input (label, phone, priority, primary), plus:
+  - `phoneLooksValid()` — accepts a leading `+`, digits, spaces, hyphens and parentheses, and
+    rejects empty/too-short input (permissive; old and short local numbers exist). The database
+    enforces the same three-digit floor, so client and server agree.
+  - `dialNumber()` — derives the value handed to the dialer: trim, keep a leading `+`, drop other
+    non-digits. The stored value remains exactly what the caregiver typed, and the phone value is
+    never logged. The dial string is derived at call time, not stored as a second column.
+- No new status enum is introduced, so `status-presentation.ts` needs no change. If the owner adds
+  one later it must ship with a `status-presentation` entry and tests.
 
 ## Acceptance criteria
 
-1. pgTAP: an unrelated account selects zero rows from both tables; the linked caregiver and the
-   elder select exactly the elder's rows.
-2. pgTAP: a direct `insert`, `update` or `delete` on either table from `authenticated` is rejected
-   with `42501`.
-3. pgTAP: each RPC rejects an elder, a family member and an unrelated account with
+### Database (pgTAP, `supabase/tests/sprint2_elder_profile.test.sql`)
+
+1. An unrelated account selects zero rows from both tables; the linked caregiver and the elder
+   select exactly the elder's rows; an active family member selects them read-only.
+2. A direct `insert`, `update` or `delete` on either table from `authenticated` is rejected with
+   `42501`.
+3. Each RPC rejects an elder, a family member and an unrelated account with
    `insufficient_privilege` or `42501`.
-4. pgTAP: `upsert_emergency_number` rejects a missing label, an empty/invalid phone, a missing
-   priority and a whitespace-only label.
-5. pgTAP: setting a second active primary number clears the previous one; two active rows with the
-   same `(elder_id, category)` are rejected; the five categories can each hold at most one active
-   row.
-6. pgTAP: `deactivate_emergency_number` keeps the row, sets `is_active = false`, and a subsequent
-   `upsert_emergency_number` for the same category succeeds.
-7. pgTAP: every write RPC writes exactly one `audit_events` row with the documented action string
-   and the correct `target_id`.
-8. Shared unit tests: the emergency zod schemas accept valid synthetic input and reject invalid
-   input; `phoneLooksValid` covers the documented cases.
-9. Mobile: `A-09` and `C-11` validate required fields inline, use the phone keyboard for numbers and
-   48 dp targets; `C-10` and `E-07` render read-only with no edit affordance.
-10. Mobile: `E-07` shows one dominant `Call` action, the ordered list, the `Verified by caregiver`
-    timestamp, and the honest partial state for active medicines; tapping a number confirms in-app
-    before opening the dialer.
-11. Mobile: a connected family member sees the read-only data; an unrelated signed-in account sees
-    the honest empty state.
-12. No `Alert.alert` or system dialog anywhere in the flow; confirmations use in-app components.
-13. `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm format:check` and `pnpm check:contrast` stay
+4. `upsert_emergency_number` rejects a missing label, an empty/invalid phone, a missing priority and
+   a whitespace-only label.
+5. Setting a second active primary clears the previous one; two active rows with the same
+   `(elder_id, category)` are rejected; each of the five categories can hold at most one active row.
+6. `deactivate_emergency_number` keeps the row, sets `is_active = false`, promotes the survivor if
+   the primary was deactivated, and a later `upsert_emergency_number` for the same category
+   succeeds.
+7. Every **state-changing** write RPC writes exactly one `audit_events` row with the documented
+   action, `target_table`, `target_id` and a non-null `elder_id`; a no-op call writes none.
+8. `upsert_elder_profile` upserts, rejects a blank required value with `23514`, and leaves an absent
+   optional field as `null`.
+9. IDOR: a manager of elder A cannot update, verify, deactivate or reorder elder B's numbers, and no
+   audit row is written on the rejected call.
+10. Verification reset: editing a number's label, phone or category clears `verified_at`/
+    `verified_by`; re-verifying sets them again.
+11. Primary invariant: exactly one primary exists whenever active rows exist; the first insert
+    becomes primary; deactivating the primary promotes the lowest-priority survivor; the invariant
+    holds after each RPC.
+12. Reorder: `reorder_emergency_numbers` rejects an array that omits an active id, includes a
+    foreign id or duplicates an id, **and a valid swap succeeds** (the two-phase path).
+13. Category conflict: inserting a second active row in an occupied category is rejected and does
+    not deactivate the existing row.
+14. Completeness: with no active `emergency_service` row, or an unverified one, the list is not
+    complete; verifying it (and only then) makes it complete.
+15. No hard delete: a `profiles` delete does not cascade away `elder_profiles` or
+    `emergency_numbers` rows; a number cannot be created without an `elder_profiles` row.
+16. RPC exposure: `has_function_privilege` confirms `authenticated` may execute the five RPCs and
+    may **not** execute `ensure_single_primary`; `anon`/`public` may execute none.
+
+**Honest limitation, recorded not hidden:** the single-session pgTAP harness cannot prove true
+concurrency. Criterion 11 proves the invariant across every serialized RPC sequence; the
+elder-scoped advisory lock is the concurrency mechanism, asserted present in the RPC bodies. A
+two-session integration test is a follow-up if the owner wants concurrency proven rather than
+reasoned.
+
+### Shared package (vitest)
+
+17. The emergency zod schemas accept valid synthetic input and reject invalid input;
+    `phoneLooksValid` and `dialNumber` cover the documented cases (permissive input, normalised dial
+    string, no logging).
+
+### Mobile (component + accessibility tests, manual APK)
+
+18. `A-09` and `C-11` validate required fields inline on blur, use the phone keyboard for numbers
+    and 48 dp targets; `C-10` and `E-07` render read-only with no edit affordance.
+19. `E-07` shows one dominant `Call` action, the ordered list behind a disclosure, the
+    `Verified by caregiver` timestamp, and the approved partial state for active medicines; tapping
+    a number confirms in-app before opening the dialer.
+20. A connected family member sees the read-only data; an unrelated signed-in account sees the
+    approved empty state.
+21. No `Alert.alert` or system dialog anywhere in the flow; confirmations use in-app components.
+22. Traceability/accessibility: components are named `A09CreateElderProfile`,
+    `C10ElderProfile`, `C11EditElderProfile`, `E07EmergencyInformation`; a copy/label fixture maps
+    each static string to its approved source (UI standard or the table above); 360 dp width and
+    200% font scale render without clipping; the dominant action stays reachable and the last list
+    row clears the tab bar.
+
+### Repo
+
+23. `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm format:check` and `pnpm check:contrast` stay
     green; the Sprint 1 pgTAP total (124) plus the new assertions pass locally and on hosted.
-14. The demo runbook step is recorded: caregiver creates the profile and numbers on the installed
+24. The demo runbook step is recorded: caregiver creates the profile and numbers on the installed
     app; the elder sees them; the dialer opens.
-15. pgTAP (IDOR): a manager of elder A cannot update, verify, deactivate or reorder elder B's
-    numbers, and no audit row is written on the rejected call.
-16. pgTAP (verification reset): editing a number's label, phone or category clears
-    `verified_at`/`verified_by`; re-verifying sets them again.
-17. pgTAP (primary invariant): exactly one primary exists whenever active rows exist; deactivating
-    the primary promotes the next-highest; the invariant holds after every RPC.
-18. pgTAP (reorder): `reorder_emergency_numbers` rejects an array that omits an active id, includes
-    a foreign id or duplicates an id, and applies a full valid reorder atomically.
-19. pgTAP (completeness): with no active `emergency_service` row or an unverified one, the list is
-    not "complete"; verifying it (and only then) makes it complete.
-20. pgTAP (no hard delete): a `profiles` delete does not cascade away `elder_profiles` or
-    `emergency_numbers` rows.
-21. Mobile (traceability/accessibility): each screen component names its frame ID; every rendered
-    string and interactive `accessibilityLabel` is traced to the UI standard; 360 dp width and 200%
-    font scale render without clipping; the dialer is preceded by an in-app confirmation.
 
 ## Out of scope
 
 - `F-04` / `F-09` family screens and the full family UI (Sprint 8); only the read policy ships here.
-- Active medicines on `E-07` (Sprint 3) — documented partial state meanwhile.
+- Active medicines on `E-07` (Sprint 3) — the approved partial state meanwhile.
 - Prescriptions and evidence (Sprint 6), appointments (Sprint 7), reports (Sprint 9).
 - Any reminder/notification scheduling; this sprint writes data the later sprints read.
+- Re-authentication for these writes (owner decision, 2026-09-29: audit only).
 - Migrating the local fixture data in `apps/mobile/src/fixtures/emergency.ts`; it is deleted or
   reduced to test-only synthetic fixtures.
 
-## Open questions for the owner (each with a recommendation)
+## Open questions for the owner — resolved 2026-09-29
 
-1. **Profile field set.** The docs name demographics, address, allergies, conditions, blood type,
-   care instructions and doctor, but not the exact columns. *Recommendation:* the minimal set above
-   (no sex/gender field — it is not in any approved document).
-2. **Allergies/conditions shape.** Free text vs a coded list. *Recommendation:* free text, repeated
-   back to the elder exactly; a coded list would invite interpretation the product forbids.
-3. **Phone validation.** Strict E.164 vs permissive. *Recommendation:* permissive with a minimum
-   digit count (old and short local numbers exist); store as entered, dial as stored.
-4. **Re-authentication.** Profile and number edits are not among the four re-auth actions (consent,
-   unlink, account deletion, evidence access). *Recommendation:* no re-auth for these writes; every
-   change still writes an audit row. Confirm this reading.
-5. **Verification lifecycle (now normative).** Editing `label`/`phone`/`category` clears
-   `verified_at`; the caregiver re-verifies. Confirm this is the intended meaning of
-   `Verified by caregiver`.
-6. **Completeness copy.** The incomplete-state wording for `E-07` needs an approved string.
-   *Recommendation:* the owner approves one, or the UI standard is amended; do not invent it.
-7. **Family read access timing.** Ship the read policy now or wait for Sprint 8.
-   *Recommendation:* ship now (one policy, matches `00-product-flow.md` §2) with no family UI.
-8. **Unlinked elder.** *Recommendation:* no profile row exists until the manager creates it; the
-   elder's screen shows an honest empty state, never blank fields.
+1. **Profile field set** — the minimal set above, no sex/gender field (not in any approved
+   document). *Resolved.*
+2. **Allergies/conditions shape** — free text, repeated back exactly; no coded list. *Resolved.*
+3. **Phone validation** — permissive with a minimum digit count; stored as entered, dialled via
+   `dialNumber()`. *Resolved.*
+4. **Re-authentication** — none for profile/number writes; every state change writes an audit row.
+   *Resolved: no re-auth.*
+5. **Verification lifecycle** — editing `label`/`phone`/`category` clears `verified_at`; the
+   caregiver re-verifies. *Resolved.*
+6. **Completeness copy** — approved verbatim in the "Approved copy" table above. *Resolved.*
+7. **Family read access timing** — ship the read policy now, no family UI. *Resolved.*
+8. **Unlinked elder** — no profile row until the manager creates it; the elder sees the approved
+   empty state. *Resolved.*
 
 ## Risks
 
 - **Elder confusion from a list.** ADR-004 keeps one dominant action for this reason; the ordered
-  list must sit behind a disclosure and never compete with the Call button.
+  list sits behind a disclosure and never competes with the Call button.
 - **Verification drift.** If edits do not clear `verified_at`, the elder can trust a stale number;
-  acceptance criteria 16 and the normative lifecycle protect this.
-- **Policy reuse.** `can_view_profile` behaviour must be asserted in pgTAP, not assumed, so adding
-  the family read policy cannot widen access silently.
-- **Copy drift / accessibility gaps.** Every string and label must be traced; inventing labels is a
-  defect, and a 200% font-scale pass is required.
+  criterion 10 and the row-locking rule protect this.
+- **Concurrency.** The invariant relies on every write taking the elder lock. That is why direct
+  writes are revoked, `ensure_single_primary` is internal-only, and the limitation is documented.
+- **Policy reuse.** `can_view_profile` is a broader circle predicate; it is asserted in pgTAP and
+  only ever passed `elder_id`.
+- **Copy drift / accessibility gaps.** Every string is traced; inventing labels is a defect, and a
+  200% font-scale pass is required.
 - **Scope creep.** `E-07` will tempt a medicines section; it stays out until Sprint 3 ships real
   data.
