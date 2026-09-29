@@ -7,7 +7,15 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { StatusBadge } from '@/components/status-badge';
-import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
+import {
+  cardSurface,
+  fontSize,
+  lineHeight,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
 import { getLinkedElder, listMedicines, type DoseView } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
@@ -29,8 +37,11 @@ interface MedsData {
  */
 export default function CaregiverMedsScreen() {
   const user = useSessionUser();
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
 
   const loader = useCallback(async (): Promise<MedsData> => {
     const link = await getLinkedElder(user.id);
@@ -90,13 +101,10 @@ export default function CaregiverMedsScreen() {
   );
 }
 
-function createStyles(colors: AppThemeColors) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     card: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      borderWidth: 1,
+      ...cardSurface(colors, elevation, gradients),
       gap: spacing.sm,
       padding: spacing.md,
     },

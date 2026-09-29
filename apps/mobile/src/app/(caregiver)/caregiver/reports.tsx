@@ -7,7 +7,15 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
+import {
+  cardSurface,
+  fontSize,
+  lineHeight,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
 import { getLinkedElder, listDoses, summarise, type AdherenceSummary, type MyLink } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
@@ -27,8 +35,11 @@ interface ReportData {
 
 export default function CaregiverReportsScreen() {
   const user = useSessionUser();
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
 
   const loader = useCallback(async (): Promise<ReportData> => {
     const link = await getLinkedElder(user.id);
@@ -115,7 +126,7 @@ export default function CaregiverReportsScreen() {
   );
 }
 
-function createStyles(colors: AppThemeColors) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     big: {
       color: colors.text,
@@ -139,10 +150,7 @@ function createStyles(colors: AppThemeColors) {
       textTransform: 'uppercase',
     },
     row: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radius.md,
-      borderWidth: 1,
+      ...cardSurface(colors, elevation, gradients),
       gap: spacing.xs,
       padding: spacing.md,
     },

@@ -2,7 +2,15 @@ import type { ReactNode } from 'react';
 import { useMemo } from 'react';
 import { Modal, StyleSheet, Text, View } from 'react-native';
 
-import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
+import {
+  fontSize,
+  lineHeight,
+  modalSurface,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface ModalCardProps {
@@ -25,8 +33,11 @@ export function ModalCard({
   onRequestClose,
   children,
 }: ModalCardProps) {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
 
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onRequestClose}>
@@ -41,7 +52,7 @@ export function ModalCard({
   );
 }
 
-function createStyles(colors: AppThemeColors) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     overlay: {
       alignItems: 'center',
@@ -51,10 +62,7 @@ function createStyles(colors: AppThemeColors) {
       padding: spacing.lg,
     },
     panel: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      borderWidth: 1,
+      ...modalSurface(colors, elevation, gradients),
       gap: spacing.md,
       maxWidth: 480,
       padding: spacing.lg,

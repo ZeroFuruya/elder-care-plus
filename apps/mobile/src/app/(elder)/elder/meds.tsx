@@ -7,7 +7,15 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { StatusBadge } from '@/components/status-badge';
-import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
+import {
+  cardSurface,
+  fontSize,
+  lineHeight,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
 import { listMedicines } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
@@ -15,8 +23,11 @@ import { formatTime } from '@/lib/format';
 
 export default function ElderMedsScreen() {
   const user = useSessionUser();
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
   const loader = useCallback(() => listMedicines(user.id), [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -66,13 +77,10 @@ export default function ElderMedsScreen() {
   );
 }
 
-function createStyles(colors: AppThemeColors) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     card: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      borderWidth: 1,
+      ...cardSurface(colors, elevation, gradients),
       gap: spacing.sm,
       padding: spacing.md,
     },

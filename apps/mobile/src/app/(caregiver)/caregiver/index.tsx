@@ -12,7 +12,15 @@ import { Icon } from '@/components/icon';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
+import {
+  cardSurface,
+  fontSize,
+  lineHeight,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
 import {
   getElderProfile,
   getLinkedElder,
@@ -45,8 +53,11 @@ const EMPTY_SUMMARY: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming:
 
 function StatTile({ status, value }: { status: DoseStatus; value: number }) {
   const presentation = doseStatusPresentation[status];
-  const { colors, statusColors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients, statusColors } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
   const color = statusColors[presentation.tone];
 
   return (
@@ -60,8 +71,11 @@ function StatTile({ status, value }: { status: DoseStatus; value: number }) {
 
 export default function CaregiverDashboardScreen() {
   const user = useSessionUser();
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
 
   const loader = useCallback(async (): Promise<DashboardData> => {
     const link = await getLinkedElder(user.id);
@@ -207,7 +221,7 @@ export default function CaregiverDashboardScreen() {
   );
 }
 
-function createStyles(colors: AppThemeColors) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     elderName: {
       color: colors.text,
@@ -225,11 +239,8 @@ function createStyles(colors: AppThemeColors) {
       gap: spacing.sm,
     },
     tile: {
+      ...cardSurface(colors, elevation, gradients),
       alignItems: 'center',
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      borderWidth: 1,
       flex: 1,
       gap: spacing.xs,
       paddingVertical: spacing.md,

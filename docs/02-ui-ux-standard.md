@@ -328,7 +328,12 @@ label. (Decision D5, closed 2026-09-24.)
   the bottom-right, applied with the modern `boxShadow` array form — never the legacy `shadow*`
   props or `elevation`. Cards therefore carry **no border**: the reference has none, and our
   `border` token is 1.12:1 on the background, so it was never what made a card legible. Softness is
-  bought with radius and elevation; **contrast is never lowered to buy it** (§5.2).
+  bought with radius and elevation; **contrast is never lowered to buy it** (§5.2). Every raised
+  surface spreads the single **`cardSurface`** recipe from `constants/theme.ts` (`modalSurface` is
+  the same recipe at the `raised` elevation); a screen that re-declares its own fill + radius +
+  border is duplicating the recipe and will drift away from it. Alerts (`Banner`, the elder
+  emergency notice) and controls (`Field`, `DateField`, buttons, the sign-up role card) are
+  deliberately **not** raised surfaces — their border colour carries meaning, so they keep it.
 - **One dominant primary action** per screen.
 - Status is always paired with **an icon and the status word**. (§6)
 

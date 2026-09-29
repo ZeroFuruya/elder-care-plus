@@ -4,7 +4,15 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Button } from '@/components/button';
 import { Icon } from '@/components/icon';
 import { StatusBadge } from '@/components/status-badge';
-import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
+import {
+  cardSurface,
+  fontSize,
+  lineHeight,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
 import type { DoseView } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { formatTime } from '@/lib/format';
@@ -16,8 +24,11 @@ interface DoseCardProps {
 }
 
 export function DoseCard({ dose, onMarkTaken, marking = false }: DoseCardProps) {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
 
   return (
     <View style={styles.card}>
@@ -57,13 +68,10 @@ export function DoseCard({ dose, onMarkTaken, marking = false }: DoseCardProps) 
   );
 }
 
-function createStyles(colors: AppThemeColors) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     card: {
-      backgroundColor: colors.surface,
-      borderColor: colors.border,
-      borderRadius: radius.lg,
-      borderWidth: 1,
+      ...cardSurface(colors, elevation, gradients),
       gap: spacing.sm,
       padding: spacing.md,
     },

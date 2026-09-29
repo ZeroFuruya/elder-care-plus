@@ -1,5 +1,5 @@
 import type { StatusTone } from '@eldercare/shared';
-import type { BoxShadowValue } from 'react-native';
+import type { BoxShadowValue, ViewStyle } from 'react-native';
 
 /**
  * Shared design tokens for ElderCare+.
@@ -302,6 +302,62 @@ export const darkGradients: AppGradients = {
   cardFrom: '#1E2836',
   cardTo: '#151D28',
 };
+
+/**
+ * The composed soft-UI surface, ready to spread into a `StyleSheet` rule.
+ *
+ * Every raised surface in the app goes through here rather than re-declaring a fill, a radius and
+ * a border, so a card in `DoseCard` is identical to one in the shared `Card`. A component adds
+ * only its own layout on top:
+ *
+ *   card: { ...cardSurface(colors, elevation, gradients), gap: spacing.sm, padding: spacing.md }
+ *
+ * `modalSurface` is the same recipe at the `raised` elevation, for sheets and dialogs.
+ */
+function surface(
+  colors: AppThemeColors,
+  elevation: AppElevation,
+  gradients: AppGradients,
+  boxShadow: readonly BoxShadowValue[],
+): ViewStyle {
+  return {
+    backgroundColor: colors.surface,
+    borderCurve: 'continuous',
+    borderRadius: radius.lg,
+    boxShadow,
+    // The structured form of `experimental_backgroundImage`, not a CSS string: no angle or
+    // percentage text for the platform to parse, and the two stops are the `AppGradients` tokens
+    // the contrast gate checks.
+    experimental_backgroundImage: [
+      {
+        colorStops: [
+          { color: gradients.cardFrom, positions: ['0%'] },
+          { color: gradients.cardTo, positions: ['100%'] },
+        ],
+        direction: 'to bottom',
+        type: 'linear-gradient',
+      },
+    ],
+  };
+}
+
+/** A resting card: gradient fill, no border, the `card` shadow pair. */
+export function cardSurface(
+  colors: AppThemeColors,
+  elevation: AppElevation,
+  gradients: AppGradients,
+): ViewStyle {
+  return surface(colors, elevation, gradients, elevation.card);
+}
+
+/** A sheet or dialog: the same recipe at the `raised` elevation. */
+export function modalSurface(
+  colors: AppThemeColors,
+  elevation: AppElevation,
+  gradients: AppGradients,
+): ViewStyle {
+  return surface(colors, elevation, gradients, elevation.raised);
+}
 
 /** Line heights for the sizes in `fontSize` (docs/02-ui-ux-standard.md section 2). */
 export const lineHeight = {
