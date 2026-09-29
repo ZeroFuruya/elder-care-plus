@@ -5,4 +5,5 @@ export * from './inventory';
 export * from './appointment';
 export * from './prescription';
 export * from './emergency';
+export * from './medication';
 export * from './status-presentation';
