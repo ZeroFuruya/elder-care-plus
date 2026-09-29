@@ -81,8 +81,17 @@ Spec first: owner writes `docs/specs/sprint-N.md` → `@architect` critiques it 
 - **Invite-code abuse protection:** invalid attempts must not burn another user's invite. Keep six-digit codes, require an authenticated redeemer, rate-limit by redeemer/session with cooldowns, avoid existence/expiry leakage, never store plaintext codes, and audit failed attempts.
 - **Mobile cutover:** use the incremental approach for Sprint 1b. Supabase is authoritative for identity, roles, care links, confirmed doses, inventory changes, and audit events. SQLite may remain only as cache/outbox storage for offline behavior.
 - **Authentication:** Sprint 1b uses email/password only. Existing dummy accounts may be used for local/phone testing, but credentials remain synthetic, local/ignored, and are never committed or sent to AI tools.
-- **Demo scope:** the class-checking demo and database viewer are no longer constraints on the production cutover plan; do not expand them during Sprint 1b.
+- **Demo scope:** the class-checking demo and database viewer are no longer constraints on the production cutover plan; do not expand them during Sprint 1b. *(Superseded in part 2026-09-29: the checking needs the demo build and a minimal family view — see below.)*
 - **Family role:** add the family-member authentication/profile/care-circle foundation in Sprint 1b; defer the complete read-only family UI, help requests, and availability to Sprint 8.
+
+## Class-checking decisions — confirmed 2026-09-29
+
+The instructor's 3rd-increment checking (one complete transaction cycle, database expansion, in-app messages only) is **2026-10-15/16** — the same week as the Oct 15 delivery checkpoint. Owner decisions:
+
+- **The checking demos the Supabase-backed app as an installed preview APK** on the owner's phone, running against the **hosted** Supabase project. No Docker or local stack at the venue.
+- **The family-member read-only view appears in the checking demo.** A deliberate exception to the Sprint 8 deferral: the family foundation stays in Sprint 1b; the minimal adherence view lands with Sprint 4.
+- **The medication transaction cycle is the deliverable of record:** caregiver sets up medicine + schedule + batch → a due dose reaches the elder → the elder confirms once (idempotent) → the database records the taken event, decrements stock, writes inventory, audit and notification rows → the caregiver receives the confirmation in-app. The "do not expand the demo" line above is superseded to the extent the checking requires it.
+- **Hosted project is critical path:** create it, push migrations, confirm email off, set keep-alive and EAS environment values, create synthetic demo accounts, and take a backup before the checking.
 
 ### This week's Sprint 1 closeout — checkpoint Thu 2026-10-01
 

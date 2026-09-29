@@ -10,3 +10,7 @@ and out-of-scope.
 implemented at the owner's request on 2026-09-25; the security closeout addendum (frozen
 2026-09-27) adds three owner-required corrections. The owner's review and acceptance are still
 outstanding — checkpoint 2026-10-01.
+
+`sprint-1b.md` (Supabase cutover: Auth, roles, care linking, hosted project, family shell) is a
+draft written 2026-09-29 for the same checkpoint. The owner reviews it and `@architect` critiques
+it before implementation starts.
