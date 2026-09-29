@@ -6,6 +6,11 @@
   batch decrement with unique side-effect keys, server-only missed transitions, outbox terminal
   states, DST policy and a due-now checking runbook. Implementation has not started. This is the
   **2026-10-15/16 instructor checking deliverable of record**.
+  **Availability verified 2026-09-29:** `pg_cron 1.6.4` and `pg_net 0.20.4` are both present in the
+  hosted Free project's extension list (not yet installed), so the every-five-minutes missed-dose
+  job is feasible. The Sprint 4 migration enables the extension and schedules the job; if
+  `cron.schedule` is refused at apply time, the honest fallback recorded below applies rather than
+  granting the server-only function to a client.
 - **Branch:** `sprint-4-medication-adherence`.
 - **Flow:** `docs/00-product-flow.md` §4 C (daily adherence), §7 data model, §8 safeguards, §9
   scenarios 2 and 8; `docs/02-ui-ux-standard.md` §6 status presentation, §9 states, §10 copy, §14
@@ -202,8 +207,9 @@ Run on the installed preview APK against hosted, both apps signed in, with conne
 4. The caregiver's `C-01` shows `Taken`, the timestamp, the stock decreased by exactly the dose, and
    an unread notification; `S-01` marks it read.
 5. Optional negative proof: a second dose left unconfirmed passes its grace and shows `Missed` with
-   one notification **only if `pg_cron` is confirmed available**; otherwise the honest limitation is
-   stated rather than claimed.
+   one notification; `pg_cron` is available on the hosted project (verified 2026-09-29), so this is
+   claimed only after the scheduled transition is seen to run, and stated as a limitation until
+   then.
 
 ## Acceptance criteria
 
@@ -272,10 +278,13 @@ Run on the installed preview APK against hosted, both apps signed in, with conne
 
 ## Open questions for the owner (each with a recommendation)
 
-1. **Is `pg_cron` available on the hosted Free project?** *Recommendation:* verify it early (an
-   owner prerequisite). If it is not, **do not** grant `transition_missed_doses` to clients under
-   any fallback — showed-missed is still derived on screen and settled inside `confirm_dose`, but
-   the proactive missed notification is then a documented limitation, not a claim.
+1. ~~Is `pg_cron` available on the hosted Free project?~~ **Resolved 2026-09-29:** both `pg_cron
+   1.6.4` and `pg_net 0.20.4` are available on the hosted Free project (`buwwkdhzansbyeytsufj`), not
+   yet installed. *Decision:* the Sprint 4 migration enables `pg_cron` and schedules
+   `transition_missed_doses()` every 5 minutes. If applying the schedule fails on the hosted
+   project, **do not** grant `transition_missed_doses` to clients under any fallback — showed-missed
+   is still derived on screen and settled inside `confirm_dose`, but the proactive missed
+   notification is then a documented limitation, not a claim.
 2. **Persisted `missed_at` vs computed-only status.** *Recommendation:* persist `missed_at` (it makes
    the single notification and terminal state provable) and extend the shared `deriveDoseStatus`.
 3. **Confirmation window.** *Recommendation (now enforced in the RPC):* only `due` doses are

@@ -28,3 +28,5 @@ Two further forward drafts were written 2026-09-29 at the owner's request and pl
   `medicine_batches`), the setup half of the medication cycle.
 - `sprint-4.md` — daily medication adherence (Flow C: `dose_events`, guarded confirmation,
   notifications, offline queue, minimal family view), the **2026-10-15/16 checking deliverable**.
+  `pg_cron 1.6.4` and `pg_net 0.20.4` were verified as available (not yet installed) on the hosted
+  Free project on 2026-09-29, so the proactive missed-dose scheduler is feasible.
