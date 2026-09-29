@@ -1,11 +1,12 @@
 import * as SQLite from 'expo-sqlite';
 
 /**
- * Legacy local store (expo-sqlite), kept as the offline cache/outbox while the
- * app moves to Supabase (docs/specs/sprint-1b.md).
+ * Local store (expo-sqlite). Supabase is authoritative for every record; this
+ * database holds only the Sprint 4 offline dose outbox and the legacy fallback
+ * tables the tagged demo build still reads (docs/specs/sprint-1b.md).
  *
- * Identity and care links no longer live here; doses and the inspection helper
- * still use it until the medication plan replaces them in Sprint 4.
+ * The legacy `doses` table is no longer reachable from any screen; the outbox is
+ * the only table this app writes.
  */
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
 
@@ -56,4 +57,16 @@ CREATE TABLE IF NOT EXISTS doses (
 );
 
 CREATE INDEX IF NOT EXISTS doses_by_elder_time ON doses (elder_id, scheduled_at);
+
+-- Sprint 4 offline outbox (docs/specs/sprint-4.md, "Offline outbox"). Only a
+-- dose that already exists on the server can be queued, so a queued row always
+-- names a real dose event. It is cleared on every terminal server outcome and
+-- retried only on a network failure.
+CREATE TABLE IF NOT EXISTS dose_outbox (
+  dose_event_id TEXT PRIMARY KEY NOT NULL,
+  client_key TEXT NOT NULL,
+  queued_at TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  last_error TEXT
+);
 `;

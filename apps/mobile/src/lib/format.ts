@@ -70,9 +70,27 @@ export function setTime(day: DateInput, hours: number, minutes = 0): Date {
   return date;
 }
 
+/**
+ * Parses a bare `HH:MM` or `HH:MM:SS` time-of-day into a Date on the current day.
+ *
+ * `medication_schedules.time_of_day` stores a `time`, which arrives as `08:00`; `new Date('08:00')`
+ * is `Invalid Date` in V8 and Hermes, so a stored schedule time must be parsed explicitly before
+ * `formatTime` reads its hours and minutes.
+ */
+export function parseTimeOfDay(value: string): Date | null {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(value);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
 /** `8:00 AM` — the standard's time format (`docs/02-ui-ux-standard.md` section 10). */
 export function formatTime(value: DateInput): string {
-  const date = toDate(value);
+  const date = typeof value === 'string' ? (parseTimeOfDay(value) ?? toDate(value)) : toDate(value);
   const hours = date.getHours();
   const minutes = date.getMinutes().toString().padStart(2, '0');
   const suffix = hours < 12 ? 'AM' : 'PM';

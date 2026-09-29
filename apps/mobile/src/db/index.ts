@@ -24,18 +24,31 @@ export {
   type RedeemOutcome,
 } from './linking';
 export {
-  confirmDose,
-  createDose,
+  countQueuedConfirmations,
+  ensureDoseEvents,
+  flushDoseOutbox,
   getDoseById,
+  getDoseStockOutcome,
+  isOfflineError,
   listDoses,
   listDosesForDay,
-  listMedicines,
   listRecentConfirmations,
+  markDoseTaken,
   summarise,
   type AdherenceSummary,
+  type ConfirmOutcome,
+  type ConfirmStatus,
+  type DoseStockOutcome,
   type DoseView,
-  type NewDose,
 } from './doses';
+export { listDoseOutbox, listQueuedDoseEventIds, type DoseOutboxEntry } from './dose-outbox';
+export {
+  countUnreadNotifications,
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationsRead,
+  type AppNotification,
+} from './notifications';
 export { inspectDatabase, type TableDump } from './inspect';
 export {
   activeBatchOf,
