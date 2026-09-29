@@ -238,6 +238,13 @@ approved these values on **2026-09-29**. `pnpm run check:contrast` enforces AA f
 token and status tone on both surfaces in **both** themes, plus the `onPrimaryFill`/`primaryFill`
 and `textInverse`/`danger` fill pairs.
 
+`lightGradients`/`darkGradients` (shaped by `AppGradients`) hold the soft-UI card gradient as two
+hex **stops** rather than a finished CSS string: `cardFrom` for a light theme is White `#FFFFFF`
+and `cardTo` is `#F4F7FC` (dark: `#1E2836` → `#151D28`). Because a card is a surface text sits on,
+the contrast gate treats **both stops as real surfaces** and checks every text token and status
+tone against each — the darker `cardTo` is the binding constraint on light. A gradient that only
+passes on its lighter end is a regression, not a style choice.
+
 **Migration status (2026-09-30).** Complete. Every screen resolves its palette from
 `useAppTheme()`, so `app.json` now sets `userInterfaceStyle: "automatic"`, `_layout.tsx` renders
 `<StatusBar style="auto" />`, and the splash screen has a dark variant, all in one change
@@ -316,6 +323,12 @@ label. (Decision D5, closed 2026-09-24.)
   components in the pack's component guide.
 - **16–24 dp card radius.** `theme.ts` now sets `radius.md: 16` and `radius.lg: 24`, inside this
   range (§20 **R5**, resolved 2026-09-30).
+- **Cards are raised, not outlined.** A card is a soft gradient fill (`AppGradients`) under a
+  two-shadow elevation pair (`AppElevation`): a light highlight from the top-left plus a shade to
+  the bottom-right, applied with the modern `boxShadow` array form — never the legacy `shadow*`
+  props or `elevation`. Cards therefore carry **no border**: the reference has none, and our
+  `border` token is 1.12:1 on the background, so it was never what made a card legible. Softness is
+  bought with radius and elevation; **contrast is never lowered to buy it** (§5.2).
 - **One dominant primary action** per screen.
 - Status is always paired with **an icon and the status word**. (§6)
 
@@ -824,6 +837,13 @@ Both approved documents require 16–24 dp (pack "Wireframe Rules"; system docum
 cards use `lg` at its top. Implemented in `apps/mobile/src/constants/theme.ts`; `pnpm
 check:contrast` still passes in both themes.
 
+The reference's own radius is 30 dp, which would breach the required range, so it is deliberately
+**not** adopted. Its card *recipe* is, though, once the values were extracted from the file rather
+than inferred from its cover: the card gradient and the two-shadow pair in §8.1, with the reference
+audit recorded in `docs/references/figma-soft-ui.md`. That audit is why the reference's text
+colours were rejected — its secondary text `#6A7CA5` measures 4.17:1 on white and 3.05–3.42:1 on
+its own tints, below AA everywhere it ships.
+
 **R6 — `Missed` wording.** Open decision **D5 is now closed: keep `Missed` for the Older Adult
 role.** `E-02` and `E-08` both render `Missed` to the elder, so the earlier suggestion to
 rename it for the elder role contradicted the approved design. Withdrawn.
@@ -909,4 +929,13 @@ forbidden. §4.1 also makes Emergency a *profile action* for the caregiver and a
   low-contrast controls were **rejected** — control outlines stay >= 3:1 and text >= 4.5:1, and the
   contrast gate still passes in both themes. Closed **R5** and corrected the stale §8.2 navigation
   status. Migrated all 19 remaining light-only screens to `useAppTheme()` and flipped `app.json` to
-  `userInterfaceStyle: "automatic"` with a dark splash variant, so **D1 is closed**.
+  `userInterfaceStyle: "automatic"` with a dark splash variant, so **D1 is closed**. A second pass
+  the same day connected the assistant to the Figma file itself (read-only personal access token
+  plus `scripts/figma-extract.mjs`), so the technique values are now exact rather than read off the
+  cover. The card therefore became the reference's real recipe — a soft gradient fill under a
+  two-shadow elevation **pair** — and its outline was dropped; `app.json`, the nav, the palette and
+  the type scale are unchanged. `check-contrast` now also treats **both** gradient stops as
+  surfaces text must clear, since the darker stop is the binding constraint. The reference's text
+  colours were **rejected** on measured contrast, not on taste: its secondary `#6A7CA5` misses AA on
+  every surface it ships and its 20% tint is 1.26:1. Full audit in
+  `docs/references/figma-soft-ui.md`.

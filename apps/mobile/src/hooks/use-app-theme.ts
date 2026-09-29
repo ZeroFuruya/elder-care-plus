@@ -4,11 +4,14 @@ import { useColorScheme } from 'react-native';
 import {
   darkColors,
   darkElevation,
+  darkGradients,
   darkStatusColors,
   lightColors,
   lightElevation,
+  lightGradients,
   lightStatusColors,
   type AppElevation,
+  type AppGradients,
   type AppThemeColors,
 } from '@/constants/theme';
 
@@ -18,8 +21,10 @@ export interface AppTheme {
   scheme: AppColorScheme;
   colors: AppThemeColors;
   statusColors: Record<StatusTone, string>;
-  /** Soft-UI shadow strings, per theme (see `AppElevation` in `constants/theme`). */
+  /** Soft-UI shadow pairs, per theme (see `AppElevation` in `constants/theme`). */
   elevation: AppElevation;
+  /** Soft-UI surface gradient stops, per theme (see `AppGradients` in `constants/theme`). */
+  gradients: AppGradients;
 }
 
 /**
@@ -41,6 +46,7 @@ export function useAppTheme(): AppTheme {
       colors: darkColors,
       statusColors: darkStatusColors,
       elevation: darkElevation,
+      gradients: darkGradients,
     };
   }
   return {
@@ -48,5 +54,6 @@ export function useAppTheme(): AppTheme {
     colors: lightColors,
     statusColors: lightStatusColors,
     elevation: lightElevation,
+    gradients: lightGradients,
   };
 }

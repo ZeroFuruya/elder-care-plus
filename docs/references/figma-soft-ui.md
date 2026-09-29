@@ -115,7 +115,31 @@ Our type scale needs no change to match it: our `body: 18`, `heading: 20` and `t
 the template's 18/21, 20/24 and 24/29 tiers, with looser line heights, and we already floor content
 at 15 dp rather than 11.
 
-## Open at the time of writing
+## Outcome (owner decision, 2026-09-30)
 
-Which of the adoptable items to implement, and in what order, was put to the owner; see the
-2026-09-30 changelog entry in `docs/02-ui-ux-standard.md` for the outcome.
+The card recipe was implemented **as the pair it is** — gradient fill plus two-shadow elevation —
+rather than the shadow alone, because doing half of it would have meant restyling `Card` twice:
+
+- `AppElevation` in `apps/mobile/src/constants/theme.ts` is now an **array** of `BoxShadowValue`
+  per role (`card`, `raised`), reproducing the light-highlight/dark-shade pair mapped onto the Navy
+  palette. Array `boxShadow` also supports `inset: true`, so the template's pressed state stays
+  available if a control ever needs it.
+- `AppGradients` adds the card gradient as two hex stops. `Card` assembles them into the structured
+  `experimental_backgroundImage` value (not a CSS string, so there is no angle or percentage text
+  for the platform to parse) — **no gradient dependency was added** — and keeps a flat
+  `backgroundColor` underneath as a fallback.
+- `Card` no longer draws a border: the reference has none, and `border` is 1.12:1 on the light
+  background, so it was never carrying the card.
+- `scripts/check-contrast.mjs` now treats **both gradient stops as surfaces**, checking every text
+  token and status tone against each. On light the darker `cardTo` is the binding constraint
+  (`textMuted` 4.63:1, `success` 4.95:1); both clear AA.
+
+Deliberately not adopted, unchanged from the table above: the reference's muted text and tints, its
+30 dp radius (our standard requires 16–24), its 10–11 px labels, and its frosted `BACKGROUND_BLUR`
+chrome. The app background stays flat — gradients behind body text on every screen would be a
+contrast risk for no legibility gain.
+
+**Open follow-up.** `experimental_backgroundImage` is a native New-Architecture style, so its
+rendering needs a device check (Expo Go). If it does not render, the card degrades to exactly its
+previous flat appearance and the fix is the official `expo-linear-gradient` module — which would be
+a new dependency and therefore needs owner approval.

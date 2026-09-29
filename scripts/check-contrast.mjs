@@ -48,6 +48,9 @@ const REQUIRED_COLOR_TOKENS = [
 
 const SURFACES = ['background', 'surface'];
 
+/** Gradient stops every `AppGradients` theme must define. Both are checked as real surfaces. */
+const REQUIRED_GRADIENT_TOKENS = ['cardFrom', 'cardTo'];
+
 /** `fill` must carry its `label` at AA: the bright brand fills never take white (section 5.2). */
 const FILL_PAIRS = [
   { fill: 'primaryFill', label: 'onPrimaryFill' },
@@ -88,16 +91,20 @@ function entries(name, namespaces) {
 const namespaces = { brand: Object.fromEntries(entries('brand', {})) };
 namespaces.lightColors = Object.fromEntries(entries('lightColors', namespaces));
 namespaces.darkColors = Object.fromEntries(entries('darkColors', namespaces));
+namespaces.lightGradients = Object.fromEntries(entries('lightGradients', namespaces));
+namespaces.darkGradients = Object.fromEntries(entries('darkGradients', namespaces));
 
 const THEMES = [
   {
     name: 'light',
     colors: namespaces.lightColors,
+    gradients: namespaces.lightGradients,
     status: Object.fromEntries(entries('lightStatusColors', namespaces)),
   },
   {
     name: 'dark',
     colors: namespaces.darkColors,
+    gradients: namespaces.darkGradients,
     status: Object.fromEntries(entries('darkStatusColors', namespaces)),
   },
 ];
@@ -133,15 +140,36 @@ function check(label, foreground, background, min = MIN_NORMAL) {
 
 for (const theme of THEMES) {
   console.log(`\n[${theme.name}]`);
-  const missing = REQUIRED_COLOR_TOKENS.filter((token) => !(token in theme.colors));
-  for (const token of missing) problems.push(`${theme.name}Colors is missing "${token}"`);
+  const missing = [
+    ...REQUIRED_COLOR_TOKENS.filter((token) => !(token in theme.colors)).map(
+      (token) => `${theme.name}Colors.${token}`,
+    ),
+    ...REQUIRED_GRADIENT_TOKENS.filter((token) => !(token in theme.gradients)).map(
+      (token) => `${theme.name}Gradients.${token}`,
+    ),
+  ];
+  for (const token of missing) problems.push(`missing required token "${token}"`);
   for (const tone of REQUIRED_TONES) {
     if (!(tone in theme.status)) problems.push(`${theme.name}StatusColors is missing "${tone}"`);
   }
   if (missing.length > 0) continue;
 
-  for (const surfaceName of SURFACES) {
-    const surface = theme.colors[surfaceName];
+  // A card's gradient has two distinct ends, so both stops are checked as surfaces text can sit
+  // on, not just `surface`. On the light theme `cardTo` is the darker end and is the binding
+  // constraint, which is exactly why it is a token rather than a string compiled into `Card`.
+  const surfaces = [
+    ...SURFACES.map((name) => ({ colour: theme.colors[name], name })),
+    ...Object.entries(theme.gradients).map(([name, colour]) => ({
+      colour,
+      name: `gradients.${name}`,
+    })),
+  ];
+
+  for (const { name: surfaceName, colour: surface } of surfaces) {
+    if (!surface) {
+      problems.push(`missing colour for surface "${surfaceName}"`);
+      continue;
+    }
     const required = [
       ...TEXT_TOKENS.map((token) => ({
         label: `${token} on ${surfaceName}`,

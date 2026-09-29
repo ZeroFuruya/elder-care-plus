@@ -8,6 +8,7 @@ import {
   radius,
   spacing,
   type AppElevation,
+  type AppGradients,
   type AppThemeColors,
 } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -20,14 +21,22 @@ interface CardProps {
 /**
  * A raised surface.
  *
- * Soft-UI technique: the card floats over the tinted field on a soft diffuse shadow instead of
- * being outlined. The hairline border stays as a fallback in case a platform does not render
- * `boxShadow`; it is decorative, and `docs/02-ui-ux-standard.md` §5 only forbids `border` from
- * being the *sole* boundary of a **control**, which a card is not.
+ * Soft-UI technique, taken as the pair it is in the reference
+ * (`docs/references/figma-soft-ui.md`): a whisper-soft gradient fill and a two-shadow elevation,
+ * not a flat fill inside an outline. The card therefore carries **no border** — the template has
+ * none, and our `border` token is 1.48:1 on the background, so it was never what made the card
+ * legible. What makes it legible is the surface tint plus the shadow.
+ *
+ * The gradient is drawn with React Native's native `experimental_backgroundImage` (no gradient
+ * dependency). `backgroundColor` stays underneath it as a flat fallback, so if a platform does not
+ * render the gradient the card is exactly what it was before rather than broken.
  */
 export function Card({ title, children }: CardProps) {
-  const { colors, elevation } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors, elevation), [colors, elevation]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
 
   return (
     <View style={styles.card}>
@@ -37,14 +46,26 @@ export function Card({ title, children }: CardProps) {
   );
 }
 
-function createStyles(colors: AppThemeColors, elevation: AppElevation) {
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
   return StyleSheet.create({
     card: {
       backgroundColor: colors.surface,
-      borderColor: colors.border,
+      borderCurve: 'continuous',
       borderRadius: radius.lg,
-      borderWidth: 1,
       boxShadow: elevation.card,
+      // The structured form of `experimental_backgroundImage`, not a CSS string: no angle or
+      // percentage text for the platform to parse, and the two stops come straight from the
+      // `AppGradients` tokens the contrast gate checks.
+      experimental_backgroundImage: [
+        {
+          colorStops: [
+            { color: gradients.cardFrom, positions: ['0%'] },
+            { color: gradients.cardTo, positions: ['100%'] },
+          ],
+          direction: 'to bottom',
+          type: 'linear-gradient',
+        },
+      ],
       gap: spacing.sm,
       padding: spacing.md,
     },

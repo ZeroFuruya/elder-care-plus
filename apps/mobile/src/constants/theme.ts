@@ -1,4 +1,5 @@
 import type { StatusTone } from '@eldercare/shared';
+import type { BoxShadowValue } from 'react-native';
 
 /**
  * Shared design tokens for ElderCare+.
@@ -213,13 +214,22 @@ export const radius = {
 /**
  * Soft-UI elevation, per theme.
  *
- * Technique reference: the Figma "Soft UI Design - Neumorphism" community file, read from its
- * public cover (owner-approved 2026-09-30). Cards float over a tinted field on a soft diffuse
- * shadow instead of relying on a hard border.
+ * Technique reference: the Figma "Soft UI Design - Neumorphism" community file, read via
+ * `scripts/figma-extract.mjs` (owner-approved 2026-09-30; exact values and the contrast audit in
+ * `docs/references/figma-soft-ui.md`). The template's signature move is a **pair** of shadows — a
+ * light highlight from the top-left plus a darker shade to the bottom-right — rather than one
+ * centred drop shadow. That pair is what is reproduced here, mapped onto the Navy palette.
  *
  * Implemented with the modern `boxShadow` style (React Native New Architecture), never the legacy
  * `shadow*` props or `elevation`: those are platform-split and deprecated, and mixing them makes a
- * shadow that only exists on one OS.
+ * shadow that only exists on one OS. `boxShadow` accepts an array, which is how the pair is
+ * expressed. The array form also supports `inset: true`, so the template's pressed/inset state is
+ * available should a control ever need it.
+ *
+ * One honest limitation: on a light field this app's cards are white over a near-white background,
+ * so the light half of the pair is almost invisible there. It is kept because it is correct in
+ * dark mode, where a faint light edge on a dark surface is clearly visible, and because the pair
+ * degrades to exactly the previous appearance when a platform ignores the second shadow.
  *
  * What is deliberately **not** adopted: neumorphism's low-contrast *controls*. Inset shadows and
  * near-invisible edges would fail §5 — control outlines stay >= 3:1 (`borderStrong`) and text
@@ -228,23 +238,69 @@ export const radius = {
  */
 export interface AppElevation {
   /** Resting card. */
-  card: string;
+  card: readonly BoxShadowValue[];
   /** Sheets, modals and the one raised element on a screen. */
-  raised: string;
+  raised: readonly BoxShadowValue[];
 }
 
 export const lightElevation: AppElevation = {
-  card: '0px 2px 8px rgba(36, 67, 109, 0.08)',
-  raised: '0px 10px 28px rgba(36, 67, 109, 0.14)',
+  card: [
+    { blurRadius: 6, color: 'rgba(255, 255, 255, 0.9)', offsetX: -2, offsetY: -2 },
+    { blurRadius: 16, color: 'rgba(36, 67, 109, 0.1)', offsetX: 6, offsetY: 6 },
+  ],
+  raised: [
+    { blurRadius: 10, color: 'rgba(255, 255, 255, 0.9)', offsetX: -3, offsetY: -3 },
+    { blurRadius: 32, color: 'rgba(36, 67, 109, 0.16)', offsetX: 10, offsetY: 14 },
+  ],
 };
 
 /**
  * On a dark field a shadow reads much weaker, so the dark set leans on the surface tint and a
- * deeper, tighter shadow; it is an accent, not the thing that separates card from background.
+ * deeper, tighter shadow; it is an accent, not the thing that separates card from background. The
+ * light half of the pair is the part that actually reads here.
  */
 export const darkElevation: AppElevation = {
-  card: '0px 2px 8px rgba(0, 0, 0, 0.45)',
-  raised: '0px 10px 28px rgba(0, 0, 0, 0.6)',
+  card: [
+    { blurRadius: 6, color: 'rgba(255, 255, 255, 0.05)', offsetX: -2, offsetY: -2 },
+    { blurRadius: 16, color: 'rgba(0, 0, 0, 0.45)', offsetX: 6, offsetY: 6 },
+  ],
+  raised: [
+    { blurRadius: 10, color: 'rgba(255, 255, 255, 0.07)', offsetX: -3, offsetY: -3 },
+    { blurRadius: 32, color: 'rgba(0, 0, 0, 0.6)', offsetX: 10, offsetY: 14 },
+  ],
+};
+
+/**
+ * Soft-UI surface gradients, per theme.
+ *
+ * The template's card is not a flat fill: it runs a whisper-soft gradient diagonally, lighter at
+ * the top-left where its highlight falls and slightly deeper at the bottom-right where its shade
+ * falls. That is the other half of the same lighting idea as `AppElevation`, so the two ship
+ * together.
+ *
+ * Kept as **two hex stops** rather than a finished gradient value so `scripts/check-contrast.mjs` can
+ * treat both ends as real surfaces and prove text still clears AA on the darker stop. `Card`
+ * assembles them into the structured `experimental_backgroundImage` value.
+ *
+ * Applied with React Native's native `experimental_backgroundImage`, so no gradient dependency is
+ * needed. If a platform does not render it, the card falls back to its flat `backgroundColor` and
+ * still reads as a raised surface.
+ */
+export interface AppGradients {
+  /** Card fill, top-left stop. */
+  cardFrom: string;
+  /** Card fill, bottom-right stop. Text must clear AA here: it is the darker end. */
+  cardTo: string;
+}
+
+export const lightGradients: AppGradients = {
+  cardFrom: brand.white,
+  cardTo: '#F4F7FC',
+};
+
+export const darkGradients: AppGradients = {
+  cardFrom: '#1E2836',
+  cardTo: '#151D28',
 };
 
 /** Line heights for the sizes in `fontSize` (docs/02-ui-ux-standard.md section 2). */
