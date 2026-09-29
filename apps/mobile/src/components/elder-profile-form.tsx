@@ -12,6 +12,7 @@ import { Banner, type BannerTone } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { ChoiceChips } from '@/components/choice-chips';
+import { DateField } from '@/components/date-field';
 import { Field } from '@/components/field';
 import { upsertElderProfile, type ElderProfile } from '@/db';
 
@@ -30,7 +31,8 @@ import { upsertElderProfile, type ElderProfile } from '@/db';
 /** Verbatim from `emergencyNumberInputSchema` in `@eldercare/shared`. */
 const PHONE_ERROR = `Enter a phone number with at least ${MIN_PHONE_DIGITS} digits`;
 
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+/** Birth dates can't predate this; a `1900` floor keeps the picker's year list short. */
+const EARLIEST_BIRTH_DATE = new Date(1900, 0, 1);
 
 interface ProfileFormState {
   dateOfBirth: string;
@@ -74,23 +76,12 @@ function blankOrNull(value: string): string | null {
   return trimmed.length === 0 ? null : trimmed;
 }
 
-/** `date` columns accept `YYYY-MM-DD`; the round trip rejects rolled-over dates like 2026-02-30. */
-function isValidDate(value: string): boolean {
-  if (!ISO_DATE.test(value)) return false;
-  const parsed = new Date(`${value}T00:00:00`);
-  if (Number.isNaN(parsed.getTime())) return false;
-  const [year, month, day] = value.split('-').map(Number);
-  return (
-    parsed.getFullYear() === year && parsed.getMonth() + 1 === month && parsed.getDate() === day
-  );
-}
-
+/**
+ * The date picker cannot produce an impossible or future `Birth date` (it is bounded by
+ * `minimumDate`/`maximumDate`), so only the free-text fields need a rule
+ * (docs/02-ui-ux-standard.md section 11).
+ */
 function validateField(key: keyof ProfileFormState, value: string): string | undefined {
-  if (key === 'dateOfBirth') {
-    if (value.trim().length === 0) return undefined;
-    return isValidDate(value.trim()) ? undefined : 'Enter the date as YYYY-MM-DD.';
-  }
-
   if (key === 'doctorPhone') {
     if (value.trim().length === 0) return undefined;
     return phoneLooksValid(value) ? undefined : PHONE_ERROR;
@@ -186,15 +177,13 @@ export function ElderProfileForm({
       {feedback ? <Banner tone={feedback.tone} message={feedback.message} /> : null}
 
       <Card title="Identity">
-        <Field
+        <DateField
           label="Birth date"
           value={form.dateOfBirth}
-          onChangeText={(value) => set('dateOfBirth', value)}
-          onBlur={() => handleBlur('dateOfBirth')}
-          error={errors.dateOfBirth}
-          placeholder="YYYY-MM-DD"
-          keyboardType="numbers-and-punctuation"
-          autoComplete="birthdate-full"
+          onChange={(value) => set('dateOfBirth', value)}
+          placeholder="Select date"
+          minimumDate={EARLIEST_BIRTH_DATE}
+          maximumDate={new Date()}
         />
         <ChoiceChips
           label="Blood type"

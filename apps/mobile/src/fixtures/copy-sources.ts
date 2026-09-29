@@ -15,7 +15,7 @@
  * - `owner-approved` — no approved source existed, so the wording was escalated to the owner, who
  *   approved it verbatim on 2026-09-30. `source` keeps the record of why the string was needed.
  * - `escalated` — **no approved source exists and the owner has not ruled on the wording**. The
- *   implementer proposes it and `COPY_ESCALATIONS` is exactly this list; it is empty today.
+ *   implementer proposes it and `COPY_ESCALATIONS` is exactly this list.
  *
  * Accessibility labels are not enumerated: each one is either the visible label itself or a
  * template over the visible label plus the record's own name (`Edit Ana Dela Cruz`,
@@ -110,12 +110,19 @@ export const COPY_SOURCES: CopyEntry[] = [
     kind: 'owner-approved',
     source: 'no approved address vocabulary',
   },
-  { text: 'YYYY-MM-DD', frame: 'A-09', kind: 'owner-approved', source: 'date format hint' },
   {
-    text: 'Enter the date as YYYY-MM-DD.',
+    text: 'Select date',
     frame: 'A-09',
-    kind: 'owner-approved',
-    source: '§11 requires an inline error; the wording is proposed',
+    kind: 'escalated',
+    source:
+      'shown inside `Birth date` before a date is chosen; the owner retired the typed `YYYY-MM-DD` hint for a native picker (2026-09-30), and the replacement placeholder is proposed',
+  },
+  {
+    text: 'Done',
+    frame: 'A-09',
+    kind: 'escalated',
+    source:
+      'confirms the inline date picker on iOS, which has no modal presentation; Android uses the system dialog wording instead',
   },
   {
     text: 'Enter a phone number with at least 3 digits',
@@ -409,8 +416,8 @@ export const COPY_SOURCES: CopyEntry[] = [
 /**
  * The strings with no approved source and no owner ruling yet. Sprint 2 says such a string "is
  * escalated to the owner, never invented". The owner approved all 18 entries raised for Sprint 2
- * on 2026-09-30 (they now read `owner-approved`), so this list is empty; it stays as the mechanism
- * for the next unapproved string.
+ * on 2026-09-30 (they now read `owner-approved`). Two new entries arrived with the native date
+ * picker (2026-09-30) and are waiting for a ruling.
  */
 export const COPY_ESCALATIONS: CopyEntry[] = COPY_SOURCES.filter(
   (entry) => entry.kind === 'escalated',

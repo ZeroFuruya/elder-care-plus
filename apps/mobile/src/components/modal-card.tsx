@@ -8,7 +8,8 @@ import { useAppTheme } from '@/hooks/use-app-theme';
 interface ModalCardProps {
   visible: boolean;
   title: string;
-  description: string;
+  /** Optional: a picker dialog explains itself through its own control. */
+  description?: string;
   onRequestClose: () => void;
   children: ReactNode;
 }
@@ -32,7 +33,7 @@ export function ModalCard({
       <View style={styles.overlay}>
         <View style={styles.panel} accessibilityViewIsModal>
           <Text style={styles.title}>{title}</Text>
-          <Text style={styles.description}>{description}</Text>
+          {description ? <Text style={styles.description}>{description}</Text> : null}
           {children}
         </View>
       </View>

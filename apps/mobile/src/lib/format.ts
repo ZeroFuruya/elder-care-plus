@@ -116,6 +116,17 @@ export function parseDayOnly(value: string): Date {
   return new Date(`${value}T00:00:00`);
 }
 
+/**
+ * A local `YYYY-MM-DD` day — the shape the `date` columns store. Built from the local parts, never
+ * `toISOString()`, which shifts west of Greenwich to the previous day.
+ */
+export function toIsoDay(value: DateInput): string {
+  const date = toDate(value);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
 /** `just now`, `12 min ago`, `3 hr ago`, `Aug 12`. */
 export function formatRelative(value: DateInput, now: Date = new Date()): string {
   const minutes = Math.round((now.getTime() - toDate(value).getTime()) / 60_000);
