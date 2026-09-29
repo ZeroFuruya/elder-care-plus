@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Banner, type BannerTone } from '@/components/banner';
@@ -7,8 +7,9 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { Field } from '@/components/field';
 import { Screen } from '@/components/screen';
-import { colors, fontSize, lineHeight } from '@/constants/theme';
+import { fontSize, lineHeight, type AppThemeColors } from '@/constants/theme';
 import { redeemCareLinkCode } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface EnterCodeScreenProps {
   role: 'elder' | 'family_member';
@@ -54,6 +55,8 @@ function formatCountdown(totalSeconds: number): string {
  */
 export function EnterCodeScreen({ role, safeBottom = false }: EnterCodeScreenProps) {
   const copy = COPY[role];
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -183,15 +186,17 @@ export function EnterCodeScreen({ role, safeBottom = false }: EnterCodeScreenPro
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    body: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      lineHeight: lineHeight.body,
+    },
+    note: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}
