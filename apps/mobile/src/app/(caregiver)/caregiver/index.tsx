@@ -8,6 +8,7 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { DoseCard } from '@/components/dose-card';
 import { EmptyState } from '@/components/empty-state';
+import { Icon } from '@/components/icon';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
@@ -25,7 +26,6 @@ import {
 } from '@/db';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { addDays, endOfDay, formatRelative, formatTime, startOfDay } from '@/lib/format';
-import { statusGlyph } from '@/lib/status-glyph';
 
 interface DashboardData {
   link: MyLink | null;
@@ -48,7 +48,7 @@ function StatTile({ status, value }: { status: DoseStatus; value: number }) {
 
   return (
     <View style={styles.tile} accessibilityLabel={`${presentation.label}: ${value}`}>
-      <Text style={[styles.tileGlyph, { color }]}>{statusGlyph(presentation.icon)}</Text>
+      <Icon name={presentation.icon} size={18} color={color} />
       <Text style={styles.tileValue}>{value}</Text>
       <Text style={styles.tileLabel}>{presentation.label}</Text>
     </View>
@@ -227,10 +227,6 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: spacing.xs,
     paddingVertical: spacing.md,
-  },
-  tileGlyph: {
-    fontSize: fontSize.heading,
-    fontWeight: '700',
   },
   tileValue: {
     color: colors.text,

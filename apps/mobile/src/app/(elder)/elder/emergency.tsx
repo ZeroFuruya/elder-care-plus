@@ -8,6 +8,7 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DetailRow } from '@/components/detail-row';
+import { Icon } from '@/components/icon';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import {
@@ -135,7 +136,11 @@ export default function E07EmergencyInformation() {
                 style={styles.disclosure}
               >
                 <Text style={styles.disclosureLabel}>Emergency contacts</Text>
-                <Text style={styles.disclosureGlyph}>{contactsExpanded ? '\u2304' : '\u203A'}</Text>
+                <Icon
+                  name={contactsExpanded ? 'collapse' : 'forward'}
+                  size={20}
+                  color={colors.textMuted}
+                />
               </Pressable>
 
               {contactsExpanded
@@ -244,11 +249,6 @@ function createStyles(colors: AppThemeColors) {
       fontWeight: '700',
       lineHeight: lineHeight.caption,
       textTransform: 'uppercase',
-    },
-    disclosureGlyph: {
-      color: colors.textMuted,
-      fontSize: fontSize.heading,
-      lineHeight: lineHeight.heading,
     },
     contact: {
       backgroundColor: colors.surfaceMuted,

@@ -1,9 +1,12 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { Icon } from '@/components/icon';
 import { StatusBadge } from '@/components/status-badge';
-import { colors, fontSize, lineHeight, radius, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
 import type { DoseView } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { formatTime } from '@/lib/format';
 
 interface DoseCardProps {
@@ -13,6 +16,9 @@ interface DoseCardProps {
 }
 
 export function DoseCard({ dose, onMarkTaken, marking = false }: DoseCardProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.card}>
       <View style={styles.top}>
@@ -26,13 +32,13 @@ export function DoseCard({ dose, onMarkTaken, marking = false }: DoseCardProps) 
       </View>
 
       <View style={styles.metaRow}>
-        <Text style={styles.metaGlyph}>{'\u25F7'}</Text>
+        <Icon name="clock" size={14} color={colors.textMuted} />
         <Text style={styles.meta}>Scheduled for {formatTime(dose.scheduledAt)}</Text>
       </View>
 
       {dose.takenAt ? (
         <View style={styles.metaRow}>
-          <Text style={[styles.metaGlyph, styles.successGlyph]}>{'\u2713'}</Text>
+          <Icon name="check" size={14} color={colors.success} />
           <Text style={[styles.meta, styles.successText]}>Taken at {formatTime(dose.takenAt)}</Text>
         </View>
       ) : null}
@@ -51,55 +57,49 @@ export function DoseCard({ dose, onMarkTaken, marking = false }: DoseCardProps) 
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  top: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  info: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  medicine: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    lineHeight: lineHeight.body,
-  },
-  instructions: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  metaRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  metaGlyph: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-  },
-  meta: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  successGlyph: {
-    color: colors.success,
-  },
-  successText: {
-    color: colors.success,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    top: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    info: {
+      flex: 1,
+      gap: spacing.xs,
+    },
+    medicine: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '700',
+      lineHeight: lineHeight.body,
+    },
+    instructions: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    metaRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: spacing.xs,
+    },
+    meta: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    successText: {
+      color: colors.success,
+      fontWeight: '600',
+    },
+  });
+}

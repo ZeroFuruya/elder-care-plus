@@ -1,8 +1,9 @@
 import { doseStatusPresentation, type DoseStatus } from '@eldercare/shared';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { fontSize, lineHeight, radius, spacing, statusColors } from '@/constants/theme';
-import { statusGlyph } from '@/lib/status-glyph';
+import { Icon } from '@/components/icon';
+import { fontSize, lineHeight, radius, spacing } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface StatusBadgeProps {
   status: DoseStatus;
@@ -13,6 +14,7 @@ interface StatusBadgeProps {
  * never conveyed by colour alone (docs/02-ui-ux-standard.md section 6).
  */
 export function StatusBadge({ status }: StatusBadgeProps) {
+  const { statusColors } = useAppTheme();
   const presentation = doseStatusPresentation[status];
   const color = statusColors[presentation.tone];
 
@@ -21,7 +23,7 @@ export function StatusBadge({ status }: StatusBadgeProps) {
       accessibilityLabel={`Status: ${presentation.label}`}
       style={[styles.badge, { borderColor: color }]}
     >
-      <Text style={[styles.glyph, { color }]}>{statusGlyph(presentation.icon)}</Text>
+      <Icon name={presentation.icon} size={14} color={color} />
       <Text style={[styles.label, { color }]}>{presentation.label}</Text>
     </View>
   );
@@ -36,10 +38,6 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-  },
-  glyph: {
-    fontSize: fontSize.caption,
-    fontWeight: '700',
   },
   label: {
     fontSize: fontSize.caption,

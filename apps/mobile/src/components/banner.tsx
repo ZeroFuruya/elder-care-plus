@@ -1,16 +1,17 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Icon, type AppIconName } from '@/components/icon';
 import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
 export type BannerTone = 'success' | 'error' | 'info';
 
-const TONE_GLYPH = {
-  success: '\u2713',
-  error: '!',
-  info: 'i',
-} as const;
+const TONE_ICON: Record<BannerTone, AppIconName> = {
+  success: 'check',
+  error: 'alert-circle',
+  info: 'info',
+};
 
 const TONE_PREFIX = {
   success: 'Success',
@@ -29,7 +30,7 @@ interface BannerProps {
   message: string;
 }
 
-/** Inline feedback message. Never colour-only: each tone carries a glyph and a worded prefix. */
+/** Inline feedback message. Never colour-only: each tone carries an icon and a worded prefix. */
 export function Banner({ tone, message }: BannerProps) {
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -41,7 +42,7 @@ export function Banner({ tone, message }: BannerProps) {
       accessibilityLabel={`${TONE_PREFIX[tone]}: ${message}`}
       style={[styles.container, { borderColor: color }]}
     >
-      <Text style={[styles.glyph, { color }]}>{TONE_GLYPH[tone]}</Text>
+      <Icon name={TONE_ICON[tone]} size={18} color={color} />
       <Text style={[styles.message, { color }]}>
         <Text style={styles.prefix}>{TONE_PREFIX[tone]}: </Text>
         {message}
@@ -60,11 +61,6 @@ function createStyles(colors: AppThemeColors) {
       flexDirection: 'row',
       gap: spacing.sm,
       padding: spacing.md,
-    },
-    glyph: {
-      fontSize: fontSize.body,
-      fontWeight: '700',
-      lineHeight: lineHeight.body,
     },
     message: {
       flex: 1,

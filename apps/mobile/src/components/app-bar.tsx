@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import { fontSize, lineHeight, spacing, touchTarget, type AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
@@ -27,7 +28,7 @@ export function AppBar({ title, subtitle, showBack, showBell }: AppBarProps) {
           style={styles.iconButton}
           hitSlop={8}
         >
-          <Text style={styles.backGlyph}>{'\u2039'}</Text>
+          <Icon name="back" size={24} color={colors.text} />
         </Pressable>
       ) : null}
 
@@ -50,7 +51,7 @@ export function AppBar({ title, subtitle, showBack, showBell }: AppBarProps) {
           style={styles.iconButton}
           hitSlop={8}
         >
-          <Text style={styles.bellGlyph}>{'\u{1F514}'}</Text>
+          <Icon name="bell" size={22} color={colors.text} />
         </Pressable>
       ) : null}
     </View>
@@ -75,14 +76,6 @@ function createStyles(colors: AppThemeColors) {
       height: touchTarget.min,
       justifyContent: 'center',
       width: touchTarget.min,
-    },
-    backGlyph: {
-      color: colors.text,
-      fontSize: fontSize.title,
-      lineHeight: lineHeight.title,
-    },
-    bellGlyph: {
-      fontSize: fontSize.heading,
     },
     titles: {
       flex: 1,

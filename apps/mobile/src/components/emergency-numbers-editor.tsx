@@ -15,6 +15,7 @@ import { Card } from '@/components/card';
 import { ChoiceChips } from '@/components/choice-chips';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { Field } from '@/components/field';
+import { Icon } from '@/components/icon';
 import {
   deactivateEmergencyNumber,
   reorderEmergencyNumbers,
@@ -312,9 +313,11 @@ export function EmergencyNumbersEditor({
             onPress={() => update({ isPrimary: !editing.isPrimary })}
             style={styles.checkRow}
           >
-            <Text style={[styles.checkGlyph, editing.isPrimary ? styles.checkGlyphOn : null]}>
-              {editing.isPrimary ? '\u2713' : '\u25CB'}
-            </Text>
+            <Icon
+              name={editing.isPrimary ? 'checkbox-on' : 'checkbox-off'}
+              size={22}
+              color={editing.isPrimary ? colors.success : colors.textMuted}
+            />
             <Text style={styles.checkLabel}>Primary contact</Text>
           </Pressable>
 
@@ -460,14 +463,6 @@ function createStyles(colors: AppThemeColors) {
       flexDirection: 'row',
       gap: spacing.sm,
       minHeight: touchTarget.min,
-    },
-    checkGlyph: {
-      color: colors.textMuted,
-      fontSize: fontSize.heading,
-      lineHeight: lineHeight.heading,
-    },
-    checkGlyphOn: {
-      color: colors.success,
     },
     checkLabel: {
       color: colors.text,

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Icon } from '@/components/icon';
 import {
   fontSize,
   lineHeight,
@@ -57,9 +58,12 @@ export function ChoiceChips<T extends string>({
                 pressed ? styles.chipPressed : null,
               ]}
             >
-              <Text style={[styles.chipLabel, selected ? styles.chipLabelSelected : null]}>
-                {selected ? `\u2713 ${option.label}` : option.label}
-              </Text>
+              <View style={styles.chipContent}>
+                {selected ? <Icon name="check" size={16} color={colors.onPrimaryFill} /> : null}
+                <Text style={[styles.chipLabel, selected ? styles.chipLabelSelected : null]}>
+                  {option.label}
+                </Text>
+              </View>
             </Pressable>
           );
         })}
@@ -91,6 +95,11 @@ function createStyles(colors: AppThemeColors) {
       justifyContent: 'center',
       minHeight: touchTarget.min,
       paddingHorizontal: spacing.md,
+    },
+    chipContent: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: spacing.xs,
     },
     chipSelected: {
       backgroundColor: colors.primaryFill,
