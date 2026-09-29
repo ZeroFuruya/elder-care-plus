@@ -38,6 +38,33 @@ export {
 } from './doses';
 export { inspectDatabase, type TableDump } from './inspect';
 export {
+  activeBatchOf,
+  createBatch,
+  createMedication,
+  createSchedule,
+  deactivateBatch,
+  getMedicationDetail,
+  getMedicationPlan,
+  isDuplicateMedicineName,
+  isDuplicateSchedule,
+  listBatchesFor,
+  listMedications,
+  listSchedulesFor,
+  medicationWriteError,
+  schedulesOf,
+  setActiveBatch,
+  setMedicationActive,
+  setScheduleActive,
+  updateBatch,
+  updateMedication,
+  updateSchedule,
+  type Medication,
+  type MedicationDetail,
+  type MedicationPlan,
+  type MedicationSchedule,
+  type MedicineBatch,
+} from './medications';
+export {
   deactivateEmergencyNumber,
   elderAddressLines,
   emergencyWriteError,
