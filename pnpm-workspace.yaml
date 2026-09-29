@@ -8,3 +8,6 @@ packages:
 # deliberately, not blanket-enabled.
 allowBuilds:
   unrs-resolver: true
+
+minimumReleaseAgeExclude:
+  - '@expo/ui@57.0.21'
