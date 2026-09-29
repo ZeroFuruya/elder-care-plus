@@ -1,6 +1,6 @@
 import { doseStatusPresentation, type DoseStatus } from '@eldercare/shared';
 import { Redirect, router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -12,7 +12,7 @@ import { Icon } from '@/components/icon';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { colors, fontSize, lineHeight, radius, spacing, statusColors } from '@/constants/theme';
+import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
 import {
   getElderProfile,
   getLinkedElder,
@@ -24,6 +24,7 @@ import {
   type DoseView,
   type MyLink,
 } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { addDays, endOfDay, formatRelative, formatTime, startOfDay } from '@/lib/format';
 
@@ -44,6 +45,8 @@ const EMPTY_SUMMARY: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming:
 
 function StatTile({ status, value }: { status: DoseStatus; value: number }) {
   const presentation = doseStatusPresentation[status];
+  const { colors, statusColors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const color = statusColors[presentation.tone];
 
   return (
@@ -57,6 +60,8 @@ function StatTile({ status, value }: { status: DoseStatus; value: number }) {
 
 export default function CaregiverDashboardScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const loader = useCallback(async (): Promise<DashboardData> => {
     const link = await getLinkedElder(user.id);
@@ -202,74 +207,76 @@ export default function CaregiverDashboardScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  elderName: {
-    color: colors.text,
-    fontSize: fontSize.heading,
-    fontWeight: '700',
-    lineHeight: lineHeight.heading,
-  },
-  elderMeta: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  tiles: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  tile: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    flex: 1,
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-  },
-  tileValue: {
-    color: colors.text,
-    fontSize: fontSize.title,
-    fontWeight: '700',
-    lineHeight: lineHeight.title,
-  },
-  tileLabel: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  adherence: {
-    color: colors.success,
-    fontSize: fontSize.title,
-    fontWeight: '700',
-    lineHeight: lineHeight.title,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-    textTransform: 'uppercase',
-  },
-  confirmation: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '600',
-    lineHeight: lineHeight.body,
-  },
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    elderName: {
+      color: colors.text,
+      fontSize: fontSize.heading,
+      fontWeight: '700',
+      lineHeight: lineHeight.heading,
+    },
+    elderMeta: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    tiles: {
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    tile: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      flex: 1,
+      gap: spacing.xs,
+      paddingVertical: spacing.md,
+    },
+    tileValue: {
+      color: colors.text,
+      fontSize: fontSize.title,
+      fontWeight: '700',
+      lineHeight: lineHeight.title,
+    },
+    tileLabel: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    adherence: {
+      color: colors.success,
+      fontSize: fontSize.title,
+      fontWeight: '700',
+      lineHeight: lineHeight.title,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+      textTransform: 'uppercase',
+    },
+    confirmation: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '600',
+      lineHeight: lineHeight.body,
+    },
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    note: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

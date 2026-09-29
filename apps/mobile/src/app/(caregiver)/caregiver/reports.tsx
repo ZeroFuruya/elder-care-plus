@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -7,8 +7,9 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { colors, fontSize, lineHeight, radius, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
 import { getLinkedElder, listDoses, summarise, type AdherenceSummary, type MyLink } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { addDays, endOfDay, formatShortDate, isSameDay, startOfDay } from '@/lib/format';
 
@@ -26,6 +27,8 @@ interface ReportData {
 
 export default function CaregiverReportsScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   const loader = useCallback(async (): Promise<ReportData> => {
     const link = await getLinkedElder(user.id);
@@ -112,56 +115,58 @@ export default function CaregiverReportsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  big: {
-    color: colors.text,
-    fontSize: fontSize.title,
-    fontWeight: '700',
-    lineHeight: lineHeight.title,
-  },
-  meta: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-    textTransform: 'uppercase',
-  },
-  row: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
-  },
-  day: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    lineHeight: lineHeight.body,
-  },
-  dayValue: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  missed: {
-    color: colors.danger,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    big: {
+      color: colors.text,
+      fontSize: fontSize.title,
+      fontWeight: '700',
+      lineHeight: lineHeight.title,
+    },
+    meta: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+      textTransform: 'uppercase',
+    },
+    row: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      gap: spacing.xs,
+      padding: spacing.md,
+    },
+    day: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '700',
+      lineHeight: lineHeight.body,
+    },
+    dayValue: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    missed: {
+      color: colors.danger,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+    },
+    note: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}
