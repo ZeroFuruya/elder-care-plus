@@ -30,8 +30,14 @@ export function Button({
   style,
 }: ButtonProps) {
   const inactive = disabled || loading;
+  // The bright brand fill cannot carry white text (§5.2): the primary button is Teal with a
+  // Navy label. The danger fill is dark enough to take white.
   const spinnerColor =
-    variant === 'primary' || variant === 'danger' ? colors.surface : colors.primary;
+    variant === 'primary'
+      ? colors.onPrimaryFill
+      : variant === 'danger'
+        ? colors.textInverse
+        : colors.primary;
 
   return (
     <Pressable
@@ -87,8 +93,8 @@ const styles = StyleSheet.create({
 
 const variantStyles = StyleSheet.create({
   primary: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
+    backgroundColor: colors.primaryFill,
+    borderColor: colors.primaryFill,
   },
   secondary: {
     backgroundColor: colors.surface,
@@ -105,7 +111,7 @@ const variantStyles = StyleSheet.create({
 });
 
 const labelStyles = StyleSheet.create({
-  primary: { color: colors.surface },
+  primary: { color: colors.onPrimaryFill },
   secondary: { color: colors.primary },
   danger: { color: colors.surface },
   ghost: { color: colors.primary },
