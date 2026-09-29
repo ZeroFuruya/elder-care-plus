@@ -89,68 +89,110 @@ export function createChunkedStorage(
     }
   }
 
-  /** Drops the manifest and (when known) its committed chunks. */
+  /**
+   * Drops the manifest first: once it is gone the value can never be read
+   * again, so an interruption here fails closed. Chunk deletion is cleanup.
+   */
   async function clear(key: string, manifest: Manifest | null): Promise<void> {
     await backend.deleteItem(manifestKey(key));
-    if (manifest) await deleteChunks(key, manifest);
+    if (!manifest) return;
+    try {
+      await deleteChunks(key, manifest);
+    } catch {
+      // The manifest is gone; orphaned chunks are unreadable garbage.
+    }
+  }
+
+  // Supabase Auth can overlap writes (token refresh vs re-auth vs sign-in).
+  // Serializing every operation per key keeps two writers from computing the
+  // same generation and mixing their chunks (review finding).
+  const queues = new Map<string, Promise<void>>();
+
+  function withKeyLock<T>(key: string, task: () => Promise<T>): Promise<T> {
+    const previous = queues.get(key) ?? Promise.resolve();
+    const next = previous.then(task, task);
+    const guard = next.then(
+      () => undefined,
+      () => undefined,
+    );
+    queues.set(key, guard);
+    void guard.then(() => {
+      if (queues.get(key) === guard) queues.delete(key);
+    });
+    return next;
   }
 
   return {
-    async getItem(key) {
-      const rawManifest = await backend.getItem(manifestKey(key));
-      const manifest = parseManifest(rawManifest);
-      if (!manifest) {
-        // A manifest we cannot trust means no session, never a half-session.
-        if (rawManifest !== null) await clear(key, null);
-        return null;
-      }
-
-      const parts: string[] = [];
-      for (let index = 0; index < manifest.chunks; index += 1) {
-        const part = await backend.getItem(chunkKey(key, manifest.generation, index));
-        if (part === null) {
-          await clear(key, manifest);
+    getItem(key) {
+      return withKeyLock(key, async () => {
+        const rawManifest = await backend.getItem(manifestKey(key));
+        const manifest = parseManifest(rawManifest);
+        if (!manifest) {
+          // A manifest we cannot trust means no session, never a half-session.
+          // (Chunks of an unparseable manifest cannot be enumerated; the next
+          // write overwrites the manifest and new generations ignore them.)
+          if (rawManifest !== null) await clear(key, null);
           return null;
         }
-        parts.push(part);
-      }
-      return parts.join('');
+
+        const parts: string[] = [];
+        for (let index = 0; index < manifest.chunks; index += 1) {
+          const part = await backend.getItem(chunkKey(key, manifest.generation, index));
+          if (part === null) {
+            await clear(key, manifest);
+            return null;
+          }
+          parts.push(part);
+        }
+        return parts.join('');
+      });
     },
 
-    async setItem(key, value) {
-      const previous = parseManifest(await backend.getItem(manifestKey(key)));
-      const generation = (previous?.generation ?? 0) + 1;
+    setItem(key, value) {
+      return withKeyLock(key, async () => {
+        const previous = parseManifest(await backend.getItem(manifestKey(key)));
+        const generation = (previous?.generation ?? 0) + 1;
 
-      const chunks: string[] = [];
-      for (let start = 0; start < Math.max(value.length, 1); start += chunkSize) {
-        chunks.push(value.slice(start, start + chunkSize));
-      }
-      if (chunks.length > maxChunks) {
-        throw new Error(
-          `Value for "${key}" needs ${chunks.length} chunks; the limit is ${maxChunks}.`,
+        const chunks: string[] = [];
+        for (let start = 0; start < Math.max(value.length, 1); start += chunkSize) {
+          chunks.push(value.slice(start, start + chunkSize));
+        }
+        if (chunks.length > maxChunks) {
+          throw new Error(
+            `Value for "${key}" needs ${chunks.length} chunks; the limit is ${maxChunks}.`,
+          );
+        }
+
+        // Chunks first, manifest last: if this throws midway, the previous
+        // generation's manifest and chunks are still intact.
+        for (let index = 0; index < chunks.length; index += 1) {
+          await backend.setItem(chunkKey(key, generation, index), chunks[index]!);
+        }
+        await backend.setItem(
+          manifestKey(key),
+          JSON.stringify({
+            version: MANIFEST_VERSION,
+            generation,
+            chunks: chunks.length,
+          }),
         );
-      }
 
-      // Chunks first, manifest last: if this throws midway, the previous
-      // generation's manifest and chunks are still intact.
-      for (let index = 0; index < chunks.length; index += 1) {
-        await backend.setItem(chunkKey(key, generation, index), chunks[index]!);
-      }
-      await backend.setItem(
-        manifestKey(key),
-        JSON.stringify({
-          version: MANIFEST_VERSION,
-          generation,
-          chunks: chunks.length,
-        }),
-      );
-
-      // Commit point passed; the old generation is now unreachable garbage.
-      if (previous) await deleteChunks(key, previous);
+        // Commit point passed; the old generation is unreachable garbage.
+        // Deleting it is cleanup and must not fail the write.
+        if (previous) {
+          try {
+            await deleteChunks(key, previous);
+          } catch {
+            // Orphaned chunks are retried on the next write; the value is safe.
+          }
+        }
+      });
     },
 
-    async removeItem(key) {
-      await clear(key, parseManifest(await backend.getItem(manifestKey(key))));
+    removeItem(key) {
+      return withKeyLock(key, async () => {
+        await clear(key, parseManifest(await backend.getItem(manifestKey(key))));
+      });
     },
   };
 }

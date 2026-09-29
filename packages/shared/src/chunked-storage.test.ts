@@ -46,6 +46,29 @@ function keys(backend: MemoryBackend, prefix: string): string[] {
   return [...backend.values.keys()].filter((key) => key.startsWith(prefix)).sort();
 }
 
+/** Yields to the microtask queue so overlapping calls interleave unless serialized. */
+const tick = () => Promise.resolve();
+
+/** Every operation yields, so overlapping calls interleave unless serialized. */
+class DelayedBackend implements StorageBackend {
+  constructor(private readonly inner: MemoryBackend) {}
+
+  async getItem(key: string): Promise<string | null> {
+    await tick();
+    return this.inner.getItem(key);
+  }
+
+  async setItem(key: string, value: string): Promise<void> {
+    await tick();
+    await this.inner.setItem(key, value);
+  }
+
+  async deleteItem(key: string): Promise<void> {
+    await tick();
+    await this.inner.deleteItem(key);
+  }
+}
+
 const PREFIX = 'demo.auth.';
 const options = { keyPrefix: PREFIX, chunkSize: 100, maxChunks: 64 };
 
@@ -148,6 +171,26 @@ describe('createChunkedStorage', () => {
     const storage = createChunkedStorage(backend, { ...options, maxChunks: 2 });
 
     await expect(storage.setItem('session', 'x'.repeat(201))).rejects.toThrow('the limit is 2');
+  });
+
+  it('serializes overlapping writes so the last value wins intact', async () => {
+    const inner = new MemoryBackend();
+    const storage = createChunkedStorage(new DelayedBackend(inner), options);
+    const first = 'a'.repeat(250);
+    const second = 'b'.repeat(350);
+
+    // Supabase Auth overlaps writes (token refresh vs re-auth). Both start
+    // before either finishes; the storage must run them one at a time.
+    await Promise.all([storage.setItem('session', first), storage.setItem('session', second)]);
+
+    expect(await storage.getItem('session')).toBe(second);
+    const manifest = JSON.parse(inner.values.get(`${PREFIX}session.manifest`)!) as {
+      generation: number;
+      chunks: number;
+    };
+    expect(manifest.generation).toBe(2);
+    expect(manifest.chunks).toBe(4);
+    expect(keys(inner, PREFIX)).toHaveLength(1 + 4);
   });
 
   it('removes the manifest and every chunk', async () => {
