@@ -41,7 +41,7 @@ supabase/.branches/
 supabase/.env
 
 # Database dumps (contain real auth rows; never commit a backup)
-backup.sql
+backup*.sql
 *.dump
 
 # Test / coverage
