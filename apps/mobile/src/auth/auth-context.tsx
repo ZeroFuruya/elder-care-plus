@@ -373,11 +373,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const current = userRef.current;
       if (!current) return { ok: false, message: 'Your session has ended. Sign in again.' };
 
+      const generation = generationRef.current;
       const client = getSupabase();
       const { data, error } = await client.auth.signInWithPassword({
         email: current.email,
         password,
       });
+
+      if (generation !== generationRef.current) {
+        // A sign-out (or another sign-in) superseded this password check while
+        // it was in flight. Its session must not come back to life.
+        await client.auth.signOut({ scope: 'local' }).catch(() => undefined);
+        return { ok: false, message: 'Your session has ended. Sign in again.' };
+      }
 
       if (error) {
         if (isNetworkError(error)) return { ok: false, message: OFFLINE_MESSAGE };
