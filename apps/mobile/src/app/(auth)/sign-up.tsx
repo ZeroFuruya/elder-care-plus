@@ -5,6 +5,7 @@ import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } fro
 import type { UserRole } from '@eldercare/shared';
 
 import { useAuth } from '@/auth/auth-context';
+import { homeRouteFor } from '@/auth/routes';
 import { validateSignUp, type FieldErrors } from '@/auth/validation';
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
@@ -22,6 +23,11 @@ const ROLE_OPTIONS: { role: UserRole; title: string; description: string }[] = [
     role: 'caregiver',
     title: 'Family caregiver',
     description: 'I look after someone and follow their record.',
+  },
+  {
+    role: 'family_member',
+    title: 'Connected family member',
+    description: 'I follow an older adult’s record read-only, once they approve.',
   },
 ];
 
@@ -59,7 +65,7 @@ export default function SignUpScreen() {
     }
 
     setSuccess('Account created successfully. Opening your dashboard…');
-    const target = outcome.user.role === 'elder' ? '/elder' : '/caregiver';
+    const target = homeRouteFor(outcome.user.role);
     setTimeout(() => router.replace(target), 900);
   };
 
@@ -68,7 +74,7 @@ export default function SignUpScreen() {
       style={styles.flex}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen title="Create account" subtitle="Stored locally on this device" showBack>
+      <Screen title="Create account" subtitle="Your account is protected by a password" showBack>
         {success ? <Banner tone="success" message={success} /> : null}
         {formError ? <Banner tone="error" message={formError} /> : null}
 
