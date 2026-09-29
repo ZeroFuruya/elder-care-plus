@@ -1,14 +1,15 @@
 # Sprint 3 — Medication and inventory setup (Flow B)
 
-- **Status:** Draft for owner approval, written 2026-09-29 at the owner's request and planned with
-  `@architect` (2026-09-29). Revised the same day to fold in the `@architect` critique: restrictive
-  foreign keys, the "no active medication without a valid schedule" rule, schedule/timezone
-  validation, the expired-batch rule, server-derived manager checks and locks, the per-RPC audit
-  contract, blank/numeric validation and normative Sprint 4 hand-off keys. Sprint 1b removed the
-  local "Add a medicine" form; this spec restores that flow against Supabase. *Implementation ran
-  2026-09-30: the migration, its pgTAP suite, the shared contracts and the `C-02`/`C-03`/`C-04`
-  screens are on the branch. Owner approval is still outstanding, so the spec stays a draft and the
-  deviations it left open are itemised under "Implementation notes" at the end.*
+- **Status:** Approved by the owner 2026-09-30. Written 2026-09-29 at the owner's request and planned
+  with `@architect` (2026-09-29). Revised the same day to fold in the `@architect` critique:
+  restrictive foreign keys, the "no active medication without a valid schedule" rule,
+  schedule/timezone validation, the expired-batch rule, server-derived manager checks and locks, the
+  per-RPC audit contract, blank/numeric validation and normative Sprint 4 hand-off keys. Sprint 1b
+  removed the local "Add a medicine" form; this spec restores that flow against Supabase.
+  *Implementation ran 2026-09-30: the migration, its pgTAP suite, the shared contracts and the
+  `C-02`/`C-03`/`C-04` screens are on the branch, and the 60 proposed strings and the deviations
+  itemised under "Implementation notes" at the end were approved by the owner on 2026-09-30. The
+  migration was pushed to the hosted project the same day.*
 - **Branch:** `sprint-3-medication-setup`.
 - **Flow:** `docs/00-product-flow.md` §4 B (medication, inventory and expiry setup), §7 data model,
   §8 validation.
@@ -257,7 +258,7 @@ These are binding contracts, because Sprint 4's idempotency depends on them:
 - **Schema duplication.** Do not recreate the legacy SQLite tables' shape; the Supabase schema is
   authoritative and the legacy modules remain unreachable.
 
-## Implementation notes (added by the implementer 2026-09-30, for owner review)
+## Implementation notes (added by the implementer 2026-09-30, approved by the owner the same day)
 
 These are the places where the build had to resolve something the draft left open. Each is also
 recorded in the header of `supabase/migrations/20261008120000_sprint3_medications.sql`.

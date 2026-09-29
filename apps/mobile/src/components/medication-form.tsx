@@ -61,14 +61,15 @@ import { useAppTheme } from '@/hooks/use-app-theme';
  * (`Add medication`, `Medication name`, `Strength / form`, `Instructions`, `SCHEDULE DATES`,
  * `Start date`, `End date`, `DOSE AND TIMES`, `Dose amount`, `Time`, `Repeat days`,
  * `Grace period`, `30 minutes`, `Save medication`). Everything else here - the unit and form
- * chip values, the weekday abbreviations, the validation sentences and the two warnings - has
- * no approved source and is recorded as an escalation in `src/fixtures/copy-sources.ts`.
+ * chip values, the weekday abbreviations, the validation sentences and the two warnings - had
+ * no approved source and were escalated to the owner, who approved them in bulk on 2026-09-30
+ * (`src/fixtures/copy-sources.ts`, now `owner-approved`).
  *
  * The database is the authority: this form validates inline for the caregiver, then assembles the
  * payload through the same zod schemas the RPC mirrors, and the RPCs re-check every rule.
  */
 
-/** All escalated, pending owner approval. Kept together so the ledger can be checked at a glance. */
+/** Owner-approved 2026-09-30. Kept together so the ledger can be checked at a glance. */
 const REQUIRED_NAME = 'Enter the medication name';
 const REQUIRED_STRENGTH = 'Enter the strength and form';
 const REQUIRED_INSTRUCTIONS = 'Enter the instructions';

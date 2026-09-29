@@ -28,8 +28,8 @@ export type MedicationForm = z.infer<typeof medicationFormSchema>;
 
 /**
  * Display labels. Only `tablet` and `mg` appear in the approved wireframes
- * (`C-03` `500 mg tablet`, `C-04` `1 tablet - 30 min grace`), so these labels
- * carry the escalation recorded in `apps/mobile/src/fixtures/copy-sources.ts`.
+ * (`C-03` `500 mg tablet`, `C-04` `1 tablet - 30 min grace`), so these labels were escalated to
+ * the owner, who approved them in bulk on 2026-09-30 (`apps/mobile/src/fixtures/copy-sources.ts`).
  */
 export const medicationFormLabels: Record<MedicationForm, string> = {
   tablet: 'Tablet',
