@@ -48,6 +48,22 @@ export default function CaregiverProfileScreen() {
           A caregiver account follows one older adult. Their doses and confirmations appear on the
           dashboard and in reports.
         </Text>
+        {state.status === 'ready' && state.data ? (
+          <>
+            <Button
+              label="Elder profile"
+              variant="secondary"
+              onPress={() => router.push('/caregiver/elder')}
+              accessibilityHint="Opens the older adult's emergency information"
+            />
+            <Button
+              label="Edit profile"
+              variant="secondary"
+              onPress={() => router.push('/caregiver/elder-edit')}
+              accessibilityHint="Opens the elder profile form"
+            />
+          </>
+        ) : null}
         <Button
           label="Care links and invites"
           variant="secondary"

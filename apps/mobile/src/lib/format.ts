@@ -108,6 +108,14 @@ export function isSameDay(a: DateInput, b: DateInput): boolean {
   );
 }
 
+/**
+ * A `date` column arrives as `YYYY-MM-DD`. Parse it at local midnight — `new Date('1958-05-08')`
+ * is UTC midnight and can render as the previous day west of Greenwich.
+ */
+export function parseDayOnly(value: string): Date {
+  return new Date(`${value}T00:00:00`);
+}
+
 /** `just now`, `12 min ago`, `3 hr ago`, `Aug 12`. */
 export function formatRelative(value: DateInput, now: Date = new Date()): string {
   const minutes = Math.round((now.getTime() - toDate(value).getTime()) / 60_000);

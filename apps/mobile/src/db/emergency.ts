@@ -2,6 +2,8 @@ import type { BloodType, EmergencyCategory, EmergencyNumberInput } from '@elderc
 
 import { getSupabase } from '@/supabase/client';
 
+import { getLinkedElder } from './care-links';
+
 /**
  * Elder profile and emergency-number access for the Supabase-backed app.
  *
@@ -179,6 +181,44 @@ export function isEmergencySetComplete(numbers: EmergencyNumber[]): boolean {
 /** The dominant call contact: the flagged primary, else the first by priority. */
 export function primaryEmergencyNumber(numbers: EmergencyNumber[]): EmergencyNumber | null {
   return numbers.find((number) => number.isPrimary) ?? numbers[0] ?? null;
+}
+
+/**
+ * The stored address as display lines. Absent parts are dropped rather than replaced with a
+ * filler string, so a partial address never claims more than it knows.
+ */
+export function elderAddressLines(profile: ElderProfile): string {
+  return [
+    profile.addressLine1,
+    profile.addressLine2,
+    [profile.city, profile.region, profile.postalCode].filter(Boolean).join(', '),
+    profile.countryCode,
+  ]
+    .filter((line): line is string => Boolean(line && line.trim()))
+    .join('\n');
+}
+
+/** One load for the caregiver screens: who the linked elder is, and their emergency record. */
+export interface CaregiverElderRecord {
+  elderId: string;
+  elderName: string | null;
+  profile: ElderProfile | null;
+  numbers: EmergencyNumber[];
+}
+
+/**
+ * The signed-in caregiver's linked elder plus their profile and ordered numbers, for `A-09`,
+ * `C-10` and `C-11`. Returns `null` when no active link exists — the screens render the
+ * honest empty state rather than inventing a record.
+ */
+export async function getElderRecordForCaregiver(
+  memberId: string,
+): Promise<CaregiverElderRecord | null> {
+  const link = await getLinkedElder(memberId);
+  if (!link) return null;
+
+  const { profile, numbers } = await getEmergencyInfo(link.elderId);
+  return { elderId: link.elderId, elderName: link.elderName, profile, numbers };
 }
 
 // ---------------------------------------------------------------------------

@@ -39,8 +39,10 @@ export {
 export { inspectDatabase, type TableDump } from './inspect';
 export {
   deactivateEmergencyNumber,
+  elderAddressLines,
   emergencyWriteError,
   getElderProfile,
+  getElderRecordForCaregiver,
   getEmergencyInfo,
   isEmergencySetComplete,
   listEmergencyNumbers,
@@ -49,6 +51,7 @@ export {
   setEmergencyNumberVerified,
   upsertElderProfile,
   upsertEmergencyNumber,
+  type CaregiverElderRecord,
   type ElderProfile,
   type ElderProfileInput,
   type EmergencyInfo,

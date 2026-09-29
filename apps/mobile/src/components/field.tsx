@@ -1,7 +1,15 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View, type TextInputProps } from 'react-native';
 
-import { colors, fontSize, lineHeight, radius, spacing, touchTarget } from '@/constants/theme';
+import {
+  fontSize,
+  lineHeight,
+  radius,
+  spacing,
+  touchTarget,
+  type AppThemeColors,
+} from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface FieldProps extends Omit<TextInputProps, 'value' | 'onChangeText' | 'style'> {
   label: string;
@@ -12,20 +20,37 @@ interface FieldProps extends Omit<TextInputProps, 'value' | 'onChangeText' | 'st
   isPassword?: boolean;
 }
 
-export function Field({ label, value, onChangeText, error, isPassword, ...rest }: FieldProps) {
+export function Field({
+  label,
+  value,
+  onChangeText,
+  error,
+  isPassword,
+  multiline,
+  ...rest
+}: FieldProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [visible, setVisible] = useState(false);
 
   return (
     <View style={styles.wrapper}>
       <Text style={styles.label}>{label}</Text>
 
-      <View style={[styles.inputRow, error ? styles.inputRowError : null]}>
+      <View
+        style={[
+          styles.inputRow,
+          multiline ? styles.inputRowMultiline : null,
+          error ? styles.inputRowError : null,
+        ]}
+      >
         <TextInput
           accessibilityLabel={label}
           accessibilityHint={error}
-          style={styles.input}
+          style={[styles.input, multiline ? styles.inputMultiline : null]}
           value={value}
           onChangeText={onChangeText}
+          multiline={multiline}
           placeholderTextColor={colors.textMuted}
           secureTextEntry={isPassword && !visible}
           {...rest}
@@ -54,63 +79,73 @@ export function Field({ label, value, onChangeText, error, isPassword, ...rest }
   );
 }
 
-const styles = StyleSheet.create({
-  wrapper: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '600',
-    lineHeight: lineHeight.caption,
-  },
-  inputRow: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    minHeight: touchTarget.min,
-    paddingLeft: spacing.md,
-  },
-  inputRowError: {
-    borderColor: colors.danger,
-    borderWidth: 2,
-  },
-  input: {
-    color: colors.text,
-    flex: 1,
-    fontSize: fontSize.body,
-    minHeight: touchTarget.min,
-    paddingRight: spacing.sm,
-    paddingVertical: spacing.sm,
-  },
-  toggle: {
-    alignItems: 'center',
-    height: touchTarget.min,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  toggleText: {
-    color: colors.primary,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-  },
-  errorRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  errorGlyph: {
-    color: colors.danger,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-  },
-  errorText: {
-    color: colors.danger,
-    flex: 1,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    wrapper: {
+      gap: spacing.xs,
+    },
+    label: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      lineHeight: lineHeight.caption,
+    },
+    inputRow: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderColor: colors.borderStrong,
+      borderRadius: radius.md,
+      borderWidth: 1,
+      flexDirection: 'row',
+      minHeight: touchTarget.min,
+      paddingLeft: spacing.md,
+    },
+    inputRowMultiline: {
+      alignItems: 'flex-start',
+    },
+    inputRowError: {
+      borderColor: colors.danger,
+      borderWidth: 2,
+    },
+    input: {
+      color: colors.text,
+      flex: 1,
+      fontSize: fontSize.body,
+      minHeight: touchTarget.min,
+      paddingRight: spacing.sm,
+      paddingVertical: spacing.sm,
+    },
+    inputMultiline: {
+      minHeight: touchTarget.min * 2,
+      paddingTop: spacing.sm,
+      textAlignVertical: 'top',
+    },
+    toggle: {
+      alignItems: 'center',
+      height: touchTarget.min,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.md,
+    },
+    toggleText: {
+      color: colors.primary,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+    },
+    errorRow: {
+      alignItems: 'center',
+      flexDirection: 'row',
+      gap: spacing.xs,
+    },
+    errorGlyph: {
+      color: colors.danger,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+    },
+    errorText: {
+      color: colors.danger,
+      flex: 1,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

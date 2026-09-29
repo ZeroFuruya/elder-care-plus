@@ -7,6 +7,7 @@ import { useSessionUser } from '@/auth/auth-context';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { DetailRow } from '@/components/detail-row';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import {
@@ -17,11 +18,16 @@ import {
   touchTarget,
   type AppThemeColors,
 } from '@/constants/theme';
-import { getEmergencyInfo, isEmergencySetComplete, primaryEmergencyNumber } from '@/db';
-import type { ElderProfile, EmergencyNumber } from '@/db';
+import {
+  elderAddressLines,
+  getEmergencyInfo,
+  isEmergencySetComplete,
+  primaryEmergencyNumber,
+} from '@/db';
+import type { EmergencyNumber } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
-import { formatDateWithYear, formatDateTime } from '@/lib/format';
+import { formatDateWithYear, formatDateTime, parseDayOnly } from '@/lib/format';
 
 /**
  * `E-07` Emergency Information — the elder's read-only emergency view
@@ -38,23 +44,7 @@ function callLabel(name: string): string {
   return `Call ${name} - emergency contact`;
 }
 
-/** A `date` column arrives as `YYYY-MM-DD`; parse it at local midnight, never as UTC. */
-function dayOnly(value: string): Date {
-  return new Date(`${value}T00:00:00`);
-}
-
-function addressLines(profile: ElderProfile): string {
-  return [
-    profile.addressLine1,
-    profile.addressLine2,
-    [profile.city, profile.region, profile.postalCode].filter(Boolean).join(', '),
-    profile.countryCode,
-  ]
-    .filter((line): line is string => Boolean(line && line.trim()))
-    .join('\n');
-}
-
-export default function ElderEmergencyScreen() {
+export default function E07EmergencyInformation() {
   const user = useSessionUser();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -80,7 +70,7 @@ export default function ElderEmergencyScreen() {
   const { profile, numbers } = state.data;
   const complete = isEmergencySetComplete(numbers);
   const primary = primaryEmergencyNumber(numbers);
-  const address = profile ? addressLines(profile) : '';
+  const address = profile ? elderAddressLines(profile) : '';
 
   function openDialer(number: EmergencyNumber) {
     setCallTarget(null);
@@ -123,7 +113,9 @@ export default function ElderEmergencyScreen() {
             <DetailRow label="Name" value={user.name} />
             <DetailRow
               label="Date of birth"
-              value={profile.dateOfBirth ? formatDateWithYear(dayOnly(profile.dateOfBirth)) : null}
+              value={
+                profile.dateOfBirth ? formatDateWithYear(parseDayOnly(profile.dateOfBirth)) : null
+              }
             />
           </Card>
 
@@ -216,21 +208,6 @@ export default function ElderEmergencyScreen() {
   );
 }
 
-/** Renders nothing when the value is absent, so no "not recorded" filler string is invented. */
-function DetailRow({ label, value }: { label: string; value: string | null | undefined }) {
-  const { colors } = useAppTheme();
-  const styles = useMemo(() => createStyles(colors), [colors]);
-
-  if (!value) return null;
-
-  return (
-    <View style={styles.detailRow}>
-      <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
-    </View>
-  );
-}
-
 function createStyles(colors: AppThemeColors) {
   return StyleSheet.create({
     body: {
@@ -252,19 +229,6 @@ function createStyles(colors: AppThemeColors) {
     },
     noticeText: {
       color: colors.warning,
-      fontSize: fontSize.body,
-      lineHeight: lineHeight.body,
-    },
-    detailRow: {
-      gap: spacing.xs,
-    },
-    detailLabel: {
-      color: colors.textMuted,
-      fontSize: fontSize.caption,
-      lineHeight: lineHeight.caption,
-    },
-    detailValue: {
-      color: colors.text,
       fontSize: fontSize.body,
       lineHeight: lineHeight.body,
     },

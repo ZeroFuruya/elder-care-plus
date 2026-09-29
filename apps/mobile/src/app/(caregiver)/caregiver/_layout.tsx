@@ -49,6 +49,10 @@ export default function CaregiverTabsLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile', tabBarIcon: tabIcon('profile') }} />
       {/* Reachable from the dashboard and profile; hidden from the tab bar. */}
       <Tabs.Screen name="link" options={{ href: null }} />
+      {/* Sprint 2 elder profile and emergency contacts: C-10 read, C-11 edit, A-09 create. */}
+      <Tabs.Screen name="elder" options={{ href: null }} />
+      <Tabs.Screen name="elder-edit" options={{ href: null }} />
+      <Tabs.Screen name="elder-new" options={{ href: null }} />
     </Tabs>
   );
 }
