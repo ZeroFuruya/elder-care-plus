@@ -90,6 +90,8 @@ follow §10: sentence case, no exclamation marks, named actions, routed to a hum
 | `E-07` active-medicines partial state (until Sprint 3) | `Medicines are not shown here yet.` |
 | Dominant call action | `Call <name> - emergency contact` |
 | Verified marker | `Verified by caregiver` |
+| `E-07` ordered-list disclosure trigger | `Emergency contacts` |
+| Dialer confirmation action (`Call` + record name, §12) | `Call <name>` |
 
 The dialer confirmation reuses the same "name the record and the effect" rule (§12) and is an
 in-app component, never a system dialog.

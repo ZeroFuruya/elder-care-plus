@@ -1,7 +1,9 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { colors, fontSize, lineHeight, spacing, touchTarget } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, touchTarget, type AppThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface AppBarProps {
   title: string;
@@ -12,6 +14,9 @@ interface AppBarProps {
 
 /** Top app bar: title, optional Back, one notification bell (docs/02-ui-ux-standard.md section 8). */
 export function AppBar({ title, subtitle, showBack, showBell }: AppBarProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <View style={styles.bar}>
       {showBack ? (
@@ -52,44 +57,46 @@ export function AppBar({ title, subtitle, showBack, showBell }: AppBarProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  bar: {
-    alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderBottomColor: colors.border,
-    borderBottomWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    minHeight: 56,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-  },
-  iconButton: {
-    alignItems: 'center',
-    height: touchTarget.min,
-    justifyContent: 'center',
-    width: touchTarget.min,
-  },
-  backGlyph: {
-    color: colors.text,
-    fontSize: fontSize.title,
-    lineHeight: lineHeight.title,
-  },
-  bellGlyph: {
-    fontSize: fontSize.heading,
-  },
-  titles: {
-    flex: 1,
-  },
-  title: {
-    color: colors.text,
-    fontSize: fontSize.heading,
-    fontWeight: '700',
-    lineHeight: lineHeight.heading,
-  },
-  subtitle: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    bar: {
+      alignItems: 'center',
+      backgroundColor: colors.surface,
+      borderBottomColor: colors.border,
+      borderBottomWidth: 1,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      minHeight: 56,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    iconButton: {
+      alignItems: 'center',
+      height: touchTarget.min,
+      justifyContent: 'center',
+      width: touchTarget.min,
+    },
+    backGlyph: {
+      color: colors.text,
+      fontSize: fontSize.title,
+      lineHeight: lineHeight.title,
+    },
+    bellGlyph: {
+      fontSize: fontSize.heading,
+    },
+    titles: {
+      flex: 1,
+    },
+    title: {
+      color: colors.text,
+      fontSize: fontSize.heading,
+      fontWeight: '700',
+      lineHeight: lineHeight.heading,
+    },
+    subtitle: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

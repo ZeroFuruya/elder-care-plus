@@ -1,7 +1,9 @@
+import { useMemo } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 
-import { colors, fontSize, radius, spacing, touchTarget } from '@/constants/theme';
+import { fontSize, radius, spacing, touchTarget, type AppThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
 
@@ -29,7 +31,10 @@ export function Button({
   accessibilityHint,
   style,
 }: ButtonProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const inactive = disabled || loading;
+
   // The bright brand fill cannot carry white text (§5.2): the primary button is Teal with a
   // Navy label. The danger fill is dark enough to take white.
   const spinnerColor =
@@ -50,7 +55,7 @@ export function Button({
       android_ripple={{ color: colors.border }}
       style={({ pressed }) => [
         styles.base,
-        variantStyles[variant],
+        styles[variant],
         size === 'large' ? styles.large : styles.default,
         inactive ? styles.inactive : null,
         pressed && !inactive ? styles.pressed : null,
@@ -58,61 +63,66 @@ export function Button({
       ]}
     >
       {loading ? <ActivityIndicator color={spinnerColor} /> : null}
-      <Text style={[styles.label, labelStyles[variant]]}>{loading ? 'Please wait…' : label}</Text>
+      <Text style={[styles.label, labelStyle(variant, colors)]}>
+        {loading ? 'Please wait…' : label}
+      </Text>
     </Pressable>
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    alignItems: 'center',
-    borderRadius: radius.md,
-    borderWidth: 1,
-    flexDirection: 'row',
-    gap: spacing.sm,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  default: {
-    minHeight: touchTarget.min,
-  },
-  large: {
-    minHeight: touchTarget.primaryAction,
-  },
-  inactive: {
-    opacity: 0.55,
-  },
-  pressed: {
-    opacity: 0.85,
-  },
-  label: {
-    fontSize: fontSize.body,
-    fontWeight: '600',
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    base: {
+      alignItems: 'center',
+      borderRadius: radius.md,
+      borderWidth: 1,
+      flexDirection: 'row',
+      gap: spacing.sm,
+      justifyContent: 'center',
+      paddingHorizontal: spacing.lg,
+    },
+    default: {
+      minHeight: touchTarget.min,
+    },
+    large: {
+      minHeight: touchTarget.primaryAction,
+    },
+    inactive: {
+      opacity: 0.55,
+    },
+    pressed: {
+      opacity: 0.85,
+    },
+    label: {
+      fontSize: fontSize.body,
+      fontWeight: '600',
+    },
+    primary: {
+      backgroundColor: colors.primaryFill,
+      borderColor: colors.primaryFill,
+    },
+    secondary: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+    },
+    danger: {
+      backgroundColor: colors.danger,
+      borderColor: colors.danger,
+    },
+    ghost: {
+      backgroundColor: 'transparent',
+      borderColor: 'transparent',
+    },
+  });
+}
 
-const variantStyles = StyleSheet.create({
-  primary: {
-    backgroundColor: colors.primaryFill,
-    borderColor: colors.primaryFill,
-  },
-  secondary: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-  },
-  danger: {
-    backgroundColor: colors.danger,
-    borderColor: colors.danger,
-  },
-  ghost: {
-    backgroundColor: 'transparent',
-    borderColor: 'transparent',
-  },
-});
-
-const labelStyles = StyleSheet.create({
-  primary: { color: colors.onPrimaryFill },
-  secondary: { color: colors.primary },
-  danger: { color: colors.surface },
-  ghost: { color: colors.primary },
-});
+/** Label colours are read outside the StyleSheet because they use the values, not the sheet. */
+function labelStyle(variant: ButtonVariant, colors: AppThemeColors) {
+  const map: Record<ButtonVariant, { color: string }> = {
+    primary: { color: colors.onPrimaryFill },
+    secondary: { color: colors.primary },
+    danger: { color: colors.textInverse },
+    ghost: { color: colors.primary },
+  };
+  return map[variant];
+}

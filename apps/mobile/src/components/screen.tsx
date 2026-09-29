@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react';
+import { useMemo } from 'react';
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { AppBar } from '@/components/app-bar';
-import { colors, spacing } from '@/constants/theme';
+import { spacing, type AppThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface ScreenProps {
   title: string;
@@ -30,6 +32,9 @@ export function Screen({
   scroll = true,
   safeBottom = false,
 }: ScreenProps) {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const body = scroll ? (
     <ScrollView
       contentContainerStyle={styles.content}
@@ -62,13 +67,15 @@ export function Screen({
   );
 }
 
-const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: colors.background,
-    flex: 1,
-  },
-  content: {
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    safeArea: {
+      backgroundColor: colors.background,
+      flex: 1,
+    },
+    content: {
+      gap: spacing.md,
+      padding: spacing.lg,
+    },
+  });
+}

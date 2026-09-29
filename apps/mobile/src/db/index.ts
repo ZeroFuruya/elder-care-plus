@@ -37,3 +37,20 @@ export {
   type NewDose,
 } from './doses';
 export { inspectDatabase, type TableDump } from './inspect';
+export {
+  deactivateEmergencyNumber,
+  emergencyWriteError,
+  getElderProfile,
+  getEmergencyInfo,
+  isEmergencySetComplete,
+  listEmergencyNumbers,
+  primaryEmergencyNumber,
+  reorderEmergencyNumbers,
+  setEmergencyNumberVerified,
+  upsertElderProfile,
+  upsertEmergencyNumber,
+  type ElderProfile,
+  type ElderProfileInput,
+  type EmergencyInfo,
+  type EmergencyNumber,
+} from './emergency';

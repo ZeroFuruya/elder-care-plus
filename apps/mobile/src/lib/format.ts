@@ -88,6 +88,12 @@ export function formatLongDate(value: DateInput): string {
   return `${DAYS_LONG[date.getDay()]}, ${MONTHS_LONG[date.getMonth()]} ${date.getDate()}`;
 }
 
+/** `Aug 8, 2026` — any date that needs a year (docs/02-ui-ux-standard.md section 10). */
+export function formatDateWithYear(value: DateInput): string {
+  const date = toDate(value);
+  return `${MONTHS_SHORT[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
 export function formatDateTime(value: DateInput): string {
   return `${formatShortDate(value)}, ${formatTime(value)}`;
 }
