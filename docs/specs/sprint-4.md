@@ -335,3 +335,32 @@ Run on the installed preview APK against hosted, both apps signed in, with conne
   that true by construction.
 - **Legacy SQLite confusion.** The old dose modules must be unreachable; any remaining local write
   path is a defect.
+
+## Implementation notes — 2026-09-30
+
+Recorded as the code landed, so the review has one place to check deviations.
+
+1. **A second migration.** `supabase/migrations/20261015130000_sprint4_realtime.sql` publishes
+   `public.dose_events` to `supabase_realtime` for the `C-01` subscription. It is a separate,
+   idempotent migration because the first was already applied when Realtime was wired. RLS still
+   scopes every delivered row. If the publication is absent, the subscription is skipped and the
+   focus/refresh fallback is the whole mechanism.
+2. **`E-04` is the confirmed state of the `E-03` route**, not a second route: on success the same
+   screen shows `Confirmed`, the copy and `Done`. No copy or rule changed.
+3. **Generation window.** The RPC caps the window at `[current_date - 1, current_date + 3]`. The
+   client asks for `[today - 1, today + 2]` and retries `[today, today + 3]` only if the server
+   rejects it, so a server date on either side of the device's still fits the cap. Generation is
+   idempotent, so the retry cannot duplicate a row.
+4. **`formatTime` now parses a bare `HH:MM`.** `medication_schedules.time_of_day` is a `time`
+   column that arrives as `08:00`, and `new Date('08:00')` is `Invalid Date`; the Sprint 3
+   schedule times were rendering wrongly. `parseTimeOfDay` fixes every caller, including the
+   Sprint 3 screens. Found while building the family plan view.
+5. **Non-decrement stock outcomes are not shown to the caregiver.** The `confirm_dose` response's
+   `stock` reason is for the acting device; the caregiver only sees a ledger row when a decrement
+   happened. No sentence was invented to describe a missing row.
+6. **Copy escalations.** The acceptance-critical copy (`E-04`, `V-03`, `C-05`, `S-01`) is named by
+   this spec. The remaining new strings — empty states, retry fallbacks, section titles and the
+   `waiting to reach the server` meta — have no approved source and are listed as `escalated` in
+   `apps/mobile/src/fixtures/copy-sources.ts` for the owner to approve verbatim, exactly as the
+   Sprint 3 batch was handled.
+
