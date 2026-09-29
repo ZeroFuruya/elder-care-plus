@@ -55,6 +55,7 @@ export function AppBar({ title, subtitle, showBack, showBell }: AppBarProps) {
           accessibilityRole="button"
           accessibilityLabel="Notifications"
           accessibilityHint="Opens the notification list"
+          onPress={() => router.push('/notifications')}
           style={styles.iconButton}
           hitSlop={8}
         >

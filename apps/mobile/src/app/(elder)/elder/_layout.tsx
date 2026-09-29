@@ -57,6 +57,8 @@ export default function ElderTabsLayout() {
       {/* Reachable from the home screen; hidden from the tab bar. */}
       <Tabs.Screen name="link" options={{ href: null }} />
       <Tabs.Screen name="circle" options={{ href: null }} />
+      {/* Sprint 4 dose detail (`E-03`/`E-04`), pushed from the home list. */}
+      <Tabs.Screen name="dose" options={{ href: null }} />
     </Tabs>
   );
 }

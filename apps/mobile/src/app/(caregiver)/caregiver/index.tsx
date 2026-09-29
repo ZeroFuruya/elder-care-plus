@@ -22,6 +22,8 @@ import {
   type AppThemeColors,
 } from '@/constants/theme';
 import {
+  countUnreadNotifications,
+  getDoseStockOutcome,
   getElderProfile,
   getLinkedElder,
   listDoses,
@@ -29,12 +31,19 @@ import {
   listRecentConfirmations,
   summarise,
   type AdherenceSummary,
+  type DoseStockOutcome,
   type DoseView,
   type MyLink,
 } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
+import { useDoseRealtime } from '@/hooks/use-dose-realtime';
 import { addDays, endOfDay, formatRelative, formatTime, startOfDay } from '@/lib/format';
+
+interface ConfirmationRow {
+  dose: DoseView;
+  stock: DoseStockOutcome | null;
+}
 
 interface DashboardData {
   link: MyLink | null;
@@ -45,8 +54,9 @@ interface DashboardData {
   hasElderProfile: boolean;
   today: DoseView[];
   todaySummary: AdherenceSummary;
-  recent: DoseView[];
+  recent: ConfirmationRow[];
   weekSummary: AdherenceSummary;
+  unread: number;
 }
 
 const EMPTY_SUMMARY: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming: 0, percent: 0 };
@@ -87,16 +97,22 @@ export default function CaregiverDashboardScreen() {
         todaySummary: EMPTY_SUMMARY,
         recent: [],
         weekSummary: EMPTY_SUMMARY,
+        unread: await countUnreadNotifications(),
       };
     }
 
     const now = new Date();
-    const [profile, today, recent, weekDoses] = await Promise.all([
+    const [profile, today, recentDoses, weekDoses, unread] = await Promise.all([
       getElderProfile(link.elderId),
       listDosesForDay(link.elderId, now),
       listRecentConfirmations(link.elderId, 5),
       listDoses(link.elderId, { from: startOfDay(addDays(now, -6)), to: endOfDay(now), now }),
+      countUnreadNotifications(),
     ]);
+
+    const recent = await Promise.all(
+      recentDoses.map(async (dose) => ({ dose, stock: await getDoseStockOutcome(dose.id) })),
+    );
 
     return {
       link,
@@ -105,17 +121,20 @@ export default function CaregiverDashboardScreen() {
       todaySummary: summarise(today),
       recent,
       weekSummary: summarise(weekDoses),
+      unread,
     };
   }, [user.id]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
+  const activeElderId = state.status === 'ready' ? (state.data.link?.elderId ?? null) : null;
+  useDoseRealtime(activeElderId, reload);
 
   if (state.status === 'loading') return <LoadingScreen message="Loading the dashboard…" />;
   if (state.status === 'error') {
     return <ScreenError title="Dashboard" showBell message={state.message} onRetry={reload} />;
   }
 
-  const { link, hasElderProfile, today, todaySummary, recent, weekSummary } = state.data;
+  const { link, hasElderProfile, today, todaySummary, recent, weekSummary, unread } = state.data;
 
   // Caregiver setup: a linked elder with no profile row yet goes straight to `A-09`. Saving
   // there creates the row, so the gate opens on its own — `useAsyncData` re-reads on focus.
@@ -151,6 +170,16 @@ export default function CaregiverDashboardScreen() {
         </Text>
       </Card>
 
+      <Card title="Notifications">
+        <Text style={styles.confirmation}>Unread: {unread}</Text>
+        <Button
+          label="Open notifications"
+          variant="secondary"
+          onPress={() => router.push('/notifications')}
+          accessibilityHint="Opens the list of dose confirmations and missed doses"
+        />
+      </Card>
+
       <Button
         label="Care links and invites"
         variant="secondary"
@@ -181,7 +210,13 @@ export default function CaregiverDashboardScreen() {
             description="No dose has passed its grace period without a confirmation today."
           />
         ) : (
-          missedToday.map((dose) => <DoseCard key={dose.id} dose={dose} />)
+          missedToday.map((dose) => (
+            <DoseCard
+              key={dose.id}
+              dose={dose}
+              onPress={() => router.push(`/caregiver/dose?id=${dose.id}`)}
+            />
+          ))
         )}
       </View>
 
@@ -190,7 +225,13 @@ export default function CaregiverDashboardScreen() {
         {remaining.length === 0 ? (
           <Text style={styles.body}>Every remaining dose today has already been confirmed.</Text>
         ) : (
-          remaining.map((dose) => <DoseCard key={dose.id} dose={dose} />)
+          remaining.map((dose) => (
+            <DoseCard
+              key={dose.id}
+              dose={dose}
+              onPress={() => router.push(`/caregiver/dose?id=${dose.id}`)}
+            />
+          ))
         )}
       </View>
 
@@ -199,7 +240,7 @@ export default function CaregiverDashboardScreen() {
         {recent.length === 0 ? (
           <Text style={styles.body}>No confirmation has been recorded yet.</Text>
         ) : (
-          recent.map((dose) => (
+          recent.map(({ dose, stock }) => (
             <Card key={dose.id}>
               <Text style={styles.confirmation}>
                 {dose.medicine} {dose.strength}
@@ -208,6 +249,11 @@ export default function CaregiverDashboardScreen() {
                 Taken at {dose.takenAt ? formatTime(dose.takenAt) : '—'} ·{' '}
                 {dose.takenAt ? formatRelative(dose.takenAt) : ''}
               </Text>
+              {stock ? (
+                <Text style={styles.elderMeta}>
+                  Stock {stock.delta} {dose.doseUnit}
+                </Text>
+              ) : null}
             </Card>
           ))
         )}

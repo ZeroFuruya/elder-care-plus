@@ -37,7 +37,23 @@ export type CopySourceKind =
 export interface CopyEntry {
   /** The exact string as rendered, with `<name>`/`<record>` marking record-supplied values. */
   text: string;
-  frame: 'A-09' | 'C-10' | 'C-11' | 'E-07' | 'C-02' | 'C-03' | 'C-04' | 'Profile tab';
+  frame:
+    | 'A-09'
+    | 'C-10'
+    | 'C-11'
+    | 'E-07'
+    | 'C-02'
+    | 'C-03'
+    | 'C-04'
+    | 'Profile tab'
+    | 'E-01'
+    | 'E-03'
+    | 'E-04'
+    | 'V-03'
+    | 'C-01'
+    | 'C-05'
+    | 'S-01'
+    | 'Family view';
   kind: CopySourceKind;
   source: string;
 }
@@ -918,6 +934,264 @@ export const COPY_SOURCES: CopyEntry[] = [
     frame: 'C-03',
     kind: 'owner-approved',
     source: 'the P0002 not-found mapping',
+  },
+
+  // -------------------------------------------------------------------------
+  // Sprint 4 dose-confirmation loop (docs/specs/sprint-4.md)
+  //
+  // The acceptance-critical copy is named by the approved spec. Anything with no
+  // approved source is `escalated` and is proposed to the owner, never invented.
+  // -------------------------------------------------------------------------
+
+  // Elder Today (E-01) and the offline banner (V-03)
+  {
+    text: 'Pending sync',
+    frame: 'V-03',
+    kind: 'shared-package',
+    source: '`syncStateLabels.pending`',
+  },
+  {
+    text: 'Pending sync. Do not tap again. ElderCare+ prevents duplicate dose events.',
+    frame: 'V-03',
+    kind: 'spec',
+    source: '§Screens V-03 copy',
+  },
+
+  // Dose Detail (E-03) and Confirmed (E-04)
+  { text: 'Dose', frame: 'E-03', kind: 'spec', source: '§Screens E-03 title' },
+  {
+    text: 'Mark as taken',
+    frame: 'E-03',
+    kind: 'ui-standard',
+    source: '§14 accessibility example names the action',
+  },
+  {
+    text: 'Scheduled for <time>',
+    frame: 'E-03',
+    kind: 'existing-app',
+    source: 'shipped by the Sprint 1b dose card',
+  },
+  { text: 'Taken', frame: 'E-03', kind: 'shared-package', source: '`doseStatusLabels.taken`' },
+  {
+    text: 'Taken at <time>',
+    frame: 'E-03',
+    kind: 'existing-app',
+    source: 'shipped by the Sprint 1b dose card',
+  },
+  { text: 'Confirmed', frame: 'E-04', kind: 'spec', source: '§Screens E-04 title' },
+  {
+    text: 'This action cannot create a duplicate confirmation.',
+    frame: 'E-04',
+    kind: 'spec',
+    source: '§Screens E-04 copy',
+  },
+  { text: 'Done', frame: 'E-04', kind: 'escalated', source: 'closes the E-04 confirmation state' },
+  { text: 'Missed', frame: 'C-05', kind: 'shared-package', source: '`doseStatusLabels.missed`' },
+  {
+    text: 'Missed dose',
+    frame: 'C-05',
+    kind: 'escalated',
+    source: 'E-03/C-05 missed section title',
+  },
+  {
+    text: 'ElderCare+ does not advise whether a late dose should be taken.',
+    frame: 'C-05',
+    kind: 'spec',
+    source: '§Screens C-05 copy',
+  },
+  {
+    text: 'This dose is no longer available',
+    frame: 'E-03',
+    kind: 'escalated',
+    source: 'a dose that RLS hides or a plan edit removed',
+  },
+  {
+    text: 'It may have been removed when the medicine plan changed. Pull to refresh the list.',
+    frame: 'E-03',
+    kind: 'escalated',
+    source: 'explains the missing-dose empty state',
+  },
+  {
+    text: 'It may have been removed when the medicine plan changed.',
+    frame: 'C-05',
+    kind: 'escalated',
+    source: 'explains the missing-dose empty state',
+  },
+  { text: 'Back to today', frame: 'E-03', kind: 'escalated', source: 'returns to the day list' },
+  { text: 'Back', frame: 'C-05', kind: 'escalated', source: 'returns to the dashboard' },
+  {
+    text: 'Only the older adult records a confirmation. This view never changes the record.',
+    frame: 'C-05',
+    kind: 'escalated',
+    source: 'states the read-only rule on the caregiver dose view',
+  },
+
+  // Caregiver Dashboard (C-01)
+  {
+    text: 'Notifications',
+    frame: 'C-01',
+    kind: 'existing-app',
+    source: 'the app-bar bell label',
+  },
+  { text: 'Unread', frame: 'C-01', kind: 'spec', source: '§Screens S-01 states `Unread` / `Read`' },
+  {
+    text: 'Unread: <count>',
+    frame: 'C-01',
+    kind: 'spec',
+    source: '§Screens S-01 `Unread` + record count',
+  },
+  {
+    text: 'Open notifications',
+    frame: 'C-01',
+    kind: 'escalated',
+    source: 'opens S-01 from the dashboard',
+  },
+  {
+    text: 'Stock <delta> <unit>',
+    frame: 'C-01',
+    kind: 'spec',
+    source: '§Screens C-01 "the stock outcome"; values come from the ledger',
+  },
+
+  // Notification Center (S-01)
+  { text: 'Read', frame: 'S-01', kind: 'spec', source: '§Screens S-01 `Unread` / `Read`' },
+  { text: 'Mark all read', frame: 'S-01', kind: 'spec', source: '§Screens S-01 copy' },
+  { text: 'No notifications yet', frame: 'S-01', kind: 'escalated', source: 'S-01 empty state' },
+  {
+    text: 'A dose confirmation or a missed dose appears here for the family caregiver.',
+    frame: 'S-01',
+    kind: 'escalated',
+    source: 'S-01 empty-state description',
+  },
+  {
+    text: 'Notifications stay in the app. ElderCare+ does not send medical detail by message.',
+    frame: 'S-01',
+    kind: 'escalated',
+    source: 'states the in-app-only rule from the instructor requirement',
+  },
+
+  // Family medication and adherence view
+  {
+    text: 'Medication plan',
+    frame: 'Family view',
+    kind: 'spec',
+    source: '§Screens family view names the plan section',
+  },
+  {
+    text: 'Dose activity',
+    frame: 'Family view',
+    kind: 'escalated',
+    source: 'family adherence section',
+  },
+  {
+    text: 'No medicines on the plan',
+    frame: 'Family view',
+    kind: 'escalated',
+    source: 'family empty state',
+  },
+  {
+    text: 'The family caregiver sets up each medicine and its schedule.',
+    frame: 'Family view',
+    kind: 'escalated',
+    source: 'family empty-state description',
+  },
+  {
+    text: 'Stock <quantity> <unit> · expires <date>',
+    frame: 'Family view',
+    kind: 'escalated',
+    source: 'family batch row; values are record data',
+  },
+  {
+    text: '<taken> taken · <missed> missed · <due> due · <upcoming> upcoming',
+    frame: 'Family view',
+    kind: 'spec',
+    source: '§Screens family view counts; labels from `doseStatusLabels`',
+  },
+  {
+    text: 'No activity yet',
+    frame: 'Family view',
+    kind: 'existing-app',
+    source: 'shipped by the Sprint 1b family shell',
+  },
+  {
+    text: 'Confirmed doses appear here as the older adult records them.',
+    frame: 'Family view',
+    kind: 'existing-app',
+    source: 'shipped by the Sprint 1b family shell',
+  },
+
+  // Shared loading / error copy for the new screens and the dose data layer
+  {
+    text: 'Loading the dose…',
+    frame: 'E-03',
+    kind: 'existing-app',
+    source: 'existing screen pattern',
+  },
+  {
+    text: 'Loading notifications…',
+    frame: 'S-01',
+    kind: 'existing-app',
+    source: 'existing screen pattern',
+  },
+  {
+    text: 'Could not load the doses.',
+    frame: 'E-01',
+    kind: 'escalated',
+    source: 'new dose data-layer error',
+  },
+  {
+    text: 'Could not load the dose.',
+    frame: 'E-03',
+    kind: 'escalated',
+    source: 'new dose data-layer error',
+  },
+  {
+    text: 'Could not load the confirmations.',
+    frame: 'C-01',
+    kind: 'escalated',
+    source: 'new dose data-layer error',
+  },
+  {
+    text: 'Could not prepare today’s doses.',
+    frame: 'E-01',
+    kind: 'escalated',
+    source: 'new generation error',
+  },
+  {
+    text: 'This dose is not available to you.',
+    frame: 'E-03',
+    kind: 'escalated',
+    source: 'the 42501 mapping for the dose RPCs',
+  },
+  {
+    text: 'Those dates are outside the allowed range.',
+    frame: 'E-01',
+    kind: 'escalated',
+    source: 'the generation window-cap mapping',
+  },
+  {
+    text: 'Could not record the confirmation.',
+    frame: 'E-03',
+    kind: 'escalated',
+    source: 'new confirmation error fallback',
+  },
+  {
+    text: 'Could not load the notifications.',
+    frame: 'S-01',
+    kind: 'escalated',
+    source: 'new notification data-layer error',
+  },
+  {
+    text: 'Could not update the notifications.',
+    frame: 'S-01',
+    kind: 'escalated',
+    source: 'new notification read-state error',
+  },
+  {
+    text: 'waiting to reach the server',
+    frame: 'V-03',
+    kind: 'escalated',
+    source: 'the second half of the pending-sync meta row',
   },
 ];
 
