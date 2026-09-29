@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { userRoleLabels } from '@eldercare/shared';
@@ -7,10 +8,13 @@ import { Card } from '@/components/card';
 import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function ElderProfileScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
   return (
     <Screen title="Profile" subtitle="Your account">
@@ -44,24 +48,26 @@ export default function ElderProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  row: {
-    gap: spacing.xs,
-  },
-  label: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  value: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '600',
-    lineHeight: lineHeight.body,
-  },
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    row: {
+      gap: spacing.xs,
+    },
+    label: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    value: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '600',
+      lineHeight: lineHeight.body,
+    },
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

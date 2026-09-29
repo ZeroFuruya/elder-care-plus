@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import {
   listDosesForDay,
   listElderCircle,
@@ -18,6 +18,7 @@ import {
   type DoseView,
   type ElderCircleLink,
 } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { formatLongDate, greeting } from '@/lib/format';
 
@@ -35,6 +36,8 @@ interface HomeData {
 
 export default function ElderHomeScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loader = useCallback(async (): Promise<HomeData> => {
     const [doses, circle] = await Promise.all([
       listDosesForDay(user.id, new Date()),
@@ -124,26 +127,28 @@ export default function ElderHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  greeting: {
-    color: colors.text,
-    fontSize: fontSize.heading,
-    fontWeight: '700',
-    lineHeight: lineHeight.heading,
-  },
-  summary: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-    textTransform: 'uppercase',
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    greeting: {
+      color: colors.text,
+      fontSize: fontSize.heading,
+      fontWeight: '700',
+      lineHeight: lineHeight.heading,
+    },
+    summary: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+      textTransform: 'uppercase',
+    },
+  });
+}

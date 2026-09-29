@@ -1,11 +1,16 @@
+import { useMemo } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { Card } from '@/components/card';
 import { EmptyState } from '@/components/empty-state';
 import { Screen } from '@/components/screen';
-import { colors, fontSize, lineHeight } from '@/constants/theme';
+import { fontSize, lineHeight, type AppThemeColors } from '@/constants/theme';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 export default function ElderCalendarScreen() {
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   return (
     <Screen title="Calendar" subtitle="Appointments">
       <EmptyState
@@ -24,10 +29,12 @@ export default function ElderCalendarScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

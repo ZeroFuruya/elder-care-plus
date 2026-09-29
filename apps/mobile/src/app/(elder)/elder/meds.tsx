@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -7,13 +7,16 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { StatusBadge } from '@/components/status-badge';
-import { colors, fontSize, lineHeight, radius, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, radius, spacing, type AppThemeColors } from '@/constants/theme';
 import { listMedicines } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { formatTime } from '@/lib/format';
 
 export default function ElderMedsScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loader = useCallback(() => listMedicines(user.id), [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -63,41 +66,43 @@ export default function ElderMedsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  top: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  medicine: {
-    color: colors.text,
-    flex: 1,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    lineHeight: lineHeight.body,
-  },
-  instructions: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  meta: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '600',
-    lineHeight: lineHeight.caption,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    card: {
+      backgroundColor: colors.surface,
+      borderColor: colors.border,
+      borderRadius: radius.lg,
+      borderWidth: 1,
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    top: {
+      alignItems: 'flex-start',
+      flexDirection: 'row',
+      gap: spacing.sm,
+    },
+    medicine: {
+      color: colors.text,
+      flex: 1,
+      fontSize: fontSize.body,
+      fontWeight: '700',
+      lineHeight: lineHeight.body,
+    },
+    instructions: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    meta: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      lineHeight: lineHeight.caption,
+    },
+    note: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}
