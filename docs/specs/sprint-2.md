@@ -9,8 +9,8 @@
   every mutating RPC) and the **edit/verify race** (row locking). Owner decisions recorded below:
   the `E-07` incomplete-state strings, **no** re-authentication for profile/number writes, and
   **state-changing-only** audit rows. Implemented and shipped on
-  `sprint-2-elder-profile-emergency` (60 pgTAP assertions); awaiting the owner's formal sign-off at
-  the 2026-10-01 checkpoint.
+  `sprint-2-elder-profile-emergency` (60 pgTAP assertions); **signed off by the owner 2026-10-01**
+  (`docs/specs/checkpoint-2026-10-01.md`).
 - **Branch:** `sprint-2-elder-profile-emergency`, based on `sprint-1b-supabase-cutover`.
 - **Flow:** `docs/00-product-flow.md` Flow G (emergency), setup step A.2; `docs/adr/adr-004`
   Decision A (ordered list of emergency numbers with one dominant call action);
