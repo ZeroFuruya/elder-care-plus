@@ -1,11 +1,12 @@
 # Sprint 1b — Cut the mobile app over to Supabase Auth + Postgres (identity, roles, care circle)
 
-- **Status:** Draft for owner approval, written 2026-09-29 at the owner's request after the
-  2026-09-29 decision that the 2026-10-15/16 class checking demonstrates the Supabase-backed app.
-  Revised the same day to fold in the `@architect` critique (2026-09-29): the transitional SQLite
-  strategy, the session-storage and auth state-machine contracts, the hosted evidence checklist,
-  the synthetic setup runbook and the sequencing gates are now part of the build contract. Hosted
-  verification evidence appended 2026-09-29.
+- **Status:** **Approved by the owner 2026-10-01** (`docs/specs/checkpoint-2026-10-01.md`). Drafted
+  2026-09-29 at the owner's request after the 2026-09-29 decision that the 2026-10-15/16 class
+  checking demonstrates the Supabase-backed app. Revised the same day to fold in the `@architect`
+  critique: the transitional SQLite strategy, the session-storage and auth state-machine contracts,
+  the hosted evidence checklist, the synthetic setup runbook and the sequencing gates are now part
+  of the build contract. Implemented on `sprint-1b-supabase-cutover` and merged to `main` via PR #1;
+  hosted verification evidence appended 2026-09-29.
 - **Branch:** `sprint-1b-supabase-cutover`.
 - **Flow:** `docs/00-product-flow.md` Flow A (first use and care linking); `docs/adr/adr-001`
   (third role, care-circle membership).

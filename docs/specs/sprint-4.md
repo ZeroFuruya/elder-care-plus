@@ -7,7 +7,8 @@
   states, DST policy and a due-now checking runbook. Open questions 2–8 were resolved by the owner
   on 2026-09-30; **question 6 chose full family plan visibility** (see below), so the narrow
   `family_*_summary` views are dropped and family access stays row-level RLS on the base tables.
-  Implementation started 2026-09-30. This is the **2026-10-15/16 instructor checking deliverable of
+  Implementation started 2026-09-30 and was reviewed and accepted at the 2026-10-01 checkpoint.
+  This is the **2026-10-15/16 instructor checking deliverable of
   record**.
   **Availability verified 2026-09-29:** `pg_cron 1.6.4` and `pg_net 0.20.4` are both present in the
   hosted Free project's extension list (not yet installed), so the every-five-minutes missed-dose

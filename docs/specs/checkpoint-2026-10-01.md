@@ -3,8 +3,11 @@
 Owner checkpoint (Thursday). Four decisions plus a diff review, prepared so the owner can accept or
 reject each item in one sitting. Evidence cites recorded results only; nothing here is invented.
 
-**Branch of record:** `sprint-4-medication-adherence` (top of the stack; contains Sprints 2–4 plus
-the UI theme and the validation-hardening pass).
+**Outcome (2026-10-01): all four decisions were granted by the owner — Sprint 1 accepted,
+`sprint-1b.md` approved, `sprint-2.md` signed off, and the Sprint 4 diff approved for merge.**
+
+**Branch of record:** the work was merged to `main` on 2026-10-01 — PR #1 (`967c86b`, the cutover)
+and PR #2 (`cd1778f`, Sprints 2–4 + UI theme + validation hardening).
 
 ---
 
@@ -22,7 +25,7 @@ Schema first — accounts, roles, care circle, consent — plus the three securi
 | 5 | Sensitive writes stay guarded | RLS default-deny on every table; elder writes only their own due dose via a guarded RPC |
 | 6 | Plain-English acceptance summary | This sheet |
 
-**Decision:** ☐ Accept  ☐ Reject (reason: )
+**Decision (2026-10-01):** ☒ Accept  ☐ Reject. **Accepted by the owner.**
 
 ---
 
@@ -30,12 +33,14 @@ Schema first — accounts, roles, care circle, consent — plus the three securi
 
 Supabase cutover: Auth, roles, care linking, hosted project, family shell.
 
-- Status in the spec is still "Draft for owner approval"; hosted verification evidence is appended.
-- Implemented on `sprint-1b-supabase-cutover` and **already merged to `main` via PR #1** (`967c86b`).
+- Status in the spec was "Draft for owner approval"; hosted verification evidence is appended.
+- Implemented on `sprint-1b-supabase-cutover` and **merged to `main` via PR #1** (`967c86b`).
 - Hosted project `buwwkdhzansbyeytsufj` is live; three synthetic demo accounts provisioned and
   role-verified under RLS; email confirmation off; 6-character minimum enforced.
+- Delivery plumbing closed out on 2026-10-01: keep-alive repo secrets + a green manual dispatch,
+  EAS `preview`/`production` env vars, and preview APK build `e2c86c9f`.
 
-**Decision:** ☐ Approve  ☐ Request changes (reason: )
+**Decision (2026-10-01):** ☒ Approve  ☐ Request changes. **Approved by the owner.**
 
 ---
 
@@ -47,8 +52,10 @@ Elder profile and emergency information (Flow G).
   audit rows only on state changes.
 - **Implemented and shipped** on `sprint-2-elder-profile-emergency` — **60/60** pgTAP assertions.
 - Status line corrected from "Implementation has not started" as part of this checkpoint.
+- One follow-up settled the same day: the `C-01` first-run gate now shows a create-profile prompt
+  instead of auto-redirecting to `A-09`, so the back button is never trapped (PR #3).
 
-**Decision:** ☐ Sign off  ☐ Request changes (reason: )
+**Decision (2026-10-01):** ☒ Sign off  ☐ Request changes. **Signed off by the owner.**
 
 ---
 
@@ -75,16 +82,19 @@ Highest-scrutiny mechanics to confirm before merge:
 - Minimal read-only family view scoped by `can_view_profile`.
 - Validation hardening: DOB ≥ 18 and ≥ 1900-01-01, length and amount caps (**13** pgTAP assertions).
 
-**Decision:** ☐ Approve the diff  ☐ Request changes (reason: )
+**Decision (2026-10-01):** ☒ Approve the diff  ☐ Request changes. **Approved and merged** (PR #2).
 
 ---
 
 ## E. Open items at this checkpoint
 
-- A-09 first-run gate: should the back-button bounce become a dashboard prompt? *(awaiting owner)*
+- ~~A-09 first-run gate: should the back-button bounce become a dashboard prompt?~~ **Settled
+  2026-10-01: a dashboard prompt (PR #3).**
 - `docs/02-ui-ux-standard.md` §16 unsaved-input confirmation *(documented follow-up)*.
-- Preview APK build (`e2c86c9f`, commit `cc8ff92`) — install on the phone for the Oct 15/16 checking.
-- Keep-alive repo secrets + manual dispatch; EAS env vars already set.
+- ~~Preview APK build~~ **Built** (`e2c86c9f`, commit `cc8ff92`) — install on the phone for the
+  Oct 15/16 checking (`docs/checking-runbook-2026-10-15.md`).
+- ~~Keep-alive repo secrets + manual dispatch~~ **Done**; keep-alive green on `main`. EAS env vars
+  set.
 - Consider a mobile component-test runner (new dev dependency — needs owner decision).
 
 ---

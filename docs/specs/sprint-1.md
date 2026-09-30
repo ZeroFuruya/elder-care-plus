@@ -1,9 +1,9 @@
 # Sprint 1 — Accounts, roles, care circle and consent (schema first)
 
-- **Status:** Draft for owner approval. Written and implemented on 2026-09-25 at the owner's
-  request; the security closeout addendum (frozen 2026-09-27) adds three owner-required
-  corrections. The owner must still review and accept the sprint at the 2026-10-01 checkpoint
-  (`docs/specs/README.md`, `docs/01-dev-environment.md` §10).
+- **Status:** **Accepted by the owner 2026-10-01** (`docs/specs/checkpoint-2026-10-01.md`). Written
+  and implemented on 2026-09-25 at the owner's request; the security closeout addendum (frozen
+  2026-09-27) adds three owner-required corrections, all covered by tests. 124/124 pgTAP; RLS
+  default-deny, sensitive writes RPC-guarded.
 - **Branch:** `sprint-1-accounts-care-circle`.
 - **Flow:** `docs/00-product-flow.md` Flow A.
 - **Decisions this depends on:** `docs/adr/adr-001` (third role, care circle), all ADRs now Accepted.

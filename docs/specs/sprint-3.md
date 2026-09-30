@@ -9,7 +9,8 @@
   *Implementation ran 2026-09-30: the migration, its pgTAP suite, the shared contracts and the
   `C-02`/`C-03`/`C-04` screens are on the branch, and the 60 proposed strings and the deviations
   itemised under "Implementation notes" at the end were approved by the owner on 2026-09-30. The
-  migration was pushed to the hosted project the same day.*
+  migration was pushed to the hosted project the same day, and the sprint was reviewed and accepted
+  at the 2026-10-01 checkpoint.*
 - **Branch:** `sprint-3-medication-setup`.
 - **Flow:** `docs/00-product-flow.md` §4 B (medication, inventory and expiry setup), §7 data model,
   §8 validation.
