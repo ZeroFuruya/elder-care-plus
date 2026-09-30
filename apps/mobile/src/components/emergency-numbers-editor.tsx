@@ -4,6 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   emergencyCategoryLabels,
   emergencyCategorySchema,
+  MAX_CONTACT_LABEL_LENGTH,
+  MAX_PHONE_LENGTH,
   MIN_PHONE_DIGITS,
   phoneLooksValid,
   type EmergencyCategory,
@@ -288,6 +290,7 @@ export function EmergencyNumbersEditor({
             onChangeText={(value) => update({ label: value })}
             onBlur={() => handleBlur('label')}
             error={errors.label}
+            maxLength={MAX_CONTACT_LABEL_LENGTH}
             autoComplete="name"
           />
           <Field
@@ -296,6 +299,7 @@ export function EmergencyNumbersEditor({
             onChangeText={(value) => update({ phone: value })}
             onBlur={() => handleBlur('phone')}
             error={errors.phone}
+            maxLength={MAX_PHONE_LENGTH}
             keyboardType="phone-pad"
             autoComplete="tel"
           />

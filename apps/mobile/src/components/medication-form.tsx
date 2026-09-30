@@ -9,6 +9,10 @@ import {
   doseUnitLabels,
   doseUnitSchema,
   graceMinutesSchema,
+  MAX_DOSE_UNIT_LENGTH,
+  MAX_MEDICATION_LABEL_LENGTH,
+  MAX_MEDICATION_TEXT_LENGTH,
+  MAX_STOCK_AMOUNT,
   medicationFormLabels,
   medicationFormSchema,
   medicationInputSchema,
@@ -52,6 +56,7 @@ import {
   type AppThemeColors,
 } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { toIsoDay } from '@/lib/format';
 
 /**
  * `C-03` Add / Edit Medication - the single write surface for a medication plan
@@ -84,6 +89,10 @@ const REQUIRED_BATCH_UNIT = 'Enter the unit written on the pack';
 const REQUIRED_BATCH_EXPIRY = 'Choose the expiry date';
 const BATCH_UNIT_MISMATCH =
   'This differs from the dose unit, so stock will not reduce automatically.';
+
+/** Escalated to the owner (2026-09-30) with the validation-hardening fix. */
+const AMOUNT_TOO_LARGE = 'Enter a smaller amount';
+const EXPIRY_IN_PAST = 'Choose an expiry date that has not passed';
 
 /** The wireframe draws `30 minutes`; these are the same pattern at the allowed step. */
 const GRACE_OPTIONS = [15, 30, 45, 60, 90, 120] as const;
@@ -260,6 +269,8 @@ export function MedicationForm({
       doseQuantity <= 0
     ) {
       nextErrors.doseQuantity = REQUIRED_DOSE;
+    } else if (doseQuantity > MAX_STOCK_AMOUNT) {
+      nextErrors.doseQuantity = AMOUNT_TOO_LARGE;
     }
     if (resolvedUnit === null) nextErrors.customUnit = REQUIRED_UNIT;
 
@@ -279,12 +290,23 @@ export function MedicationForm({
         batchQuantity < 0)
     ) {
       nextErrors.batchQuantity = REQUIRED_BATCH_QUANTITY;
+    } else if (form.hasBatch && batchQuantity > MAX_STOCK_AMOUNT) {
+      nextErrors.batchQuantity = AMOUNT_TOO_LARGE;
     }
     if (form.hasBatch && form.batchUnit.trim().length === 0) {
       nextErrors.batchUnit = REQUIRED_BATCH_UNIT;
     }
     if (form.hasBatch && form.batchExpiry.length === 0) {
       nextErrors.batchExpiry = REQUIRED_BATCH_EXPIRY;
+    } else if (form.hasBatch && form.batchExpiry < toIsoDay(new Date())) {
+      // The server rejects an already-expired batch; say it inline first.
+      nextErrors.batchExpiry = EXPIRY_IN_PAST;
+    }
+
+    const thresholdField = form.batchThreshold.trim();
+    const thresholdValue = thresholdField.length === 0 ? Number.NaN : Number(thresholdField);
+    if (form.hasBatch && Number.isFinite(thresholdValue) && thresholdValue > MAX_STOCK_AMOUNT) {
+      nextErrors.batchThreshold = AMOUNT_TOO_LARGE;
     }
 
     setErrors(nextErrors);
@@ -424,6 +446,7 @@ export function MedicationForm({
           value={form.name}
           onChangeText={(value) => set('name', value)}
           error={errors.name}
+          maxLength={MAX_MEDICATION_LABEL_LENGTH}
           placeholder="Metformin"
         />
         <Field
@@ -431,6 +454,7 @@ export function MedicationForm({
           value={form.strength}
           onChangeText={(value) => set('strength', value)}
           error={errors.strength}
+          maxLength={MAX_MEDICATION_LABEL_LENGTH}
           placeholder="500 mg tablet"
         />
         <ChoiceChips
@@ -444,6 +468,7 @@ export function MedicationForm({
           value={form.instructions}
           onChangeText={(value) => set('instructions', value)}
           error={errors.instructions}
+          maxLength={MAX_MEDICATION_TEXT_LENGTH}
           placeholder="Take 1 tablet after meals"
           multiline
         />
@@ -488,6 +513,7 @@ export function MedicationForm({
             value={form.customUnit}
             onChangeText={(value) => set('customUnit', value)}
             error={errors.customUnit}
+            maxLength={MAX_DOSE_UNIT_LENGTH}
             placeholder="teaspoon"
           />
         ) : null}
@@ -566,6 +592,7 @@ export function MedicationForm({
               value={form.batchUnit}
               onChangeText={(value) => set('batchUnit', value)}
               error={errors.batchUnit}
+              maxLength={MAX_DOSE_UNIT_LENGTH}
               placeholder="tablet"
             />
             {form.batchUnit.trim().length > 0 &&
@@ -577,6 +604,7 @@ export function MedicationForm({
               label="Lot number"
               value={form.batchLot}
               onChangeText={(value) => set('batchLot', value)}
+              maxLength={MAX_DOSE_UNIT_LENGTH}
               placeholder="LOT-A1"
             />
             <DateField
@@ -591,6 +619,7 @@ export function MedicationForm({
               label="Low-stock threshold"
               value={form.batchThreshold}
               onChangeText={(value) => set('batchThreshold', value)}
+              error={errors.batchThreshold}
               placeholder="7"
               keyboardType="decimal-pad"
             />
@@ -598,6 +627,7 @@ export function MedicationForm({
               label="Refill contact"
               value={form.batchRefill}
               onChangeText={(value) => set('batchRefill', value)}
+              maxLength={MAX_MEDICATION_LABEL_LENGTH}
               placeholder="Night Pharmacy"
             />
           </>

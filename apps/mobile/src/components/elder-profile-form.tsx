@@ -3,6 +3,14 @@ import { useMemo, useState } from 'react';
 import {
   bloodTypeLabels,
   bloodTypeSchema,
+  dateOfBirthIssue,
+  EARLIEST_BIRTH_DATE,
+  MAX_COUNTRY_TEXT_LENGTH,
+  MAX_ELDER_SHORT_TEXT_LENGTH,
+  MAX_ELDER_TEXT_LENGTH,
+  MAX_PHONE_LENGTH,
+  MAX_POSTAL_CODE_LENGTH,
+  MIN_ELDER_AGE_YEARS,
   MIN_PHONE_DIGITS,
   phoneLooksValid,
   type BloodType,
@@ -15,6 +23,7 @@ import { ChoiceChips } from '@/components/choice-chips';
 import { DateField } from '@/components/date-field';
 import { Field } from '@/components/field';
 import { upsertElderProfile, type ElderProfile } from '@/db';
+import { parseDayOnly } from '@/lib/format';
 
 /**
  * The elder-profile fields shared by `A-09` Create Elder Profile and `C-11` Edit Elder Profile
@@ -31,8 +40,14 @@ import { upsertElderProfile, type ElderProfile } from '@/db';
 /** Verbatim from `emergencyNumberInputSchema` in `@eldercare/shared`. */
 const PHONE_ERROR = `Enter a phone number with at least ${MIN_PHONE_DIGITS} digits`;
 
-/** Birth dates can't predate this; a `1900` floor keeps the picker's year list short. */
-const EARLIEST_BIRTH_DATE = new Date(1900, 0, 1);
+/**
+ * The birth-date rules have no approved source, so the wording was escalated to the owner
+ * (2026-09-30) alongside the fix. The bounds themselves are shared with `@eldercare/shared` and
+ * the `upsert_elder_profile` RPC, not invented here.
+ */
+const FUTURE_BIRTH_DATE = 'The birth date cannot be in the future';
+const BIRTH_DATE_TOO_EARLY = 'Enter a birth date from 1900 or later';
+const BIRTH_DATE_UNDER_AGE = `The older adult must be at least ${MIN_ELDER_AGE_YEARS} years old`;
 
 interface ProfileFormState {
   dateOfBirth: string;
@@ -77,11 +92,22 @@ function blankOrNull(value: string): string | null {
 }
 
 /**
- * The date picker cannot produce an impossible or future `Birth date` (it is bounded by
- * `minimumDate`/`maximumDate`), so only the free-text fields need a rule
- * (docs/02-ui-ux-standard.md section 11).
+ * Validate on change or blur, never on every keystroke (docs/02-ui-ux-standard.md section 11).
+ *
+ * The date picker is bounded, but the bound is a hint: an out-of-range value must still be
+ * rejected on save, so `Birth date` is checked here as well as in the server RPC. The free-text
+ * fields get no rule beyond `maxLength` (enforced at the input) and the doctor's phone number.
  */
 function validateField(key: keyof ProfileFormState, value: string): string | undefined {
+  if (key === 'dateOfBirth') {
+    if (value.length === 0) return undefined;
+    const issue = dateOfBirthIssue(value);
+    if (issue === 'future') return FUTURE_BIRTH_DATE;
+    if (issue === 'before_earliest') return BIRTH_DATE_TOO_EARLY;
+    if (issue === 'under_age') return BIRTH_DATE_UNDER_AGE;
+    return undefined;
+  }
+
   if (key === 'doctorPhone') {
     if (value.trim().length === 0) return undefined;
     return phoneLooksValid(value) ? undefined : PHONE_ERROR;
@@ -118,19 +144,35 @@ export function ElderProfileForm({
     [],
   );
 
+  /** The newest birth date that still makes the older adult an adult. */
+  const latestBirthDate = useMemo(() => {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - MIN_ELDER_AGE_YEARS);
+    return date;
+  }, []);
+
   function set<K extends keyof ProfileFormState>(key: K, value: ProfileFormState[K]) {
     setForm((current) => ({ ...current, [key]: value }));
   }
 
-  /** Validate on blur, never on every keystroke (docs/02-ui-ux-standard.md section 11). */
-  function handleBlur(key: keyof ProfileFormState) {
-    const message = validateField(key, form[key]);
+  function applyError(key: keyof ProfileFormState, value: string) {
+    const message = validateField(key, value);
     setErrors((current) => {
       const next = { ...current };
       if (message) next[key] = message;
       else delete next[key];
       return next;
     });
+  }
+
+  function handleBlur(key: keyof ProfileFormState) {
+    applyError(key, form[key]);
+  }
+
+  /** The picker fires once, so validate the chosen date immediately rather than on blur. */
+  function setBirthDate(value: string) {
+    set('dateOfBirth', value);
+    applyError('dateOfBirth', value);
   }
 
   async function save() {
@@ -180,10 +222,11 @@ export function ElderProfileForm({
         <DateField
           label="Birth date"
           value={form.dateOfBirth}
-          onChange={(value) => set('dateOfBirth', value)}
+          onChange={setBirthDate}
           placeholder="Select date"
-          minimumDate={EARLIEST_BIRTH_DATE}
-          maximumDate={new Date()}
+          error={errors.dateOfBirth}
+          minimumDate={parseDayOnly(EARLIEST_BIRTH_DATE)}
+          maximumDate={latestBirthDate}
         />
         <ChoiceChips
           label="Blood type"
@@ -198,18 +241,21 @@ export function ElderProfileForm({
           label="Conditions"
           value={form.conditions}
           onChangeText={(value) => set('conditions', value)}
+          maxLength={MAX_ELDER_TEXT_LENGTH}
           multiline
         />
         <Field
           label="Allergies"
           value={form.allergies}
           onChangeText={(value) => set('allergies', value)}
+          maxLength={MAX_ELDER_TEXT_LENGTH}
           multiline
         />
         <Field
           label="Care instructions"
           value={form.careInstructions}
           onChangeText={(value) => set('careInstructions', value)}
+          maxLength={MAX_ELDER_TEXT_LENGTH}
           multiline
         />
       </Card>
@@ -219,6 +265,7 @@ export function ElderProfileForm({
           label="Primary doctor"
           value={form.doctorName}
           onChangeText={(value) => set('doctorName', value)}
+          maxLength={MAX_ELDER_SHORT_TEXT_LENGTH}
           autoComplete="name"
         />
         <Field
@@ -227,6 +274,7 @@ export function ElderProfileForm({
           onChangeText={(value) => set('doctorPhone', value)}
           onBlur={() => handleBlur('doctorPhone')}
           error={errors.doctorPhone}
+          maxLength={MAX_PHONE_LENGTH}
           keyboardType="phone-pad"
           autoComplete="tel"
         />
@@ -237,25 +285,39 @@ export function ElderProfileForm({
           label="Address line 1"
           value={form.addressLine1}
           onChangeText={(value) => set('addressLine1', value)}
+          maxLength={MAX_ELDER_SHORT_TEXT_LENGTH}
           autoComplete="street-address"
         />
         <Field
           label="Address line 2"
           value={form.addressLine2}
           onChangeText={(value) => set('addressLine2', value)}
+          maxLength={MAX_ELDER_SHORT_TEXT_LENGTH}
         />
-        <Field label="City" value={form.city} onChangeText={(value) => set('city', value)} />
-        <Field label="Region" value={form.region} onChangeText={(value) => set('region', value)} />
+        <Field
+          label="City"
+          value={form.city}
+          onChangeText={(value) => set('city', value)}
+          maxLength={MAX_ELDER_SHORT_TEXT_LENGTH}
+        />
+        <Field
+          label="Region"
+          value={form.region}
+          onChangeText={(value) => set('region', value)}
+          maxLength={MAX_ELDER_SHORT_TEXT_LENGTH}
+        />
         <Field
           label="Postal code"
           value={form.postalCode}
           onChangeText={(value) => set('postalCode', value)}
+          maxLength={MAX_POSTAL_CODE_LENGTH}
           autoComplete="postal-code"
         />
         <Field
           label="Country"
           value={form.country}
           onChangeText={(value) => set('country', value)}
+          maxLength={MAX_COUNTRY_TEXT_LENGTH}
           autoComplete="country"
         />
       </Card>

@@ -109,12 +109,28 @@ export function resolveDoseUnit(unit: DoseUnit, customUnit?: string | null): str
 // Field primitives
 // ---------------------------------------------------------------------------
 
+/** Matches the `numeric(10, 3)` stock columns; a larger value cannot be stored. */
+export const MAX_STOCK_AMOUNT = 9_999_999.999;
+
+/** Bounded free text the medication tables store, matched by their column checks. */
+export const MAX_MEDICATION_LABEL_LENGTH = 200;
+export const MAX_MEDICATION_TEXT_LENGTH = 2000;
+export const MAX_DOSE_UNIT_LENGTH = 100;
+
 /**
  * A non-blank string. The database rejects whitespace-only `name`, `strength`,
- * `dose_unit` and `instructions`, so trimming here keeps client and server in
- * step.
+ * `dose_unit`, `instructions` and `timezone`, so trimming here keeps client and
+ * server in step.
  */
 const nonBlankText = z.string().trim().min(1);
+
+/**
+ * A non-blank string with a ceiling. The `max` mirrors the length check added to
+ * each column by the validation-hardening migration.
+ */
+function boundedText(max: number) {
+  return nonBlankText.max(max);
+}
 
 /** `YYYY-MM-DD` — the same literal form the `date` column and the date field use. */
 export const isoDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
@@ -167,12 +183,12 @@ export function canonicalizeDaysOfWeek(days: readonly number[]): number[] {
  */
 export const medicationInputSchema = z
   .object({
-    name: nonBlankText,
-    strength: nonBlankText,
+    name: boundedText(MAX_MEDICATION_LABEL_LENGTH),
+    strength: boundedText(MAX_MEDICATION_LABEL_LENGTH),
     form: medicationFormSchema.nullable(),
-    doseQuantity: z.number().positive(),
-    doseUnit: nonBlankText,
-    instructions: nonBlankText,
+    doseQuantity: z.number().positive().max(MAX_STOCK_AMOUNT),
+    doseUnit: boundedText(MAX_DOSE_UNIT_LENGTH),
+    instructions: boundedText(MAX_MEDICATION_TEXT_LENGTH),
     startDate: isoDaySchema,
     endDate: isoDaySchema.nullable(),
   })
@@ -194,12 +210,12 @@ export type ScheduleInput = z.infer<typeof scheduleInputSchema>;
  * convert a cleared field before validating.
  */
 export const batchInputSchema = z.object({
-  quantity: z.number().min(0),
-  unit: nonBlankText,
-  lotNumber: nonBlankText.nullable(),
+  quantity: z.number().min(0).max(MAX_STOCK_AMOUNT),
+  unit: boundedText(MAX_DOSE_UNIT_LENGTH),
+  lotNumber: boundedText(MAX_DOSE_UNIT_LENGTH).nullable(),
   expiryDate: isoDaySchema,
-  lowStockThreshold: z.number().min(0).nullable(),
-  refillContact: nonBlankText.nullable(),
+  lowStockThreshold: z.number().min(0).max(MAX_STOCK_AMOUNT).nullable(),
+  refillContact: boundedText(MAX_MEDICATION_LABEL_LENGTH).nullable(),
 });
 export type BatchInput = z.infer<typeof batchInputSchema>;
 

@@ -10,6 +10,7 @@ import {
   graceMinutesSchema,
   hasUsableActiveBatch,
   isoDaySchema,
+  MAX_STOCK_AMOUNT,
   medicationFormLabels,
   medicationFormSchema,
   medicationInputSchema,
@@ -224,6 +225,17 @@ describe('medicationInputSchema', () => {
       medicationInputSchema.safeParse({ ...VALID_MEDICATION, startDate: '2026-10-1' }).success,
     ).toBe(false);
   });
+
+  it('caps the dose quantity at the numeric(10,3) maximum', () => {
+    expect(
+      medicationInputSchema.safeParse({ ...VALID_MEDICATION, doseQuantity: MAX_STOCK_AMOUNT })
+        .success,
+    ).toBe(true);
+    expect(
+      medicationInputSchema.safeParse({ ...VALID_MEDICATION, doseQuantity: MAX_STOCK_AMOUNT + 1 })
+        .success,
+    ).toBe(false);
+  });
 });
 
 describe('scheduleInputSchema', () => {
@@ -311,6 +323,19 @@ describe('batchInputSchema', () => {
 
   it('accepts a zero quantity (an empty pack is a real state)', () => {
     expect(batchInputSchema.safeParse({ ...VALID_BATCH, quantity: 0 }).success).toBe(true);
+  });
+
+  it('caps the quantity and the threshold at the numeric(10,3) maximum', () => {
+    expect(batchInputSchema.safeParse({ ...VALID_BATCH, quantity: MAX_STOCK_AMOUNT }).success).toBe(
+      true,
+    );
+    expect(
+      batchInputSchema.safeParse({ ...VALID_BATCH, quantity: MAX_STOCK_AMOUNT + 1 }).success,
+    ).toBe(false);
+    expect(
+      batchInputSchema.safeParse({ ...VALID_BATCH, lowStockThreshold: MAX_STOCK_AMOUNT + 1 })
+        .success,
+    ).toBe(false);
   });
 });
 

@@ -88,14 +88,62 @@ export function dialNumber(value: string): string {
   return `${prefix}${trimmed.replace(/[^0-9]/g, '')}`;
 }
 
+/**
+ * The elder must be an adult (owner decision 2026-09-30): ElderCare+ is a care
+ * and record-keeping service for older adults, and a minor's record is out of
+ * scope. `1900-01-01` is the plausible floor for a living person. The picker,
+ * the caregiver form and the `upsert_elder_profile` RPC share both bounds,
+ * exactly as the phone rule is shared.
+ */
+export const MIN_ELDER_AGE_YEARS = 18;
+export const EARLIEST_BIRTH_DATE = '1900-01-01';
+
+/** Bounded free text the elder profile stores, matched by the `elder_profiles` checks. */
+export const MAX_ELDER_TEXT_LENGTH = 2000;
+export const MAX_ELDER_SHORT_TEXT_LENGTH = 200;
+export const MAX_POSTAL_CODE_LENGTH = 32;
+export const MAX_COUNTRY_TEXT_LENGTH = 100;
+export const MAX_PHONE_LENGTH = 32;
+
+/** One emergency contact: an 80-character label and a priority the column accepts. */
+export const MAX_CONTACT_LABEL_LENGTH = 80;
+export const MAX_CONTACT_PRIORITY = 999;
+
+/** A local `YYYY-MM-DD` day; never `toISOString()`, which shifts west of Greenwich. */
+function toIsoDay(value: Date): string {
+  const month = `${value.getMonth() + 1}`.padStart(2, '0');
+  const day = `${value.getDate()}`.padStart(2, '0');
+  return `${value.getFullYear()}-${month}-${day}`;
+}
+
+export type DateOfBirthIssue = 'future' | 'before_earliest' | 'under_age';
+
+/**
+ * Why a well-formed `YYYY-MM-DD` birth date is not acceptable, or `null` when it
+ * is. `today` is injectable so the rule is testable without a clock.
+ *
+ * The checks are ordered so the caregiver is told the real problem: a date in
+ * the future, an implausible age, or someone under {@link MIN_ELDER_AGE_YEARS}.
+ * Comparison is lexicographic, which is exact for `YYYY-MM-DD`.
+ */
+export function dateOfBirthIssue(value: string, today: Date = new Date()): DateOfBirthIssue | null {
+  if (value > toIsoDay(today)) return 'future';
+  if (value < EARLIEST_BIRTH_DATE) return 'before_earliest';
+  const latest = new Date(today);
+  latest.setFullYear(latest.getFullYear() - MIN_ELDER_AGE_YEARS);
+  if (value > toIsoDay(latest)) return 'under_age';
+  return null;
+}
+
 /** The fields `upsert_emergency_number` accepts, validated before the RPC call. */
 export const emergencyNumberInputSchema = z.object({
   category: emergencyCategorySchema,
-  label: z.string().trim().min(1, 'A label is required').max(80),
+  label: z.string().trim().min(1, 'A label is required').max(MAX_CONTACT_LABEL_LENGTH),
   phone: z
     .string()
+    .max(MAX_PHONE_LENGTH)
     .refine(phoneLooksValid, `Enter a phone number with at least ${MIN_PHONE_DIGITS} digits`),
-  priority: z.number().int().min(0),
+  priority: z.number().int().min(0).max(MAX_CONTACT_PRIORITY),
   isPrimary: z.boolean().default(false),
 });
 export type EmergencyNumberInput = z.infer<typeof emergencyNumberInputSchema>;

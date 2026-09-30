@@ -4,10 +4,15 @@ import {
   bloodTypeLabels,
   bloodTypeSchema,
   countPhoneDigits,
+  dateOfBirthIssue,
   dialNumber,
+  EARLIEST_BIRTH_DATE,
   emergencyCategoryLabels,
   emergencyCategorySchema,
   emergencyNumberInputSchema,
+  MAX_CONTACT_LABEL_LENGTH,
+  MAX_CONTACT_PRIORITY,
+  MIN_ELDER_AGE_YEARS,
   MIN_PHONE_DIGITS,
   phoneLooksValid,
 } from './emergency';
@@ -130,5 +135,58 @@ describe('emergencyNumberInputSchema', () => {
     expect(emergencyNumberInputSchema.safeParse({ ...valid, category: 'police' }).success).toBe(
       false,
     );
+  });
+
+  it('rejects a priority above the column cap', () => {
+    expect(
+      emergencyNumberInputSchema.safeParse({ ...valid, priority: MAX_CONTACT_PRIORITY }).success,
+    ).toBe(true);
+    expect(
+      emergencyNumberInputSchema.safeParse({ ...valid, priority: MAX_CONTACT_PRIORITY + 1 })
+        .success,
+    ).toBe(false);
+  });
+
+  it('rejects a label above the column cap', () => {
+    expect(
+      emergencyNumberInputSchema.safeParse({
+        ...valid,
+        label: 'x'.repeat(MAX_CONTACT_LABEL_LENGTH),
+      }).success,
+    ).toBe(true);
+    expect(
+      emergencyNumberInputSchema.safeParse({
+        ...valid,
+        label: 'x'.repeat(MAX_CONTACT_LABEL_LENGTH + 1),
+      }).success,
+    ).toBe(false);
+  });
+});
+
+describe('dateOfBirthIssue', () => {
+  const today = new Date(2026, 8, 30); // 2026-09-30, local
+
+  it('accepts an adult birth date', () => {
+    expect(dateOfBirthIssue('1948-03-14', today)).toBeNull();
+    expect(dateOfBirthIssue('2008-09-30', today)).toBeNull(); // exactly 18 today
+  });
+
+  it('rejects a birth date in the future', () => {
+    expect(dateOfBirthIssue('2026-10-01', today)).toBe('future');
+    expect(dateOfBirthIssue('2030-01-01', today)).toBe('future');
+  });
+
+  it('rejects a birth date before 1900', () => {
+    expect(dateOfBirthIssue('1899-12-31', today)).toBe('before_earliest');
+  });
+
+  it('rejects anyone under 18', () => {
+    expect(dateOfBirthIssue('2008-10-01', today)).toBe('under_age'); // one day short
+    expect(dateOfBirthIssue('2020-01-01', today)).toBe('under_age');
+  });
+
+  it('exposes the shared bounds', () => {
+    expect(MIN_ELDER_AGE_YEARS).toBe(18);
+    expect(EARLIEST_BIRTH_DATE).toBe('1900-01-01');
   });
 });
