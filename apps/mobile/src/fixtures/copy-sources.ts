@@ -1064,6 +1064,26 @@ export const COPY_SOURCES: CopyEntry[] = [
     kind: 'spec',
     source: '§Screens C-01 "the stock outcome"; values come from the ledger',
   },
+  {
+    // The create-profile prompt shown when a linked older adult has no profile row yet
+    // (owner decision 2026-10-01). Reuses the C-10 create-prompt strings unchanged.
+    text: 'No emergency information yet.',
+    frame: 'C-01',
+    kind: 'approved-copy',
+    source: 'first sentence of the §Approved copy empty state',
+  },
+  {
+    text: "Create the older adult's care and emergency profile.",
+    frame: 'C-01',
+    kind: 'wireframe',
+    source: 'A-09 PURPOSE block',
+  },
+  {
+    text: 'Create elder profile',
+    frame: 'C-01',
+    kind: 'wireframe',
+    source: 'A-09 frame name used as the action',
+  },
 
   // Notification Center (S-01)
   { text: 'Read', frame: 'S-01', kind: 'spec', source: '§Screens S-01 `Unread` / `Read`' },
