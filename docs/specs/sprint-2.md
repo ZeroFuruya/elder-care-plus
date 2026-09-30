@@ -8,7 +8,9 @@
   priority reassignment), the **exactly-one-primary invariant** (elder-scoped advisory lock in
   every mutating RPC) and the **edit/verify race** (row locking). Owner decisions recorded below:
   the `E-07` incomplete-state strings, **no** re-authentication for profile/number writes, and
-  **state-changing-only** audit rows. Implementation has not started.
+  **state-changing-only** audit rows. Implemented and shipped on
+  `sprint-2-elder-profile-emergency` (60 pgTAP assertions); awaiting the owner's formal sign-off at
+  the 2026-10-01 checkpoint.
 - **Branch:** `sprint-2-elder-profile-emergency`, based on `sprint-1b-supabase-cutover`.
 - **Flow:** `docs/00-product-flow.md` Flow G (emergency), setup step A.2; `docs/adr/adr-004`
   Decision A (ordered list of emergency numbers with one dominant call action);
