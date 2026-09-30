@@ -1,5 +1,5 @@
 import { doseStatusPresentation, type DoseStatus } from '@eldercare/shared';
-import { Redirect, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -49,7 +49,8 @@ interface DashboardData {
   link: MyLink | null;
   /**
    * Whether the linked elder has an `elder_profiles` row yet. `false` is the caregiver setup
-   * state: `C-01` hands straight over to `A-09` (docs/specs/sprint-2.md).
+   * state: `C-01` shows the create-profile prompt instead of the dashboard
+   * (docs/specs/sprint-2.md).
    */
   hasElderProfile: boolean;
   today: DoseView[];
@@ -136,10 +137,6 @@ export default function CaregiverDashboardScreen() {
 
   const { link, hasElderProfile, today, todaySummary, recent, weekSummary, unread } = state.data;
 
-  // Caregiver setup: a linked elder with no profile row yet goes straight to `A-09`. Saving
-  // there creates the row, so the gate opens on its own — `useAsyncData` re-reads on focus.
-  if (link && !hasElderProfile) return <Redirect href="/caregiver/elder-new" />;
-
   if (!link) {
     return (
       <Screen title="Dashboard" showBell onRefresh={reload} refreshing={refreshing}>
@@ -148,6 +145,25 @@ export default function CaregiverDashboardScreen() {
           description="Link an older adult with a six-digit code so their doses can be recorded here."
         />
         <Button label="Link an older adult" onPress={() => router.push('/caregiver/link')} />
+      </Screen>
+    );
+  }
+
+  // Caregiver setup: a linked older adult with no profile row yet gets a prompt rather than an
+  // automatic redirect, so the back button is never trapped (owner decision 2026-10-01). Saving
+  // in `A-09` creates the row, so the prompt clears on the next focus read.
+  if (!hasElderProfile) {
+    return (
+      <Screen title="Dashboard" showBell onRefresh={reload} refreshing={refreshing}>
+        <EmptyState
+          title="No emergency information yet."
+          description="Create the older adult's care and emergency profile."
+        />
+        <Button
+          label="Create elder profile"
+          onPress={() => router.push('/caregiver/elder-new')}
+          accessibilityHint="Opens the elder profile form"
+        />
       </Screen>
     );
   }

@@ -119,6 +119,12 @@ exist yet, and the Profile tab keeps its `Elder profile`/`Edit profile` entries)
 `YYYY-MM-DD` text field rather than a native picker, and `Full name` is not editable in `A-09` or
 `C-11` because the name comes from `profiles`.
 
+The owner settled one further follow-up on 2026-10-01: the caregiver dashboard (`C-01`) no longer
+auto-redirects a linked older adult with no profile row to `A-09`. It now renders the same
+create-profile prompt `C-10` uses (`No emergency information yet.` / `Create the older adult's
+care and emergency profile.` / `Create elder profile`), so the back button is never trapped;
+saving in `A-09` clears the prompt on the next focus read.
+
 ### Completeness rule
 
 Product flow §8 requires the caregiver to verify the local emergency-service details for the
