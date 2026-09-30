@@ -2,8 +2,12 @@ name: Supabase keep-alive
 
 # The Supabase Free project pauses after roughly a week idle
 # (docs/01-dev-environment.md section 8.1). Ping it every ~3 days so it stays awake.
-# Requires repository secrets SUPABASE_URL and SUPABASE_ANON_KEY. The anon key is a
-# public client key; keeping it in secrets avoids committing it to the repo.
+# Requires repository secrets SUPABASE_URL and SUPABASE_ANON_KEY. The publishable
+# client key is public; keeping it in secrets avoids committing it to the repo.
+# NOTE: the hosted project uses the new publishable key (sb_publishable_...), which
+# PostgREST's root endpoint rejects with 401 "Secret API key required" (observed
+# 2026-09-30). We therefore ping the public Auth health endpoint and treat any
+# PostgREST response as proof of reachability.
 
 on:
   schedule:
@@ -24,10 +28,20 @@ jobs:
             exit 0
           fi
 
+          # 1. Auth health: public, returns 200, and counts as project activity.
           curl --fail --silent --show-error \
             -H "apikey: $SUPABASE_ANON_KEY" \
-            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
-            "$SUPABASE_URL/rest/v1/" \
+            "$SUPABASE_URL/auth/v1/health" \
             -o /dev/null
+
+          # 2. PostgREST reachability: the publishable key cannot use the root endpoint,
+          #    so accept any HTTP status but require that the project actually answered.
+          code=$(curl --silent --show-error -o /dev/null -w '%{http_code}' \
+            -H "apikey: $SUPABASE_ANON_KEY" "$SUPABASE_URL/rest/v1/")
+          echo "PostgREST probe returned HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "PostgREST probe could not reach the project."
+            exit 1
+          fi
 
           echo "Keep-alive ping OK."

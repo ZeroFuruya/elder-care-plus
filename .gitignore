@@ -18,6 +18,9 @@ web-build/
 # Environment variables (never commit secrets)
 .env
 .env.*
+# Figma personal access token for scripts/figma-extract.mjs (covered by `.env.*` too; listed
+# explicitly because it holds a credential).
+.env.figma
 !.env.example
 !**/.env.example
 
@@ -36,6 +39,10 @@ services/ai/.venv/
 supabase/.temp/
 supabase/.branches/
 supabase/.env
+
+# Database dumps (contain real auth rows; never commit a backup)
+backup*.sql
+*.dump
 
 # Test / coverage
 coverage/

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
@@ -6,8 +6,9 @@ import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { SensitiveActionDialog } from '@/components/sensitive-action-dialog';
-import { colors, fontSize, lineHeight } from '@/constants/theme';
+import { fontSize, lineHeight, type AppThemeColors } from '@/constants/theme';
 import { deactivateAccount } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 /**
  * Deactivation is a soft delete: links are revoked and history is kept. It needs
@@ -15,6 +16,8 @@ import { deactivateAccount } from '@/db';
  */
 export function DeactivateAccount() {
   const { signOut } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [confirming, setConfirming] = useState(false);
   const [prompting, setPrompting] = useState(false);
 
@@ -62,10 +65,12 @@ export function DeactivateAccount() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

@@ -1,20 +1,49 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+
+import {
+  hasUsableActiveBatch,
+  stockStatusPresentation,
+  stockStatusFromBatch,
+} from '@eldercare/shared';
 
 import { useSessionUser } from '@/auth/auth-context';
 import { Banner } from '@/components/banner';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
-import { StatusBadge } from '@/components/status-badge';
-import { colors, fontSize, lineHeight, radius, spacing } from '@/constants/theme';
-import { listMedicines } from '@/db';
+import { StatusPill } from '@/components/status-pill';
+import {
+  cardSurface,
+  fontSize,
+  lineHeight,
+  spacing,
+  type AppElevation,
+  type AppGradients,
+  type AppThemeColors,
+} from '@/constants/theme';
+import { activeBatchOf, getMedicationPlan, schedulesOf, type MedicationPlan } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
-import { formatTime } from '@/lib/format';
+import { formatDaysOfWeek, formatTime } from '@/lib/format';
 
+/**
+ * `C-02` Medication List, elder view (docs/specs/sprint-3.md).
+ *
+ * The same plan the caregiver sees, read-only: the elder reads their own rows under RLS and the
+ * screen offers no edit affordance. A medicine is shown with the dose, its schedule and the stock
+ * state, and nothing here is ever generated or suggested by the application
+ * (docs/00-product-flow.md, hard rules).
+ */
 export default function ElderMedsScreen() {
   const user = useSessionUser();
-  const loader = useCallback(() => listMedicines(user.id), [user.id]);
+  const { colors, elevation, gradients } = useAppTheme();
+  const styles = useMemo(
+    () => createStyles(colors, elevation, gradients),
+    [colors, elevation, gradients],
+  );
+
+  const loader = useCallback(() => getMedicationPlan(user.id), [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
   if (state.status === 'loading') return <LoadingScreen message="Loading your medicines…" />;
@@ -26,33 +55,54 @@ export default function ElderMedsScreen() {
     );
   }
 
-  const medicines = state.data;
+  const plan: MedicationPlan = state.data;
+  const active = plan.medications.filter((medication) => medication.isActive);
 
   return (
     <Screen title="Meds" subtitle="What you take" onRefresh={reload} refreshing={refreshing}>
-      {medicines.length === 0 ? (
+      {active.length === 0 ? (
         <EmptyState
           title="No medicines yet"
           description="Your family caregiver adds medicines and schedules here."
         />
       ) : (
-        medicines.map((entry) => (
-          <View key={`${entry.medicine}-${entry.strength}`} style={styles.card}>
-            <View style={styles.top}>
-              <Text style={styles.medicine}>
-                {entry.medicine} {entry.strength}
+        active.map((medication) => {
+          const batch = activeBatchOf(plan.batches, medication.id);
+          const schedules = schedulesOf(plan.schedules, medication.id).filter(
+            (schedule) => schedule.isActive,
+          );
+
+          return (
+            <View key={medication.id} style={styles.card}>
+              <Text style={styles.medicine}>{medication.name}</Text>
+              <Text style={styles.dose}>
+                {medication.strength}
+                {' - '}
+                {medication.doseQuantity} {medication.doseUnit}
               </Text>
-              <StatusBadge status={entry.next.status} />
+              <Text style={styles.instructions}>{medication.instructions}</Text>
+
+              {schedules.map((schedule) => (
+                <Text key={schedule.id} style={styles.meta}>
+                  {formatDaysOfWeek(schedule.daysOfWeek)} at {formatTime(schedule.timeOfDay)}
+                </Text>
+              ))}
+
+              <StatusPill
+                presentation={
+                  stockStatusPresentation[
+                    stockStatusFromBatch(
+                      batch?.quantity ?? 0,
+                      batch?.lowStockThreshold,
+                      batch?.expiryDate,
+                      hasUsableActiveBatch(batch, medication.doseUnit),
+                    )
+                  ]
+                }
+              />
             </View>
-            <Text style={styles.instructions}>{entry.instructions}</Text>
-            <Text style={styles.meta}>
-              {entry.next.status === 'due' || entry.next.status === 'upcoming'
-                ? 'Next dose at'
-                : 'Most recent dose'}{' '}
-              {formatTime(entry.next.scheduledAt)}
-            </Text>
-          </View>
-        ))
+          );
+        })
       )}
 
       <Text style={styles.note}>
@@ -63,41 +113,40 @@ export default function ElderMedsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    backgroundColor: colors.surface,
-    borderColor: colors.border,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    gap: spacing.sm,
-    padding: spacing.md,
-  },
-  top: {
-    alignItems: 'flex-start',
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  medicine: {
-    color: colors.text,
-    flex: 1,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    lineHeight: lineHeight.body,
-  },
-  instructions: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  meta: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '600',
-    lineHeight: lineHeight.caption,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors, elevation: AppElevation, gradients: AppGradients) {
+  return StyleSheet.create({
+    card: {
+      ...cardSurface(colors, elevation, gradients),
+      gap: spacing.sm,
+      padding: spacing.md,
+    },
+    medicine: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '700',
+      lineHeight: lineHeight.body,
+    },
+    dose: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      lineHeight: lineHeight.caption,
+    },
+    instructions: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    meta: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      lineHeight: lineHeight.caption,
+    },
+    note: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}

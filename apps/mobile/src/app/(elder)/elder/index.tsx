@@ -1,8 +1,9 @@
 import { router } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
+import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { DoseCard } from '@/components/dose-card';
@@ -10,38 +11,52 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import {
+  countQueuedConfirmations,
+  ensureDoseEvents,
+  flushDoseOutbox,
   listDosesForDay,
   listElderCircle,
   summarise,
   type DoseView,
   type ElderCircleLink,
 } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { formatLongDate, greeting } from '@/lib/format';
 
 /**
- * The older adult's day. Dose confirmation is deliberately absent in this
- * build: the real confirmation loop writes to Supabase (Sprint 3/4), and a
- * local-only write must never look like the caregiver can see it
- * (docs/specs/sprint-1b.md, "Legacy store").
+ * `E-01` Elder Today. The elder sees their day and opens a dose to confirm it.
+ *
+ * On load the screen flushes any offline confirmation and asks the server to
+ * generate today's occurrences; both are best-effort, because a network problem
+ * must leave the dose list readable rather than blocking it.
  */
 
 interface HomeData {
   doses: DoseView[];
   circle: ElderCircleLink[];
+  pending: number;
 }
 
 export default function ElderHomeScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
+
   const loader = useCallback(async (): Promise<HomeData> => {
-    const [doses, circle] = await Promise.all([
+    await flushDoseOutbox().catch(() => undefined);
+    await ensureDoseEvents(user.id).catch(() => undefined);
+
+    const [doses, circle, pending] = await Promise.all([
       listDosesForDay(user.id, new Date()),
       listElderCircle(user.id),
+      countQueuedConfirmations(),
     ]);
-    return { doses, circle };
+    return { doses, circle, pending };
   }, [user.id]);
+
   const { state, refreshing, reload } = useAsyncData(loader);
 
   if (state.status === 'loading') return <LoadingScreen message="Loading today's doses…" />;
@@ -49,14 +64,13 @@ export default function ElderHomeScreen() {
     return <ScreenError title="Today" showBell message={state.message} onRetry={reload} />;
   }
 
-  const doses = state.data.doses;
+  const { doses, circle, pending } = state.data;
   const summary = summarise(doses);
   const firstName = user.name.split(' ')[0];
 
   const caregiver =
-    state.data.circle.find((link) => link.memberRole === 'caregiver' && link.status === 'active') ??
-    null;
-  const awaitingConsent = state.data.circle.filter((link) => link.status === 'invited');
+    circle.find((link) => link.memberRole === 'caregiver' && link.status === 'active') ?? null;
+  const awaitingConsent = circle.filter((link) => link.status === 'invited');
 
   const parts = [`${doses.length} ${doses.length === 1 ? 'dose' : 'doses'} today`];
   if (summary.due > 0) parts.push(`${summary.due} due now`);
@@ -71,6 +85,13 @@ export default function ElderHomeScreen() {
       onRefresh={reload}
       refreshing={refreshing}
     >
+      {pending > 0 ? (
+        <Banner
+          tone="info"
+          message="Pending sync. Do not tap again. ElderCare+ prevents duplicate dose events."
+        />
+      ) : null}
+
       <Card>
         <Text style={styles.greeting}>
           {greeting()}, {firstName}
@@ -99,7 +120,13 @@ export default function ElderHomeScreen() {
             description="There is nothing to take today. Your family caregiver sets the schedule."
           />
         ) : (
-          doses.map((dose) => <DoseCard key={dose.id} dose={dose} />)
+          doses.map((dose) => (
+            <DoseCard
+              key={dose.id}
+              dose={dose}
+              onPress={() => router.push(`/elder/dose?id=${dose.id}`)}
+            />
+          ))
         )}
       </View>
 
@@ -124,26 +151,28 @@ export default function ElderHomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  greeting: {
-    color: colors.text,
-    fontSize: fontSize.heading,
-    fontWeight: '700',
-    lineHeight: lineHeight.heading,
-  },
-  summary: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-    textTransform: 'uppercase',
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    greeting: {
+      color: colors.text,
+      fontSize: fontSize.heading,
+      fontWeight: '700',
+      lineHeight: lineHeight.heading,
+    },
+    summary: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+      textTransform: 'uppercase',
+    },
+  });
+}

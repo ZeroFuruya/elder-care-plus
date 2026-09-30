@@ -1,3 +1,5 @@
+import { weekdayShortLabels } from '@eldercare/shared';
+
 const MONTHS_SHORT = [
   'Jan',
   'Feb',
@@ -68,9 +70,27 @@ export function setTime(day: DateInput, hours: number, minutes = 0): Date {
   return date;
 }
 
+/**
+ * Parses a bare `HH:MM` or `HH:MM:SS` time-of-day into a Date on the current day.
+ *
+ * `medication_schedules.time_of_day` stores a `time`, which arrives as `08:00`; `new Date('08:00')`
+ * is `Invalid Date` in V8 and Hermes, so a stored schedule time must be parsed explicitly before
+ * `formatTime` reads its hours and minutes.
+ */
+export function parseTimeOfDay(value: string): Date | null {
+  const match = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(value);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (hours > 23 || minutes > 59) return null;
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  return date;
+}
+
 /** `8:00 AM` — the standard's time format (`docs/02-ui-ux-standard.md` section 10). */
 export function formatTime(value: DateInput): string {
-  const date = toDate(value);
+  const date = typeof value === 'string' ? (parseTimeOfDay(value) ?? toDate(value)) : toDate(value);
   const hours = date.getHours();
   const minutes = date.getMinutes().toString().padStart(2, '0');
   const suffix = hours < 12 ? 'AM' : 'PM';
@@ -88,6 +108,12 @@ export function formatLongDate(value: DateInput): string {
   return `${DAYS_LONG[date.getDay()]}, ${MONTHS_LONG[date.getMonth()]} ${date.getDate()}`;
 }
 
+/** `Aug 8, 2026` — any date that needs a year (docs/02-ui-ux-standard.md section 10). */
+export function formatDateWithYear(value: DateInput): string {
+  const date = toDate(value);
+  return `${MONTHS_SHORT[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+}
+
 export function formatDateTime(value: DateInput): string {
   return `${formatShortDate(value)}, ${formatTime(value)}`;
 }
@@ -100,6 +126,25 @@ export function isSameDay(a: DateInput, b: DateInput): boolean {
     left.getMonth() === right.getMonth() &&
     left.getDate() === right.getDate()
   );
+}
+
+/**
+ * A `date` column arrives as `YYYY-MM-DD`. Parse it at local midnight — `new Date('1958-05-08')`
+ * is UTC midnight and can render as the previous day west of Greenwich.
+ */
+export function parseDayOnly(value: string): Date {
+  return new Date(`${value}T00:00:00`);
+}
+
+/**
+ * A local `YYYY-MM-DD` day — the shape the `date` columns store. Built from the local parts, never
+ * `toISOString()`, which shifts west of Greenwich to the previous day.
+ */
+export function toIsoDay(value: DateInput): string {
+  const date = toDate(value);
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  const day = date.getDate().toString().padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 /** `just now`, `12 min ago`, `3 hr ago`, `Aug 12`. */
@@ -119,4 +164,16 @@ export function greeting(now: Date = new Date()): string {
   if (hours < 12) return 'Good morning';
   if (hours < 18) return 'Good afternoon';
   return 'Good evening';
+}
+
+/**
+ * `Mon Tue Wed Thu Fri` - the weekday abbreviations the approved `C-04` wireframe draws, in the
+ * `days_of_week` 0-6 order. An empty set renders as an empty string, never a stand-in word.
+ */
+export function formatDaysOfWeek(days: readonly number[]): string {
+  return [...new Set(days)]
+    .sort((a, b) => a - b)
+    .map((day) => weekdayShortLabels[day] ?? '')
+    .filter((label) => label.length > 0)
+    .join(' ');
 }

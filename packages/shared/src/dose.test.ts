@@ -48,6 +48,44 @@ describe('deriveDoseStatus', () => {
     ).toBe('taken');
   });
 
+  it('is missed as soon as the server has settled the miss, even inside the client grace window', () => {
+    // A device clock that lags, or a late cron run, must not re-open a settled miss.
+    expect(
+      deriveDoseStatus(
+        { scheduledAt: scheduled, missedAt: at('2026-09-24T08:30:00.000Z') },
+        at('2026-09-24T08:05:00.000Z'),
+      ),
+    ).toBe('missed');
+  });
+
+  it('is missed from the persisted timestamp long after the grace period', () => {
+    expect(
+      deriveDoseStatus(
+        { scheduledAt: scheduled, missedAt: at('2026-09-24T08:30:00.000Z') },
+        at('2026-09-26T00:00:00.000Z'),
+      ),
+    ).toBe('missed');
+  });
+
+  it('treats a null missedAt as "not missed"', () => {
+    expect(
+      deriveDoseStatus({ scheduledAt: scheduled, missedAt: null }, at('2026-09-24T08:10:00.000Z')),
+    ).toBe('due');
+  });
+
+  it('lets taken win if both timestamps are somehow set (the DB forbids it)', () => {
+    expect(
+      deriveDoseStatus(
+        {
+          scheduledAt: scheduled,
+          takenAt: at('2026-09-24T08:05:00.000Z'),
+          missedAt: at('2026-09-24T08:30:00.000Z'),
+        },
+        at('2026-09-27T00:00:00.000Z'),
+      ),
+    ).toBe('taken');
+  });
+
   it('honours a custom grace period', () => {
     expect(deriveDoseStatus({ scheduledAt: scheduled }, at('2026-09-24T08:10:00.000Z'), 5)).toBe(
       'missed',

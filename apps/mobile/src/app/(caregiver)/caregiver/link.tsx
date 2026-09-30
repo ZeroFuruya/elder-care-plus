@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -12,7 +12,7 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { SensitiveActionDialog } from '@/components/sensitive-action-dialog';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import {
   createElderLinkInvite,
   getLinkedElder,
@@ -23,6 +23,7 @@ import {
   type MyInvite,
   type MyLink,
 } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { formatDateTime } from '@/lib/format';
 
@@ -51,6 +52,8 @@ function inviteState(invite: MyInvite): string {
 /** Caregiver side of the care circle: the elder link code, family invites, revoke. */
 export default function CaregiverLinkScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loader = useCallback(async (): Promise<LinkData> => {
     const [link, invites] = await Promise.all([getLinkedElder(user.id), listMyInvites(user.id)]);
     return { link, invites };
@@ -255,40 +258,42 @@ export default function CaregiverLinkScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  code: {
-    color: colors.text,
-    fontSize: fontSize.title,
-    fontWeight: '700',
-    letterSpacing: 8,
-    lineHeight: lineHeight.title,
-    textAlign: 'center',
-  },
-  name: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    fontWeight: '700',
-    lineHeight: lineHeight.body,
-  },
-  body: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-  note: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-    paddingTop: spacing.xs,
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionTitle: {
-    color: colors.text,
-    fontSize: fontSize.caption,
-    fontWeight: '700',
-    lineHeight: lineHeight.caption,
-    textTransform: 'uppercase',
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    code: {
+      color: colors.text,
+      fontSize: fontSize.title,
+      fontWeight: '700',
+      letterSpacing: 8,
+      lineHeight: lineHeight.title,
+      textAlign: 'center',
+    },
+    name: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      fontWeight: '700',
+      lineHeight: lineHeight.body,
+    },
+    body: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+    note: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+      paddingTop: spacing.xs,
+    },
+    section: {
+      gap: spacing.sm,
+    },
+    sectionTitle: {
+      color: colors.text,
+      fontSize: fontSize.caption,
+      fontWeight: '700',
+      lineHeight: lineHeight.caption,
+      textTransform: 'uppercase',
+    },
+  });
+}

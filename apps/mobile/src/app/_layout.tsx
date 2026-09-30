@@ -8,9 +8,10 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        {/* Dark icons on the light app background. ElderCare+ has no dark palette
-            (docs/02-ui-ux-standard.md section 20.3, decision D1). */}
-        <StatusBar style="dark" />
+        {/* `auto` lets the status-bar glyphs follow the theme, which is why it flips in step with
+            `app.json` `userInterfaceStyle: "automatic"` (docs/02-ui-ux-standard.md decision D1,
+            closed 2026-09-30 once every screen resolved its palette from `useAppTheme()`). */}
+        <StatusBar style="auto" />
         <Stack screenOptions={{ headerShown: false }} />
       </AuthProvider>
     </SafeAreaProvider>

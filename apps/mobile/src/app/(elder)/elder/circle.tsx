@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -10,8 +10,9 @@ import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { SensitiveActionDialog } from '@/components/sensitive-action-dialog';
-import { colors, fontSize, lineHeight, spacing } from '@/constants/theme';
+import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import { consentToCareLink, listElderCircle, revokeCareLink, type ElderCircleLink } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 
 type PendingAction = { link: ElderCircleLink; action: 'consent' | 'revoke' };
@@ -19,6 +20,8 @@ type PendingAction = { link: ElderCircleLink; action: 'consent' | 'revoke' };
 /** The elder's view of who can see their record, with consent and revoke. */
 export default function ElderCircleScreen() {
   const user = useSessionUser();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const loader = useCallback(() => listElderCircle(user.id), [user.id]);
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -128,17 +131,19 @@ export default function ElderCircleScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  body: {
-    color: colors.text,
-    fontSize: fontSize.body,
-    lineHeight: lineHeight.body,
-  },
-  state: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    fontWeight: '600',
-    lineHeight: lineHeight.caption,
-    paddingBottom: spacing.xs,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    body: {
+      color: colors.text,
+      fontSize: fontSize.body,
+      lineHeight: lineHeight.body,
+    },
+    state: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      fontWeight: '600',
+      lineHeight: lineHeight.caption,
+      paddingBottom: spacing.xs,
+    },
+  });
+}

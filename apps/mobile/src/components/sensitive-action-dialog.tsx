@@ -1,12 +1,13 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useAuth } from '@/auth/auth-context';
 import { Button } from '@/components/button';
 import { Field } from '@/components/field';
 import { ModalCard } from '@/components/modal-card';
-import { colors, fontSize, lineHeight } from '@/constants/theme';
+import { fontSize, lineHeight, type AppThemeColors } from '@/constants/theme';
 import { isLinkingError } from '@/db';
+import { useAppTheme } from '@/hooks/use-app-theme';
 
 interface SensitiveActionDialogProps {
   visible: boolean;
@@ -36,6 +37,8 @@ export function SensitiveActionDialog({
   danger = false,
 }: SensitiveActionDialogProps) {
   const { user, reauthenticate } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -134,10 +137,12 @@ export function SensitiveActionDialog({
   );
 }
 
-const styles = StyleSheet.create({
-  email: {
-    color: colors.textMuted,
-    fontSize: fontSize.caption,
-    lineHeight: lineHeight.caption,
-  },
-});
+function createStyles(colors: AppThemeColors) {
+  return StyleSheet.create({
+    email: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
+    },
+  });
+}
