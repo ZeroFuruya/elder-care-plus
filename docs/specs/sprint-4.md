@@ -364,4 +364,10 @@ Recorded as the code landed, so the review has one place to check deviations.
    `apps/mobile/src/fixtures/copy-sources.ts`, and were approved verbatim by the owner on
    2026-09-30 (the third batch, after Sprint 2's 18 and Sprint 3's 60). `COPY_ESCALATIONS` is empty
    again and keeps its meaning as the mechanism for the next batch.
+7. **Validation hardening (owner request 2026-09-30).** The birth-date, dose-ceiling and
+   batch-expiry rules had no approved source, so their five sentences were recorded as `escalated`
+   (the fourth batch); the owner chose the rule (minimum age 18, all extra constraints) and then
+   approved the five sentences verbatim the same day. The migration
+   `20261015140000_sprint4_validation_hardening.sql` enforces the same bounds as the shared schemas
+   and the caregiver forms, with `supabase/tests/validation_hardening.test.sql` (13 assertions).
 

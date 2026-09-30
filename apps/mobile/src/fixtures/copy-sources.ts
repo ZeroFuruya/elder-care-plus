@@ -1215,37 +1215,37 @@ export const COPY_SOURCES: CopyEntry[] = [
   // Validation hardening (owner request 2026-09-30)
   //
   // The logical rules had no approved wording. They were escalated to the owner,
-  // who chose the rule (minimum age 18) in the same conversation; the sentences
-  // await his ruling on the exact words.
+  // who chose the rule (minimum age 18) and then approved these five sentences
+  // verbatim on 2026-09-30.
   // -------------------------------------------------------------------------
   {
     text: 'The older adult must be at least 18 years old',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved source for the minimum-age rule (owner set the rule 2026-09-30)',
   },
   {
     text: 'Enter a birth date from 1900 or later',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved source for the plausible birth-date floor',
   },
   {
     text: 'The birth date cannot be in the future',
     frame: 'A-09',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved source for the future-date rule',
   },
   {
     text: 'Enter a smaller amount',
     frame: 'C-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved source for the numeric(10,3) quantity ceiling',
   },
   {
     text: 'Choose an expiry date that has not passed',
     frame: 'C-03',
-    kind: 'escalated',
+    kind: 'owner-approved',
     source: 'no approved source for the batch-expiry rule',
   },
 ];
@@ -1261,9 +1261,9 @@ export const COPY_SOURCES: CopyEntry[] = [
  * 2026-09-30 and they now read `owner-approved` (each keeping its `source` as the record of why it
  * was needed). Sprint 4's 26 entries were the third batch — empty states, retry fallbacks, section
  * titles and the `waiting to reach the server` meta — approved verbatim by the owner on 2026-09-30.
- * The validation-hardening sentences are the fourth batch: the owner chose the rules
- * (minimum age 18; all extra constraints) on 2026-09-30 and these five entries await his ruling on
- * the wording.
+ * The validation-hardening sentences are the fourth batch: the owner chose the rules (minimum age
+ * 18; all extra constraints) and approved these five entries verbatim on 2026-09-30, so this list
+ * is empty again.
  */
 export const COPY_ESCALATIONS: CopyEntry[] = COPY_SOURCES.filter(
   (entry) => entry.kind === 'escalated',
