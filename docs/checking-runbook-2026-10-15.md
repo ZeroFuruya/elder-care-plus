@@ -10,6 +10,14 @@ Environment: Android phone (main target), hosted project `buwwkdhzansbyeytsufj.s
 migrations applied. Synthetic demo accounts only — credentials live in the git-ignored
 `apps/mobile/.env.demo-accounts` and are never printed, committed, or sent to any AI tool.
 
+**The care circle and the elder profile are pre-provisioned** (2026-10-01) by
+`scripts/provision-demo-circle.mjs`: the caregiver↔elder link is active (the elder's redemption is
+their consent), the family↔elder link is active with the elder's consent, and the elder profile row
+exists so `C-01` renders the dashboard rather than the create-profile prompt. The script creates
+**no medications, schedules, batches or dose events** — the medication plan and dose state stay
+empty on purpose, so the checking run still produces the first plan and the first confirmation. It
+is idempotent: re-running reuses an existing link/consent.
+
 ---
 
 ## 0. Pre-flight (do this the day before)
@@ -20,15 +28,18 @@ migrations applied. Synthetic demo accounts only — credentials live in the git
 | 2 | Keep-alive green | GitHub → Actions → "Supabase keep-alive" → Run workflow | Green run |
 | 3 | APK installed | Install from build `e2c86c9f` (commit `cc8ff92`) | App launches, connects |
 | 4 | Accounts signed in | Caregiver + elder on the phone; family for the read view | Each sees only their own data |
-| 5 | Connectivity | Wi-Fi/mobile data on | Requests succeed |
-| 6 | Pre-demo backup | `npx supabase db dump -f backup.sql --linked` | File written (git-ignored) |
-| 7 | Fresh state | `dose_events` empty on hosted | The run creates the first cycle |
+| 5 | Care circle linked | Caregiver dashboard shows the elder; family view is read-only | No "No older adult linked yet" empty state |
+| 6 | Connectivity | Wi-Fi/mobile data on | Requests succeed |
+| 7 | Pre-demo backup | `npx supabase db dump -f backup.sql --linked` | File written (git-ignored) |
+| 8 | Fresh medication state | `medications`, `dose_events`, `notifications`, `inventory_transactions` empty on hosted | The run creates the first cycle |
+| 9 | Circle recoverable | `node scripts/provision-demo-circle.mjs` | Idempotent; re-links if a link was removed |
 
 ---
 
 ## 1. The demo of record (happy path)
 
-Run with both apps signed in and connectivity on.
+Run with both apps signed in and connectivity on. The care circle is already linked (pre-flight
+§0), so the caregiver opens `C-02` directly — no invite/redeem step is needed during the run.
 
 1. **Caregiver — set up the plan.** `C-02` → **Add medication** (`C-03`): a medicine, a schedule at
    **demo-local now + 5 minutes** with **grace 120 minutes**, and a batch with a **matching unit**,
@@ -80,3 +91,9 @@ limitation until observed.
 Medical history is never hard-deleted. To re-run the cycle, **deactivate** the medicine (or its
 schedule) and create a new plan; the previous plan, dose events and audit rows remain. The pre-demo
 `backup.sql` is the recovery point if a reset is ever needed.
+
+If a care link is removed during rehearsal, re-establish it with
+`node scripts/provision-demo-circle.mjs` (idempotent). Note the constraints the script relies on:
+`create_elder_link_invite` refuses if the caregiver already has an active elder link, and an elder
+who already has an active manager cannot redeem a second one, so re-linking means revoking the old
+link first (which requires a recent password entry).
