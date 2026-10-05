@@ -1,11 +1,12 @@
 # Sprint 8 — Family care circle UI (F-01 … F-15)
 
-- **Status:** **Increment A implemented and locally verified (2026-10-06); Increment B not started.**
-  The owner asked to start Sprint 8 on 2026-10-06 and chose **Full A + B** for the checking scope
-  (OD1). Increment A (read-only care views + family navigation) is on `sprint-7-appointments` and all
-  checks are green (`pnpm typecheck`/`lint`/`format:check`, 139 JS tests, `npx supabase test db`
-  **524/524**, this sprint adds 8 assertions). One additive policy was needed (F-14's co-member read,
-  below). OD2–OD4 still gate Increment B's schema, and OD5 (navigation) is settled by Increment A.
+- **Status:** **Implemented and locally verified (2026-10-06); both increments on `sprint-7-appointments`.**
+  The owner asked to start Sprint 8 on 2026-10-06 and chose **Full A + B** for the checking scope (OD1),
+  then decided OD2–OD4 (below). Increment A (read-only care views + family navigation) and Increment B
+  (help requests + availability + device notifications) are both implemented. All checks green:
+  `pnpm typecheck`/`lint`/`format:check`, **143** JS tests, `npx supabase test db` **550/550** (Sprint 8
+  adds 34 assertions: 8 policy + 26 help/availability). Two migrations pushed to hosted
+  (`20261106120000`, `20261107120000`; 16/16 in sync).
 - **Depends on:** Sprint 1b (family role, `(family)` shell, care-link invite/consent), Sprint 2
   (elder/emergency read), Sprint 3 (medication plan read), Sprint 4 (dose activity + the minimal
   family view already shipped), Sprint 7 (appointments read; the appointments RLS already admits
@@ -27,11 +28,11 @@
 | F-08 | Appointment Detail | no | Sprint 7 read path; **no** device-calendar export for family |
 | F-09 | Emergency Information | no | Sprint 2 read path |
 | F-10 | Care Summary | partial | the current home already shows doses + a summary line |
-| F-11 | Help Requests | **yes — new table + RPCs** | elder-initiated asks; family receives/accepts |
-| F-12 | Help Request Detail | **yes** | note, recipient scope, safety guidance |
-| F-13 | Response Confirmation | **yes** | confirm ownership of an accepted request |
+| F-11 | Help Requests | **done** (`help_requests` + RPCs) | elder-initiated asks; circle receives/accepts |
+| F-12 | Help Request Detail | **done** | note, category, accept/complete |
+| F-13 | Response Confirmation | **done** | in-app confirmation banner after accept |
 | F-14 | Family Care Circle | **one additive policy** | co-member read of `care_links` (§Increment A) |
-| F-15 | Availability and Alerts | **yes — new table + prefs** | per-member availability + request notifications |
+| F-15 | Availability and Alerts | **done** (`member_availability` + device notify) | per-member toggle + note; local device notification |
 
 Everything in the "no" column reuses the **existing** RLS (`is_active_member_of`) and db wrappers; the
 work is screens, navigation and tests, not schema. F-11…F-13 and F-15 are the only new backend.
@@ -39,8 +40,8 @@ work is screens, navigation and tests, not schema. F-11…F-13 and F-15 are the 
 ## Proposed build order (two increments)
 
 **Increment A — read-only care views + family navigation (implemented 2026-10-06).**
-- Give the `(family)` shell its own tab set (Home, Meds, Visits, Circle, More) with the detail
-  routes registered `href: null`.
+- Give the `(family)` shell its own tab set (Home, Meds, Visits, Help, More) with the detail
+  routes registered `href: null`; the care circle and availability live under More.
 - `F-03`/`F-10` home + care summary, `F-04` elder profile, `F-05` medication schedule, `F-06`
   medicine detail, `F-07`/`F-08` appointments, `F-09` emergency information, `F-14` family care
   circle.
@@ -53,25 +54,33 @@ work is screens, navigation and tests, not schema. F-11…F-13 and F-15 are the 
   never leaked. Migration `20261106120000_sprint8_family_ui.sql` + 8 pgTAP assertions.
 - Tests: the policy proof plus the existing RLS already refusing every family write.
 
-**Increment B — help requests + availability (new schema).**
-- `help_requests` (+ responses) and availability preferences, with guarded RPCs and default-deny RLS.
-- `F-11`/`F-12`/`F-13` family side; the elder's create/edit path (an `E-*` screen or a card on
-  `E-01`).
-- `F-15` availability + notification preferences; in-app notifications only (consistent with the
-  Sprint 7 owner decision OD1).
+**Increment B — help requests + availability (implemented 2026-10-06).**
+- `help_requests` and `member_availability`, with five guarded RPCs and default-deny RLS. Migration
+  `20261107120000_sprint8_help_requests.sql` + 26 pgTAP assertions.
+- `F-11`/`F-12`/`F-13` family side (`help.tsx`, `help-detail.tsx`), the elder create/cancel screen
+  (`(elder)/elder/help.tsx`, reached from `E-01`), and a caregiver view (`(caregiver)/caregiver/help.tsx`,
+  reached from the notification centre and Profile) because the elder notifies **every** active member.
+- `F-15` availability (`(family)/family/availability.tsx`), shown per member on `F-14`.
+- Notifications reuse the Sprint 5/7 `notifications` table with four new events; `help_requests` is
+  published for Realtime and `useHelpRequestNotifications` mirrors an event to a **local device
+  notification** (owner OD4). There is no remote push service; the device mirror fires while the app
+  is running and connected, and the in-app centre stays the source of truth.
 
 ## Owner decisions
 
 - **OD1 — checking scope — DECIDED 2026-10-06: Full A + B.** Increment A (read-only care views +
   family navigation, no schema) and Increment B (help requests + availability, new backend) both land
   in Sprint 8. OD2–OD5 below still gate Increment B's design.
-- **OD2 — help-request lifecycle.** Who may create (elder only, or caregiver on the elder's behalf)?
-  States (`open` → `accepted` → `completed` | `cancelled`)? One accepting member, or many? Is a note
-  required? Categories (urgent / practical / companionship)?
-- **OD3 — availability model.** Per-member free-text, a simple available/not-available toggle, or
-  per-day slots? Stored on `care_links` or a new `member_availability` table?
-- **OD4 — notifications.** Confirm in-app only (no push/local), and which events alert: new request,
-  acceptance, cancellation? Reuse `notifications` + `dedup_key` and the Sprint 7 sweep pattern?
+- **OD2 — help-request lifecycle — DECIDED 2026-10-06: the recommended default.** The elder creates
+  (Urgent / Practical / Companionship, optional note ≤ 500 chars) and **every** active care-circle
+  member is notified. The first member to accept claims it; the elder or the accepter completes it;
+  the elder cancels. States `open → accepted → completed | cancelled`, all timestamped, never hard
+  deleted. The creator is always the elder (`help_requests_creator_is_elder`).
+- **OD3 — availability model — DECIDED 2026-10-06: toggle + note.** One `member_availability` row per
+  (elder, member): Available / Not available plus an optional note ≤ 200 chars. Shown on `F-14`.
+- **OD4 — notifications — DECIDED 2026-10-06: in-app + device.** Four new notification events
+  (`help_request_created/accepted/completed/cancelled`) reuse `notifications` + `dedup_key`; the
+  client mirrors each to a local device notification. No remote push service is used (budget).
 - **OD5 — family navigation — DECIDED 2026-10-06 by Increment A:** five tabs (Home, Meds, Visits,
   Circle, More); F-01/F-02 remain the pre-consent flow already built in Sprint 1b.
 - **OD6 — copy.** As in Sprints 3 and 5, all new rendered strings and accessibility labels will be
