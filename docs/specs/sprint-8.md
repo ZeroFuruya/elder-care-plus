@@ -1,9 +1,11 @@
 # Sprint 8 — Family care circle UI (F-01 … F-15)
 
-- **Status:** **Draft v1 (2026-10-06) with the owner's scope decision recorded; not implemented.**
+- **Status:** **Increment A implemented and locally verified (2026-10-06); Increment B not started.**
   The owner asked to start Sprint 8 on 2026-10-06 and chose **Full A + B** for the checking scope
-  (OD1). OD2–OD6 are still open and must be closed before Increment B's schema is written. This v1
-  fixes the screen inventory and the reusable read path.
+  (OD1). Increment A (read-only care views + family navigation) is on `sprint-7-appointments` and all
+  checks are green (`pnpm typecheck`/`lint`/`format:check`, 139 JS tests, `npx supabase test db`
+  **524/524**, this sprint adds 8 assertions). One additive policy was needed (F-14's co-member read,
+  below). OD2–OD4 still gate Increment B's schema, and OD5 (navigation) is settled by Increment A.
 - **Depends on:** Sprint 1b (family role, `(family)` shell, care-link invite/consent), Sprint 2
   (elder/emergency read), Sprint 3 (medication plan read), Sprint 4 (dose activity + the minimal
   family view already shipped), Sprint 7 (appointments read; the appointments RLS already admits
@@ -28,7 +30,7 @@
 | F-11 | Help Requests | **yes — new table + RPCs** | elder-initiated asks; family receives/accepts |
 | F-12 | Help Request Detail | **yes** | note, recipient scope, safety guidance |
 | F-13 | Response Confirmation | **yes** | confirm ownership of an accepted request |
-| F-14 | Family Care Circle | no | `listElderCircle`-style read of `care_links` |
+| F-14 | Family Care Circle | **one additive policy** | co-member read of `care_links` (§Increment A) |
 | F-15 | Availability and Alerts | **yes — new table + prefs** | per-member availability + request notifications |
 
 Everything in the "no" column reuses the **existing** RLS (`is_active_member_of`) and db wrappers; the
@@ -36,15 +38,20 @@ work is screens, navigation and tests, not schema. F-11…F-13 and F-15 are the 
 
 ## Proposed build order (two increments)
 
-**Increment A — read-only care views + family navigation (no new schema).**
-- Give the `(family)` shell its own tab set (Home, Medicines, Appointments, Care circle, More).
-- `F-04` elder profile, `F-05`/`F-06` medication schedule + detail, `F-07`/`F-08` appointments,
-  `F-09` emergency information, `F-10` care summary, `F-14` family care circle.
+**Increment A — read-only care views + family navigation (implemented 2026-10-06).**
+- Give the `(family)` shell its own tab set (Home, Meds, Visits, Circle, More) with the detail
+  routes registered `href: null`.
+- `F-03`/`F-10` home + care summary, `F-04` elder profile, `F-05` medication schedule, `F-06`
+  medicine detail, `F-07`/`F-08` appointments, `F-09` emergency information, `F-14` family care
+  circle.
 - Every screen is strictly read-only: no dose confirmation, no stock adjustment, no edit control, no
   device-calendar export. The permission boundary from the wireframe is a testable assertion.
-- Reuse `Screen`, `Card`, `DetailRow`, `StatusPill`, `DoseCard`, and the Sprint 7 `AppointmentCard`.
-- Tests: family reads succeed under RLS; every write path is refused (the existing grants already
-  enforce this; add a family-role fetch that asserts the screens render no action control).
+- Reuses `Screen`, `Card`, `DetailRow`, `StatusPill`, `DoseCard`, and the Sprint 7 `AppointmentCard`.
+- **One additive policy:** `care_links_select_active_circle` lets an active member read the elder's
+  **active** links so `F-14` can show the caregiver and relatives. Pending (`invited`) rows stay
+  hidden from co-members and visible only to the elder and the invited member, so consent state is
+  never leaked. Migration `20261106120000_sprint8_family_ui.sql` + 8 pgTAP assertions.
+- Tests: the policy proof plus the existing RLS already refusing every family write.
 
 **Increment B — help requests + availability (new schema).**
 - `help_requests` (+ responses) and availability preferences, with guarded RPCs and default-deny RLS.
@@ -65,8 +72,8 @@ work is screens, navigation and tests, not schema. F-11…F-13 and F-15 are the 
   per-day slots? Stored on `care_links` or a new `member_availability` table?
 - **OD4 — notifications.** Confirm in-app only (no push/local), and which events alert: new request,
   acceptance, cancellation? Reuse `notifications` + `dedup_key` and the Sprint 7 sweep pattern?
-- **OD5 — family navigation.** Tab bar vs. stack; and do F-01/F-02 stay as the pre-consent flow
-  already built in Sprint 1b?
+- **OD5 — family navigation — DECIDED 2026-10-06 by Increment A:** five tabs (Home, Meds, Visits,
+  Circle, More); F-01/F-02 remain the pre-consent flow already built in Sprint 1b.
 - **OD6 — copy.** As in Sprints 3 and 5, all new rendered strings and accessibility labels will be
   proposed as a traceable batch for approval before merge.
 

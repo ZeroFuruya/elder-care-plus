@@ -70,9 +70,13 @@ applies it cleanly and `npx supabase test db` is **516/516**. Backed up (fresh `
 git-ignored) and **pushed to the hosted project 2026-10-06**, so all **14** migrations are in sync.
 
 `docs/specs/sprint-8.md` (Family care circle UI, F-01…F-15) was **drafted 2026-10-06** by owner
-request with a two-increment scope and six open decisions. Increment A (read-only care views + family
-navigation) needs **no schema**; Increment B (help requests + availability) is a new backend and is
-gated on the owner's scope decision. **Not implemented; awaiting owner decisions.**
+request with a two-increment scope. The owner chose **Full A + B** (OD1). **Increment A**
+(read-only care views + family navigation: F-03…F-10 and F-14, on a five-tab family shell) is
+**implemented and locally verified 2026-10-06** — `pnpm typecheck`/`lint`/`format:check`, 139 JS tests
+and `npx supabase test db` **524/524** (8 new assertions). It needed **one additive policy**,
+`care_links_select_active_circle`, for F-14's co-member read; pending invites stay hidden from
+co-members. **Increment B** (help requests + availability) is a new backend and is **gated on OD2–OD4**
+(lifecycle, availability model, notifications).
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
