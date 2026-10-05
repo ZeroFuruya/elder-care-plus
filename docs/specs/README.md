@@ -36,13 +36,11 @@ project.
 **Checkpoint:** `checkpoint-2026-10-01.md` records the four acceptances (Sprint 1, `sprint-1b.md`,
 `sprint-2.md`, Sprint 4 review), all granted 2026-10-01.
 
-`sprint-5.md` (inventory and expiry safety, Flow D) was **drafted 2026-10-05** and revised to
-**v2** the same day after an `@architect` critique, as the first of the remaining sprints to be
-wrapped up before the 2026-10-15/16 checking. It is **awaiting owner approval**. The owner's
-`needs_review` decision (suppress only when a batch exists but is invalid) and the frame-ID
-decision (reuse `C-04` plus a confirmation dialog) are recorded in the spec; the open items are the
-adjustment-reason list, the no-batch display label, the sweep time, and warning-window
-configurability.
+`sprint-5.md` (inventory and expiry safety, Flow D) was **drafted 2026-10-05**, revised to **v2**
+the same day after an `@architect` critique, **approved by the owner 2026-10-05**, and
+**implemented** on `sprint-5-inventory-expiry`. `npx supabase db reset` applies its migration
+cleanly and `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions). It is awaiting the
+hosted push (after a backup) and review/merge.
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),

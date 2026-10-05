@@ -1,8 +1,12 @@
 # Sprint 5 — Inventory and expiry safety (Flow D)
 
-- **Status:** Draft **v2** for owner approval. v1 written 2026-10-05; v2 revised the same day after
-  an `@architect` critique, which found that v1's suppression/resume and notification-dedup
-  mechanisms could not work against the Sprint 4 code. Every must-fix is folded in below.
+- **Status:** **Implemented and locally verified (2026-10-06).** v1 written 2026-10-05; v2 revised
+  the same day after an `@architect` critique, which found that v1's suppression/resume and
+  notification-dedup mechanisms could not work against the Sprint 4 code. Every must-fix is folded
+  in below. The owner approved v2 and the two follow-up decisions (`No stock tracking`; prescription
+  records kept as a deferred slice), and the branch is implemented. `npx supabase db reset` applies
+  the migration cleanly and `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions).
+  Hosted push is pending a backup.
 - **Branch:** `sprint-5-inventory-expiry` (spec only so far; implementation starts on approval).
 - **Flow:** `docs/00-product-flow.md` §4 D (inventory and expiry safety), §6 data model, §8 rules.
 - **Depends on:** Sprint 3 (`medicine_batches`, `create_batch`/`update_batch`/`set_active_batch`/
