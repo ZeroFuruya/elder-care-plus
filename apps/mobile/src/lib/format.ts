@@ -118,6 +118,69 @@ export function formatDateTime(value: DateInput): string {
   return `${formatShortDate(value)}, ${formatTime(value)}`;
 }
 
+/**
+ * The wall-clock parts of an instant in a named IANA zone.
+ *
+ * Sprint 7 stores an appointment's `start_at` as a UTC instant plus its `timezone`, and the form
+ * must show the local date and time the caregiver typed. `Intl.DateTimeFormat` is the reverse of
+ * the server's `local_dose_timestamp` (instant -> local), which is the direction Hermes supports
+ * reliably; the forward direction is why the write contract sends date + time + zone and lets the
+ * server compute the instant.
+ *
+ * If the runtime cannot honour the zone (a stripped-down Hermes build), fall back to the device
+ * clock. That fallback is correct whenever the appointment's zone matches the device, and never
+ * throws on a screen.
+ */
+function wallClockParts(value: DateInput, timeZone: string) {
+  const date = toDate(value);
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+    }).formatToParts(date);
+    const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
+    const year = get('year');
+    const month = get('month');
+    const day = get('day');
+    const hour = get('hour');
+    const minute = get('minute');
+    if (year && month && day && hour && minute) return { year, month, day, hour, minute };
+  } catch {
+    // Fall through to the device clock.
+  }
+  return {
+    year: `${date.getFullYear()}`,
+    month: `${date.getMonth() + 1}`.toString().padStart(2, '0'),
+    day: `${date.getDate()}`.toString().padStart(2, '0'),
+    hour: `${date.getHours()}`.toString().padStart(2, '0'),
+    minute: `${date.getMinutes()}`.toString().padStart(2, '0'),
+  };
+}
+
+/** The local calendar day (`YYYY-MM-DD`) of an instant in a named IANA zone. */
+export function instantToLocalDate(value: DateInput, timeZone: string): string {
+  const part = wallClockParts(value, timeZone);
+  return `${part.year}-${part.month}-${part.day}`;
+}
+
+/** The local clock time (`HH:MM`) of an instant in a named IANA zone. */
+export function instantToLocalTime(value: DateInput, timeZone: string): string {
+  const part = wallClockParts(value, timeZone);
+  return `${part.hour}:${part.minute}`;
+}
+
+/** `Oct 8, 2026, 10:00 AM` — an instant rendered in the zone it was recorded in. */
+export function formatInstantInZone(value: DateInput, timeZone: string): string {
+  const day = instantToLocalDate(value, timeZone);
+  const time = instantToLocalTime(value, timeZone);
+  return `${formatDateWithYear(new Date(`${day}T00:00:00`))}, ${formatTime(time)}`;
+}
+
 export function isSameDay(a: DateInput, b: DateInput): boolean {
   const left = toDate(a);
   const right = toDate(b);

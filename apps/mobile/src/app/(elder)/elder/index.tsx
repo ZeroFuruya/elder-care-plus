@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
+import { AppointmentCard } from '@/components/appointment-card';
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
@@ -16,9 +17,12 @@ import {
   countQueuedConfirmations,
   ensureDoseEvents,
   flushDoseOutbox,
+  listAppointments,
   listDosesForDay,
   listElderCircle,
+  nextAppointment,
   summarise,
+  type Appointment,
   type DoseView,
   type ElderCircleLink,
 } from '@/db';
@@ -38,6 +42,7 @@ interface HomeData {
   doses: DoseView[];
   circle: ElderCircleLink[];
   pending: number;
+  next: Appointment | null;
 }
 
 export default function ElderHomeScreen() {
@@ -49,12 +54,13 @@ export default function ElderHomeScreen() {
     await flushDoseOutbox().catch(() => undefined);
     await ensureDoseEvents(user.id).catch(() => undefined);
 
-    const [doses, circle, pending] = await Promise.all([
+    const [doses, circle, pending, appointments] = await Promise.all([
       listDosesForDay(user.id, new Date()),
       listElderCircle(user.id),
       countQueuedConfirmations(),
+      listAppointments(user.id),
     ]);
-    return { doses, circle, pending };
+    return { doses, circle, pending, next: nextAppointment(appointments) };
   }, [user.id]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
@@ -64,7 +70,7 @@ export default function ElderHomeScreen() {
     return <ScreenError title="Today" showBell message={state.message} onRetry={reload} />;
   }
 
-  const { doses, circle, pending } = state.data;
+  const { doses, circle, pending, next } = state.data;
   const summary = summarise(doses);
   const firstName = user.name.split(' ')[0];
 
@@ -103,6 +109,16 @@ export default function ElderHomeScreen() {
             : 'No caregiver is linked to this account yet.'}
         </Text>
       </Card>
+
+      {next ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Next appointment</Text>
+          <AppointmentCard
+            appointment={next}
+            onPress={() => router.push(`/elder/appointment?id=${next.id}`)}
+          />
+        </View>
+      ) : null}
 
       {awaitingConsent.length > 0 ? (
         <Button

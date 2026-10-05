@@ -71,10 +71,8 @@ export default function NotificationsScreen() {
       return;
     }
     if (targetTable === 'appointments') {
-      // The appointment detail routes land with the Sprint 7 screens; until then the
-      // reminder opens the appointment list for the viewer's role.
-      if (user?.role === 'caregiver') router.push('/caregiver/calendar');
-      else if (user?.role === 'elder') router.push('/elder/calendar');
+      if (user?.role === 'caregiver') router.push(`/caregiver/appointment?id=${targetId}`);
+      else if (user?.role === 'elder') router.push(`/elder/appointment?id=${targetId}`);
       else await reload();
       return;
     }

@@ -99,3 +99,15 @@ export {
   type EmergencyInfo,
   type EmergencyNumber,
 } from './emergency';
+export {
+  appointmentWriteError,
+  cancelAppointment,
+  completeAppointment,
+  createAppointment,
+  getAppointment,
+  listAppointments,
+  nextAppointment,
+  splitAppointments,
+  updateAppointment,
+  type Appointment,
+} from './appointments';
