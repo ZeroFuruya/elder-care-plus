@@ -41,7 +41,8 @@ the same day after an `@architect` critique, **approved by the owner 2026-10-05*
 **implemented** on `sprint-5-inventory-expiry`. `npx supabase db reset` applies its migration
 cleanly, `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions), and the branch was
 pushed. The hosted project was backed up (`backup.sql`, git-ignored) and the migration pushed
-2026-10-06, so all 12 migrations are in sync there. It is awaiting review/merge.
+2026-10-06, so all 12 migrations are in sync there. The owner **approved the adjust-stock dialog copy
+batch on 2026-10-06**. Merged to `main` 2026-10-06 (`6c03bfa`).
 
 `sprint-7.md` (appointments, Flow F) was **drafted 2026-10-06**, the owner closed its six decisions
 the same day, and an `@architect` critique returned **"Needs changes"**; **v2** folds in all 19
