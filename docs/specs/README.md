@@ -62,10 +62,12 @@ server-only, both demo accounts sign in, appointments reads are RLS-scoped, and 
 write returns the authorization guard. Awaiting review/merge.
 
 `docs/specs/sprint-4b-dose-reactivation.md` (restore future doses when a deactivated medicine is
-reactivated) was **drafted 2026-10-06** by owner request. It is a bug fix, not a feature sprint: one
-`create or replace` of `reconcile_dose_events_for_medication` reopening future `plan_deactivated`
-occurrences that still match the current active plan and schedule, plus a pgTAP regression file. **Not
-implemented; awaiting owner approval.**
+reactivated) was **drafted and approved by owner decision on 2026-10-06**. It is a bug fix, not a
+feature sprint: one `create or replace` of `reconcile_dose_events_for_medication` reopening future
+`plan_deactivated` occurrences that still match the current active plan and schedule, plus a
+20-assertion pgTAP regression file. **Implemented** on `sprint-7-appointments`; `npx supabase db reset`
+applies it cleanly and `npx supabase test db` is **516/516**. Backed up (fresh `backup.sql`,
+git-ignored) and **pushed to the hosted project 2026-10-06**, so all **14** migrations are in sync.
 
 `docs/specs/sprint-8.md` (Family care circle UI, F-01…F-15) was **drafted 2026-10-06** by owner
 request with a two-increment scope and six open decisions. Increment A (read-only care views + family

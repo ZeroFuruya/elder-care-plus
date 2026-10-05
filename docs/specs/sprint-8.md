@@ -1,8 +1,9 @@
 # Sprint 8 — Family care circle UI (F-01 … F-15)
 
-- **Status:** **Draft v1 (2026-10-06) — scope and open decisions for the owner. Not implemented.**
-  The owner asked to start Sprint 8 on 2026-10-06. This v1 fixes the screen inventory and the
-  reusable read path, and lists the decisions Sprint 8 needs before implementation.
+- **Status:** **Draft v1 (2026-10-06) with the owner's scope decision recorded; not implemented.**
+  The owner asked to start Sprint 8 on 2026-10-06 and chose **Full A + B** for the checking scope
+  (OD1). OD2–OD6 are still open and must be closed before Increment B's schema is written. This v1
+  fixes the screen inventory and the reusable read path.
 - **Depends on:** Sprint 1b (family role, `(family)` shell, care-link invite/consent), Sprint 2
   (elder/emergency read), Sprint 3 (medication plan read), Sprint 4 (dose activity + the minimal
   family view already shipped), Sprint 7 (appointments read; the appointments RLS already admits
@@ -54,9 +55,9 @@ work is screens, navigation and tests, not schema. F-11…F-13 and F-15 are the 
 
 ## Owner decisions
 
-- **OD1 — checking scope.** Increment A needs no migration and is small enough to land before the
-  freeze (~Oct 12); Increment B is a new feature. Options: (a) A only for the checking, B after;
-  (b) A + a reduced B (help requests read/accept, no availability); (c) full A + B.
+- **OD1 — checking scope — DECIDED 2026-10-06: Full A + B.** Increment A (read-only care views +
+  family navigation, no schema) and Increment B (help requests + availability, new backend) both land
+  in Sprint 8. OD2–OD5 below still gate Increment B's design.
 - **OD2 — help-request lifecycle.** Who may create (elder only, or caregiver on the elder's behalf)?
   States (`open` → `accepted` → `completed` | `cancelled`)? One accepting member, or many? Is a note
   required? Categories (urgent / practical / companionship)?

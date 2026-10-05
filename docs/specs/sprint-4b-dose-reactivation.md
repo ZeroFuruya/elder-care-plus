@@ -1,7 +1,10 @@
 # Sprint 4b — Restore future doses on medicine reactivation
 
-- **Status:** **Draft v1 (2026-10-06). Not implemented; awaiting owner approval.** Raised by the owner
-  on 2026-10-06 as a latent Sprint 4/Sprint 5 gap found during Sprint 7 work.
+- **Status:** **Approved by owner decision 2026-10-06; implemented.** Raised by the owner on
+  2026-10-06 as a latent Sprint 4/Sprint 5 gap found during Sprint 7 work, and implemented on
+  `sprint-7-appointments` after the owner chose it as the next action. `npx supabase db reset` applies
+  its migration cleanly and `npx supabase test db` is **516/516** (this file adds 20 assertions). The
+  hosted project was backed up and the migration pushed 2026-10-06 (all 14 migrations in sync).
 - **Flow:** `docs/00-product-flow.md` §7 hard rule "never hard-delete medical history — deactivate or
   archive with timestamps" and the medication lifecycle (`medication.deactivated` /
   `medication.reactivated`).
