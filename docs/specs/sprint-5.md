@@ -21,8 +21,10 @@
 - **D2 — frame IDs.** The approved wireframe pack has no stock/batch frame (C-R3). Stock is shown on
   the existing `C-04`, and the adjustment action is a **confirmation dialog**, not a new screen. No
   new frame ID may be invented.
-- **D3 — AI/OCR deferred.** Prescriptions, photo evidence, OCR and embeddings are out of scope for
-  the app and this presentation. Sprint 6 is dropped; `services/ai` is not consumed here.
+- **D3 — AI/OCR removed.** Photo evidence, OCR and embeddings are out of the app and this
+  presentation; `services/ai` is not consumed here. Plain prescription **records** (no photos, no
+  OCR) remain a deferred future slice — Sprint 6 is re-scoped to records-only and deferred, not
+  dropped outright. The immediate sequence is **S5 → S7 → S8 → S9**.
 
 ## Goal
 
@@ -104,11 +106,12 @@ replaced forward (never by editing applied history).
    `on conflict (schedule_id, scheduled_at) do nothing` is unchanged, so the `(schedule_id,
    scheduled_at)` idempotency anchor is preserved and cancelled rows are reopened only through
    reconciliation (step 3), never resurrected by a bare insert.
-6. **Batch RPCs call reconciliation.** `create_batch`, `update_batch`, `set_active_batch` and
-   `deactivate_batch` (Sprint 3) are `CREATE OR REPLACE`d so that, after their existing validation
-   and write, they call `reconcile_dose_events_for_medication(medication_id)`. Sprint 3 predates
-   that helper, so this wiring is new; it is what makes "add a replacement batch → reminders
-   resume" actually work.
+6. **A batch trigger calls reconciliation.** A new `after insert or update` trigger on
+   `medicine_batches` (mirroring the Sprint 4 `medications`/`medication_schedules` triggers) calls
+   `reconcile_dose_events_for_medication(new.medication_id)`. Sprint 3 predates that helper, and
+   batches have no such trigger today, so this wiring is new; it is what makes "add or activate a
+   replacement batch → reminders resume" and "add an invalid batch → suppression" work through
+   every write path.
 
 **B. Ledger and manual adjustments**
 
@@ -159,7 +162,9 @@ replaced forward (never by editing applied history).
 - `packages/shared/src/inventory.ts`: add `expiryWarningWindows = [30, 14, 7, 1]`,
   `expiryWindow(daysRemaining)`, and a **separate** suppression predicate
   `medicineSuppressesDoses({ hasAnyBatch, hasValidActiveBatch })` so "no batch" and "batch exists
-  but invalid" are always distinguishable from the display status.
+  but invalid" are always distinguishable from the display status. Add
+  `stockDisplayFromBatch(...)` returning either a `StockStatus` or the new `untracked` tracking
+  state (label **`No stock tracking`**) when the medicine has no batch at all.
 - `packages/shared/src/medication.ts`: keep `stockStatusFromBatch` for display, with the explicit
   precedence `expired > needs_review > out > low > expiring > normal`; the new `expiring` value is
   returned only inside a warning window and before expiry.
@@ -210,32 +215,29 @@ replaced forward (never by editing applied history).
 ## Out of scope
 
 - Pharmacy ordering, payments, insurance, refill automation (not in product-flow scope).
-- Prescriptions, photo evidence, OCR, embeddings (**deferred**, D3) — Sprint 6 is dropped.
+- Photo evidence, OCR and embeddings (**removed**, D3). Plain prescription records are a deferred
+  future slice; Sprint 6 is re-scoped rather than started.
 - Appointments (Sprint 7), the full family UI (Sprint 8), advanced reports/retrieval (Sprint 9).
 - Dose correction: `taken`/`missed` stay terminal.
 - A per-elder configurable warning-window UI; Sprint 5 ships the documented default set.
 - Push-notification delivery; in-app notifications remain the deliverable.
 
-## Open questions for the owner (each with a recommendation)
+## Decisions closed by the owner (2026-10-05)
 
-1. **Adjustment reason list.** *Recommendation:* the fixed codes `restock`, `correction`, `damage`,
-   `waste`, `count_adjustment`, with an optional free-text note. Approve or supply the list.
-2. **Display state for a no-batch medicine.** A medicine with no batch is not "Normal stock".
-   *Recommendation:* add a presentation value `No stock tracking` (icon + text) used when a medicine
-   has no batch, so the badge never misleads, and keep suppression driven by the separate predicate.
-   This adds one value to the shared presentation guard; approve the wording.
-3. **Alert sweep time and channel.** *Recommendation:* one daily sweep; confirm the time and that
-   in-app only is acceptable for the checking.
-4. **Warning windows configurable, and by whom?** *Recommendation:* ship the fixed default
-   `[30, 14, 7, 1]`; defer a settings UI.
+1. **Adjustment reasons** are the fixed codes `restock`, `correction`, `damage`, `waste`,
+   `count_adjustment`, with an optional free-text note.
+2. **A no-batch medicine** shows the presentation value **`No stock tracking`** (icon + text), and
+   suppression stays driven by the separate predicate.
+3. **Alerts** are one daily in-app sweep; push delivery is out of scope.
+4. **Warning windows** are the fixed default `[30, 14, 7, 1]`; a settings UI is deferred.
 
 ## Risks
 
 - **Over-suppression.** Bounded by D1; the migration and its pgTAP must prove both sides (no-batch
   generating, invalid-batch suppressing) so a working plan is never silently stopped.
-- **Resume depends on reconciliation.** If a batch change does not call
-  `reconcile_dose_events_for_medication`, reminders will not resume; the wiring in item 6 and its
-  pgTAP are load-bearing.
+- **Resume depends on the batch trigger.** If the `medicine_batches` trigger is missing or the
+  helper is not callable from it, reminders will not resume; the trigger and its pgTAP are
+  load-bearing.
 - **Cron reliability.** The sweep depends on `pg_cron`; treat an unobserved sweep as a limitation
   and keep the on-screen derivation correct regardless.
 - **Append-only ledger.** Corrections are new signed rows; the UI must never imply an edit.

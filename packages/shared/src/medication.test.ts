@@ -16,12 +16,14 @@ import {
   medicationInputSchema,
   resolveDoseUnit,
   scheduleInputSchema,
+  stockDisplayFromBatch,
   stockStatusFromBatch,
   timeOfDaySchema,
   weekdaySchema,
   weekdayShortLabels,
   type BatchLike,
 } from './medication';
+import { expiryWindow, medicineSuppressesDoses } from './inventory';
 
 const VALID_MEDICATION = {
   name: 'Amlodipine',
@@ -422,5 +424,93 @@ describe('stockStatusFromBatch', () => {
 
   it('does not report expiring: that window is Sprint 5’s', () => {
     expect(stockStatusFromBatch(30, 7, '2026-11-01', true, TODAY)).toBe('normal');
+  });
+});
+
+describe('expiryWindow', () => {
+  it('returns the narrowest window a remaining-days value has crossed', () => {
+    expect(expiryWindow(45)).toBeNull();
+    expect(expiryWindow(30)).toBe(30);
+    expect(expiryWindow(29)).toBe(30);
+    expect(expiryWindow(14)).toBe(14);
+    expect(expiryWindow(8)).toBe(14);
+    expect(expiryWindow(7)).toBe(7);
+    expect(expiryWindow(2)).toBe(7);
+    expect(expiryWindow(1)).toBe(1);
+    expect(expiryWindow(0)).toBe(1);
+  });
+
+  it('returns null when already expired or not finite', () => {
+    expect(expiryWindow(-1)).toBeNull();
+    expect(expiryWindow(Number.NaN)).toBeNull();
+    expect(expiryWindow(Number.POSITIVE_INFINITY)).toBeNull();
+  });
+});
+
+describe('medicineSuppressesDoses', () => {
+  it('suppresses only when a batch exists but none is valid and active', () => {
+    expect(medicineSuppressesDoses({ hasAnyBatch: true, hasValidActiveBatch: false })).toBe(true);
+  });
+
+  it('does not suppress a medicine with no batch', () => {
+    expect(medicineSuppressesDoses({ hasAnyBatch: false, hasValidActiveBatch: false })).toBe(false);
+  });
+
+  it('does not suppress a medicine with a valid active batch', () => {
+    expect(medicineSuppressesDoses({ hasAnyBatch: true, hasValidActiveBatch: true })).toBe(false);
+  });
+});
+
+describe('stockDisplayFromBatch', () => {
+  const TODAY = '2026-10-08';
+  const BASE = {
+    hasAnyBatch: true,
+    hasValidActiveBatch: true,
+    quantity: 30,
+    lowStockThreshold: 7,
+    expiryDate: '2027-12-31',
+  };
+
+  it('shows untracked when the medicine has no batch', () => {
+    expect(stockDisplayFromBatch({ ...BASE, hasAnyBatch: false, quantity: null }, TODAY)).toBe(
+      'untracked',
+    );
+  });
+
+  it('shows expired for an expired batch that is not valid', () => {
+    expect(
+      stockDisplayFromBatch(
+        { ...BASE, hasValidActiveBatch: false, expiryDate: '2026-10-07' },
+        TODAY,
+      ),
+    ).toBe('expired');
+  });
+
+  it('shows needs_review when a batch exists but is not a valid active batch', () => {
+    expect(
+      stockDisplayFromBatch(
+        { ...BASE, hasValidActiveBatch: false, expiryDate: '2027-12-31' },
+        TODAY,
+      ),
+    ).toBe('needs_review');
+  });
+
+  it('shows out at zero and low at or below the threshold', () => {
+    expect(stockDisplayFromBatch({ ...BASE, quantity: 0 }, TODAY)).toBe('out');
+    expect(stockDisplayFromBatch({ ...BASE, quantity: 7 }, TODAY)).toBe('low');
+  });
+
+  it('shows expiring inside a warning window', () => {
+    expect(stockDisplayFromBatch({ ...BASE, expiryDate: '2026-10-22' }, TODAY)).toBe('expiring');
+  });
+
+  it('shows normal outside every window', () => {
+    expect(stockDisplayFromBatch({ ...BASE, expiryDate: '2027-12-31' }, TODAY)).toBe('normal');
+  });
+
+  it('shows normal for a valid batch with no stock rule and no expiry', () => {
+    expect(
+      stockDisplayFromBatch({ ...BASE, lowStockThreshold: null, expiryDate: null }, TODAY),
+    ).toBe('normal');
   });
 });
