@@ -45,9 +45,17 @@ pushed. The hosted project was backed up (`backup.sql`, git-ignored) and the mig
 
 `sprint-7.md` (appointments, Flow F) was **drafted 2026-10-06**, the owner closed its six decisions
 the same day, and an `@architect` critique returned **"Needs changes"**; **v2** folds in all 19
-must-fix items and is **awaiting owner approval**. It records a prerequisite fix for a Sprint 5 gap:
-the shared notification event schema was never widened, so Sprint 5 stock alerts currently mis-render
-as `Taken` in `S-01`.
+must-fix items and was **approved by the owner 2026-10-06**. It is **implemented** on
+`sprint-7-appointments` (stacked on the merged Sprint 5 tip): migration, RLS, four guarded RPCs and
+the guarded reminder sweep with 52 pgTAP assertions (**496/496** total), the shared appointment
+contracts and the widened notification vocabulary, caregiver and elder appointment screens, the
+dashboard next-appointment cards, and the elder's device-calendar export (a native `expo-calendar`
+dependency, so the demo needs a **fresh APK**). **Revision v3** records the implemented timezone
+contract: the write RPCs take a local date + time + zone and convert server-side with Sprint 4's
+`local_dose_timestamp`. It also carries the prerequisite fix for a Sprint 5 gap: the shared
+notification event schema was never widened, so Sprint 5 stock alerts mis-rendered as `Taken` in
+`S-01`; Sprint 7 widens it and routes by event + target. The migration is **not yet pushed** to the
+hosted project; it waits for a fresh `backup.sql`.
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
