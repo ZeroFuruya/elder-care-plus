@@ -6,7 +6,7 @@ every message in-app. This is the operational script. The demo of record is
 `docs/specs/sprint-4.md` §"Checking runbook"; this file adds the pre-flight, the evidence to
 capture, and the fallbacks.
 
-Environment: Android phone (main target), hosted project `buwwkdhzansbyeytsufj.supabase.co`, 11
+Environment: Android phone (main target), hosted project `buwwkdhzansbyeytsufj.supabase.co`, 16
 migrations applied. Synthetic demo accounts only — credentials live in the git-ignored
 `apps/mobile/.env.demo-accounts` and are never printed, committed, or sent to any AI tool.
 
@@ -16,9 +16,9 @@ migrations applied. Synthetic demo accounts only — credentials live in the git
 
 | # | Check | Command / how | Expected |
 |---|---|---|---|
-| 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 11 local ↔ remote |
+| 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 16 local ↔ remote |
 | 2 | Keep-alive green | GitHub → Actions → "Supabase keep-alive" → Run workflow | Green run |
-| 3 | APK installed | Install from build `e2c86c9f` (commit `cc8ff92`) | App launches, connects |
+| 3 | APK installed | **Rebuild required** — the installed `e2c86c9f` (commit `cc8ff92`) predates Sprints 5/7/8 and the `expo-calendar`/`expo-notifications` native modules. `eas build -p android --profile preview`, install, and record the build id here: `____________` | App launches, connects |
 | 4 | Accounts signed in | Caregiver + elder on the phone; family for the read view | Each sees only their own data |
 | 5 | Connectivity | Wi-Fi/mobile data on | Requests succeed |
 | 6 | Pre-demo backup | `npx supabase db dump -f backup.sql --linked` | File written (git-ignored) |
@@ -39,8 +39,28 @@ Run with both apps signed in and connectivity on.
    **Mark as taken** exactly once.
 4. **Caregiver — sees it.** `C-01` shows **Taken**, the timestamp, **stock decreased by exactly the
    dose**, and an unread notification. `S-01` marks it read and opens the related record.
-5. **Family — read-only.** The family view shows the plan and the adherence row, with **no
-   management control**.
+5. **Family — read-only.** The family Home shows the care summary; **Meds** the plan and the
+   adherence row, **Visits** the appointments, **More → Care circle** the active links. Access is
+   read-only for all medical data — the only writes a family member has are accepting/completing a
+   help request and setting their own availability.
+
+## 1b. Optional — help-request cycle (Sprint 8)
+
+A second, lighter cycle that shows the family role is not only read-only:
+
+1. **Elder — ask.** `E-01` → **Ask for help**, choose a category (e.g. Practical) and an optional
+   note, then send. (Every active member is notified; the elder is not notified of their own ask.)
+2. **Circle notified.** The caregiver and each active family member get an in-app notification; while
+   the app is running, a **device notification** also appears (local presentation — there is no
+   remote push service).
+3. **First member accepts.** Family **Help** tab → open the request → **Offer to help**. The state
+   becomes **Accepted** and the accepter is recorded; a second member can no longer claim it.
+4. **Complete.** The elder or the accepter taps **Mark as done** → **Completed**.
+5. **Availability.** Family **More → My availability** sets Available / Not available plus a short
+   note; it shows per member on the care circle (`F-14`).
+
+Captured rows: one `help_requests` row moving `open → accepted → completed` with timestamps (never
+hard-deleted); `notifications` rows for each event; one `member_availability` row per member.
 
 ## 2. Optional negative proof (missed dose)
 
@@ -59,6 +79,8 @@ limitation until observed.
   one `inventory_transactions` row; one `audit_events` row; one unread → read `notifications` row.
 - **Idempotency proof** (the headline claim): confirming the same dose a second time returns
   `duplicate: true` and writes **no** new `taken_at`, stock, inventory, audit or notification row.
+- **Help-request evidence** (if section 1b is run): one `help_requests` row per run with its state
+  transitions timestamped, the matching `notifications` rows, and the `member_availability` toggle.
 - **Test-case table** for the thesis: step → expected → observed (with the screenshot reference).
 
 ---
@@ -67,6 +89,9 @@ limitation until observed.
 
 - **Proactive missed-dose notification** depends on `pg_cron`; if the scheduled transition is not
   observed, state it as a limitation rather than claiming it.
+- **Device notifications have no remote push service.** A help-request device notification is a
+  **local** presentation fired by the app when it receives the row over Realtime, so it needs the app
+  running and connected; the in-app notification centre is the source of truth.
 - **Realtime** refreshes `C-01` on a confirmation; if the subscription is unavailable the dashboard
   still refreshes on focus, so the demo does not depend on it.
 - **Card gradient** renders with React Native's native `experimental_backgroundImage`; a device that
