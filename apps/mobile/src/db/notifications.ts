@@ -1,11 +1,19 @@
-import { notificationEventTypeSchema, type NotificationEventType } from '@eldercare/shared';
+import {
+  notificationEventTypeSchema,
+  notificationTargetTableSchema,
+  type NotificationEventType,
+  type NotificationTargetTable,
+} from '@eldercare/shared';
 
 import { getSupabase } from '@/supabase/client';
 
 /**
- * In-app notifications (docs/specs/sprint-4.md). Reads are recipient-scoped by
- * RLS (`recipient_id = auth.uid()`); the only writes are the two guarded
- * read-state RPCs. There is no send path from the client.
+ * In-app notifications (docs/specs/sprint-4.md, extended by Sprints 5 and 7). Reads
+ * are recipient-scoped by RLS (`recipient_id = auth.uid()`); the only writes are the
+ * two guarded read-state RPCs. There is no send path from the client.
+ *
+ * `target_table` is carried through so the notification centre routes by the record
+ * the event is about (a dose, a medicine, an appointment), not by the dose default.
  */
 
 const NOTIFICATION_COLUMNS =
@@ -26,17 +34,27 @@ export interface AppNotification {
   id: string;
   elderId: string | null;
   eventType: NotificationEventType;
+  targetTable: NotificationTargetTable | null;
   targetId: string | null;
   createdAt: string;
   readAt: string | null;
 }
 
-function toNotification(row: NotificationRow): AppNotification {
-  const parsed = notificationEventTypeSchema.safeParse(row.event_type);
+/**
+ * Map a row, or `null` when the database sends an event or target this client has no
+ * presentation for. The database check constraint makes that unreachable in practice;
+ * dropping the row is the safe behaviour, and `listNotifications` filters it rather
+ * than coercing a stock alert into a dose event.
+ */
+function toNotification(row: NotificationRow): AppNotification | null {
+  const event = notificationEventTypeSchema.safeParse(row.event_type);
+  if (!event.success) return null;
+  const target = notificationTargetTableSchema.safeParse(row.target_table);
   return {
     id: row.id,
     elderId: row.elder_id,
-    eventType: parsed.success ? parsed.data : 'dose_confirmed',
+    eventType: event.data,
+    targetTable: target.success ? target.data : null,
     targetId: row.target_id,
     createdAt: row.created_at,
     readAt: row.read_at,
@@ -52,7 +70,7 @@ export async function listNotifications(limit = 50): Promise<AppNotification[]> 
     .returns<NotificationRow[]>();
 
   if (error) throw new Error('Could not load the notifications.');
-  return data.map(toNotification);
+  return data.map(toNotification).filter((row): row is AppNotification => row !== null);
 }
 
 /** Unread count for the dashboard summary. `head` means no rows travel. */

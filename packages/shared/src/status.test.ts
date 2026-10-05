@@ -13,6 +13,8 @@ import {
   evidenceReviewStatusLabels,
   evidenceReviewStatusPresentation,
   evidenceReviewStatusSchema,
+  notificationEventTypeSchema,
+  notificationPresentation,
   prescriptionStatusLabels,
   prescriptionStatusPresentation,
   prescriptionStatusSchema,
@@ -113,4 +115,28 @@ describe('status presentation', () => {
       }
     },
   );
+});
+
+/**
+ * The notification centre renders an event from `notificationPresentation`. Sprint 5
+ * added server event types without a client presentation, so a stock alert showed as
+ * "Taken". This guards the whole vocabulary: a new server event with no presentation
+ * fails `pnpm test`.
+ */
+describe('notification event presentations', () => {
+  it('presents every server event with a label, icon and tone', () => {
+    expect(Object.keys(notificationPresentation).sort()).toEqual(
+      [...notificationEventTypeSchema.options].sort(),
+    );
+
+    for (const event of notificationEventTypeSchema.options) {
+      const presentation = notificationPresentation[event];
+      expect(presentation.label.trim().length, `missing label for "${event}"`).toBeGreaterThan(0);
+      expect(presentation.icon.trim().length, `missing icon for "${event}"`).toBeGreaterThan(0);
+      expect(
+        statusToneSchema.safeParse(presentation.tone).success,
+        `unknown tone for "${event}"`,
+      ).toBe(true);
+    }
+  });
 });
