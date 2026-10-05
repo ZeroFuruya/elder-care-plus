@@ -54,8 +54,22 @@ dependency, so the demo needs a **fresh APK**). **Revision v3** records the impl
 contract: the write RPCs take a local date + time + zone and convert server-side with Sprint 4's
 `local_dose_timestamp`. It also carries the prerequisite fix for a Sprint 5 gap: the shared
 notification event schema was never widened, so Sprint 5 stock alerts mis-rendered as `Taken` in
-`S-01`; Sprint 7 widens it and routes by event + target. The migration is **not yet pushed** to the
-hosted project; it waits for a fresh `backup.sql`.
+`S-01`; Sprint 7 widens it and routes by event + target. The hosted project was backed up
+(`backup.sql`, git-ignored) and the migration **pushed 2026-10-06**, so all **13** migrations are in
+sync; a non-mutating hosted smoke confirmed signed-out reads/writes are `42501`, the sweep RPC is
+server-only, both demo accounts sign in, appointments reads are RLS-scoped, and every cross-account
+write returns the authorization guard. Awaiting review/merge.
+
+`docs/specs/sprint-4b-dose-reactivation.md` (restore future doses when a deactivated medicine is
+reactivated) was **drafted 2026-10-06** by owner request. It is a bug fix, not a feature sprint: one
+`create or replace` of `reconcile_dose_events_for_medication` reopening future `plan_deactivated`
+occurrences that still match the current active plan and schedule, plus a pgTAP regression file. **Not
+implemented; awaiting owner approval.**
+
+`docs/specs/sprint-8.md` (Family care circle UI, F-01…F-15) was **drafted 2026-10-06** by owner
+request with a two-increment scope and six open decisions. Increment A (read-only care views + family
+navigation) needs **no schema**; Increment B (help requests + availability) is a new backend and is
+gated on the owner's scope decision. **Not implemented; awaiting owner decisions.**
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
