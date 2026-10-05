@@ -2,6 +2,7 @@ export * from './role';
 export * from './chunked-storage';
 export * from './dose';
 export * from './notification';
+export * from './help-request';
 export * from './inventory';
 export * from './appointment';
 export * from './prescription';

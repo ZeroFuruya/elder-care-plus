@@ -76,6 +76,13 @@ export default function NotificationsScreen() {
       else await reload();
       return;
     }
+    if (targetTable === 'help_requests') {
+      if (user?.role === 'caregiver') router.push('/caregiver/help');
+      else if (user?.role === 'elder') router.push('/elder/help');
+      else if (user?.role === 'family_member') router.push('/family/help');
+      else await reload();
+      return;
+    }
     // A stock alert about a medicine.
     if (user?.role === 'caregiver') router.push(`/caregiver/med?id=${targetId}`);
     else if (user?.role === 'elder') router.push('/elder/meds');

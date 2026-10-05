@@ -32,6 +32,19 @@ export default function FamilyMoreScreen() {
         />
       </Card>
 
+      <Card title="The care circle">
+        <Button
+          label="Care circle"
+          variant="secondary"
+          onPress={() => router.push('/family/circle')}
+        />
+        <Button
+          label="My availability"
+          variant="secondary"
+          onPress={() => router.push('/family/availability')}
+        />
+      </Card>
+
       <DeactivateAccount />
 
       <LogoutButton size="large" />

@@ -8,26 +8,42 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
-import { getLinkedElder, listElderCircle, type ElderCircleLink } from '@/db';
+import {
+  getLinkedElder,
+  listAvailability,
+  listElderCircle,
+  type ElderCircleLink,
+  type MemberAvailability,
+} from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
+
+interface CircleData {
+  circle: ElderCircleLink[];
+  availability: MemberAvailability[];
+}
 
 /**
  * `F-14` Family Care Circle (docs/specs/sprint-8.md).
  *
- * Read-only: the caregiver and the other connected relatives, with who has active access. The
- * list is served by the Sprint 8 co-member read (`care_links_select_active_circle`); a pending
- * invite is hidden from co-members until the elder consents.
+ * Read-only: the caregiver and the other connected relatives, with who has active access and
+ * whether they have marked themselves available (`F-15`). The list is served by the Sprint 8
+ * co-member read (`care_links_select_active_circle`); a pending invite is hidden from co-members
+ * until the elder consents.
  */
 export default function FamilyCircleScreen() {
   const user = useSessionUser();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const loader = useCallback(async (): Promise<ElderCircleLink[] | null> => {
+  const loader = useCallback(async (): Promise<CircleData | null> => {
     const link = await getLinkedElder(user.id);
     if (!link) return null;
-    return listElderCircle(link.elderId);
+    const [circle, availability] = await Promise.all([
+      listElderCircle(link.elderId),
+      listAvailability(link.elderId),
+    ]);
+    return { circle, availability };
   }, [user.id]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
@@ -48,7 +64,8 @@ export default function FamilyCircleScreen() {
     );
   }
 
-  const circle = state.data;
+  const { circle, availability } = state.data;
+  const availabilityByMember = new Map(availability.map((row) => [row.memberId, row]));
 
   return (
     <Screen title="Care circle" subtitle="Read-only" onRefresh={reload} refreshing={refreshing}>
@@ -58,20 +75,29 @@ export default function FamilyCircleScreen() {
           description="The people who help care for the older adult will appear here."
         />
       ) : (
-        circle.map((link) => (
-          <Card key={link.linkId} title={link.memberLabel}>
-            <Text style={styles.body}>
-              {link.memberRole === 'caregiver'
-                ? 'Caregiver · manages the care plan'
-                : 'Family member · read-only'}
-            </Text>
-            <Text style={styles.state}>
-              {link.status === 'active'
-                ? 'Access active'
-                : 'Waiting for the older adult’s approval'}
-            </Text>
-          </Card>
-        ))
+        circle.map((link) => {
+          const availabilityRow = availabilityByMember.get(link.memberId);
+          return (
+            <Card key={link.linkId} title={link.memberLabel}>
+              <Text style={styles.body}>
+                {link.memberRole === 'caregiver'
+                  ? 'Caregiver · manages the care plan'
+                  : 'Family member · read-only'}
+              </Text>
+              <Text style={styles.state}>
+                {link.status === 'active'
+                  ? 'Access active'
+                  : 'Waiting for the older adult’s approval'}
+              </Text>
+              {availabilityRow ? (
+                <Text style={styles.availability}>
+                  {availabilityRow.isAvailable ? 'Available to help' : 'Not available'}
+                  {availabilityRow.note ? ` — ${availabilityRow.note}` : ''}
+                </Text>
+              ) : null}
+            </Card>
+          );
+        })
       )}
     </Screen>
   );
@@ -88,6 +114,12 @@ function createStyles(colors: AppThemeColors) {
       color: colors.textMuted,
       fontSize: fontSize.caption,
       fontWeight: '600',
+      lineHeight: lineHeight.caption,
+      paddingTop: spacing.xs,
+    },
+    availability: {
+      color: colors.text,
+      fontSize: fontSize.caption,
       lineHeight: lineHeight.caption,
       paddingTop: spacing.xs,
     },

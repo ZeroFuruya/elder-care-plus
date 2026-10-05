@@ -111,3 +111,16 @@ export {
   updateAppointment,
   type Appointment,
 } from './appointments';
+export {
+  acceptHelpRequest,
+  cancelHelpRequest,
+  completeHelpRequest,
+  createHelpRequest,
+  getHelpRequest,
+  helpRequestWriteError,
+  listAvailability,
+  listHelpRequests,
+  setMemberAvailability,
+  type HelpRequest,
+  type MemberAvailability,
+} from './help-requests';

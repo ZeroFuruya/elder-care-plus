@@ -26,6 +26,10 @@ export const notificationEventTypeSchema = z.enum([
   'stock_expiring',
   'medicine_needs_review',
   'appointment_upcoming',
+  'help_request_created',
+  'help_request_accepted',
+  'help_request_completed',
+  'help_request_cancelled',
 ]);
 export type NotificationEventType = z.infer<typeof notificationEventTypeSchema>;
 
@@ -34,7 +38,12 @@ export type NotificationEventType = z.infer<typeof notificationEventTypeSchema>;
  * centre can navigate to the right record for the viewer's role, rather than
  * assuming every notification is about a dose.
  */
-export const notificationTargetTableSchema = z.enum(['dose_events', 'medications', 'appointments']);
+export const notificationTargetTableSchema = z.enum([
+  'dose_events',
+  'medications',
+  'appointments',
+  'help_requests',
+]);
 export type NotificationTargetTable = z.infer<typeof notificationTargetTableSchema>;
 
 /**
@@ -50,4 +59,8 @@ export const notificationPresentation: Record<NotificationEventType, StatusPrese
   stock_expiring: stockStatusPresentation.expiring,
   medicine_needs_review: stockStatusPresentation.needs_review,
   appointment_upcoming: appointmentStatePresentation.upcoming,
+  help_request_created: { label: 'Help requested', icon: 'help', tone: 'attention' },
+  help_request_accepted: { label: 'Help accepted', icon: 'check', tone: 'success' },
+  help_request_completed: { label: 'Help completed', icon: 'check', tone: 'success' },
+  help_request_cancelled: { label: 'Help cancelled', icon: 'close', tone: 'neutral' },
 };

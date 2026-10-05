@@ -158,6 +158,13 @@ export default function ElderHomeScreen() {
       />
 
       <Button
+        label="Ask for help"
+        variant="secondary"
+        onPress={() => router.push('/elder/help')}
+        accessibilityHint="Ask your family or caregiver for help with something"
+      />
+
+      <Button
         label="Emergency information"
         variant="secondary"
         onPress={() => router.push('/elder/emergency')}

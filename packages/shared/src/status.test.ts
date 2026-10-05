@@ -13,6 +13,12 @@ import {
   evidenceReviewStatusLabels,
   evidenceReviewStatusPresentation,
   evidenceReviewStatusSchema,
+  helpRequestCategoryLabels,
+  helpRequestCategoryPresentation,
+  helpRequestCategorySchema,
+  helpRequestStateLabels,
+  helpRequestStatePresentation,
+  helpRequestStateSchema,
   notificationEventTypeSchema,
   notificationPresentation,
   prescriptionStatusLabels,
@@ -45,6 +51,8 @@ describe('status labels', () => {
     ['appointment type', appointmentTypeSchema.options, appointmentTypeLabels],
     ['prescription status', prescriptionStatusSchema.options, prescriptionStatusLabels],
     ['evidence review status', evidenceReviewStatusSchema.options, evidenceReviewStatusLabels],
+    ['help request category', helpRequestCategorySchema.options, helpRequestCategoryLabels],
+    ['help request state', helpRequestStateSchema.options, helpRequestStateLabels],
   ] as const;
 
   it.each(cases)('%s has a text label for every value', (_name, options, labels) => {
@@ -90,6 +98,18 @@ describe('status presentation', () => {
       evidenceReviewStatusSchema.options,
       evidenceReviewStatusLabels,
       evidenceReviewStatusPresentation,
+    ],
+    [
+      'help request category',
+      helpRequestCategorySchema.options,
+      helpRequestCategoryLabels,
+      helpRequestCategoryPresentation,
+    ],
+    [
+      'help request state',
+      helpRequestStateSchema.options,
+      helpRequestStateLabels,
+      helpRequestStatePresentation,
     ],
   ] as const;
 

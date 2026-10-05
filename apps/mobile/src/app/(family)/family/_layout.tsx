@@ -8,13 +8,14 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { TabIcon } from '@/components/tab-icon';
 import { fontSize } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useHelpRequestNotifications } from '@/hooks/use-help-notifications';
 
 const TAB_ICONS: Record<string, AppIconName> = {
   index: 'home',
   meds: 'medication',
   calendar: 'calendar',
-  circle: 'person',
-  more: 'help',
+  help: 'help',
+  more: 'person',
 };
 
 function tabIcon(name: keyof typeof TAB_ICONS) {
@@ -25,16 +26,21 @@ function tabIcon(name: keyof typeof TAB_ICONS) {
 }
 
 /**
- * Connected family member tabs: Home, Meds, Visits, Care circle, More
+ * Connected family member tabs: Home, Meds, Visits, Help, More
  * (docs/specs/sprint-8.md; the read-only permission boundary is docs/adr/adr-001).
  *
- * Everything reachable here is read-only. The detail routes (`med`, `appointment`,
- * `elder`, `emergency`) and the pre-consent join flow (`link`) are registered with
- * `href: null` so they never appear in the tab bar but can still be pushed.
+ * Everything reachable here is read-only apart from two deliberate exceptions: accepting or
+ * completing a help request, and setting one's own availability. The detail routes
+ * (`med`, `appointment`, `elder`, `emergency`, `circle`, `availability`, `help-detail`) and the
+ * pre-consent join flow (`link`) are registered with `href: null` so they never appear in the
+ * tab bar but can still be pushed.
  */
 export default function FamilyTabsLayout() {
   const { ready, user } = useAuth();
   const { colors } = useAppTheme();
+
+  // Mirrors help-request events to the device while the family member uses the app (OD4).
+  useHelpRequestNotifications();
 
   if (!ready) return <LoadingScreen message="Starting ElderCare+…" />;
   if (!user) return <Redirect href="/sign-in" />;
@@ -53,7 +59,7 @@ export default function FamilyTabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: tabIcon('index') }} />
       <Tabs.Screen name="meds" options={{ title: 'Meds', tabBarIcon: tabIcon('meds') }} />
       <Tabs.Screen name="calendar" options={{ title: 'Visits', tabBarIcon: tabIcon('calendar') }} />
-      <Tabs.Screen name="circle" options={{ title: 'Circle', tabBarIcon: tabIcon('circle') }} />
+      <Tabs.Screen name="help" options={{ title: 'Help', tabBarIcon: tabIcon('help') }} />
       <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: tabIcon('more') }} />
 
       <Tabs.Screen name="link" options={{ href: null }} />
@@ -61,6 +67,9 @@ export default function FamilyTabsLayout() {
       <Tabs.Screen name="appointment" options={{ href: null }} />
       <Tabs.Screen name="elder" options={{ href: null }} />
       <Tabs.Screen name="emergency" options={{ href: null }} />
+      <Tabs.Screen name="circle" options={{ href: null }} />
+      <Tabs.Screen name="availability" options={{ href: null }} />
+      <Tabs.Screen name="help-detail" options={{ href: null }} />
     </Tabs>
   );
 }

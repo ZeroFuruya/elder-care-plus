@@ -64,6 +64,8 @@ export default function CaregiverTabsLayout() {
       <Tabs.Screen name="med" options={{ href: null }} />
       {/* Sprint 4 dose detail (`C-05` missed dose), pushed from the dashboard. */}
       <Tabs.Screen name="dose" options={{ href: null }} />
+      {/* Sprint 8 help requests (Flow F), reached from the notification centre. */}
+      <Tabs.Screen name="help" options={{ href: null }} />
     </Tabs>
   );
 }

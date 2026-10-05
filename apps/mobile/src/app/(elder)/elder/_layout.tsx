@@ -59,6 +59,10 @@ export default function ElderTabsLayout() {
       <Tabs.Screen name="circle" options={{ href: null }} />
       {/* Sprint 4 dose detail (`E-03`/`E-04`), pushed from the home list. */}
       <Tabs.Screen name="dose" options={{ href: null }} />
+      {/* Sprint 7 appointment detail (`E-06`), pushed from the calendar. */}
+      <Tabs.Screen name="appointment" options={{ href: null }} />
+      {/* Sprint 8 ask-for-help (Flow F), pushed from the home screen. */}
+      <Tabs.Screen name="help" options={{ href: null }} />
     </Tabs>
   );
 }
