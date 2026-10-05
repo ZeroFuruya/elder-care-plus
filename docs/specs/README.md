@@ -35,3 +35,8 @@ project.
 
 **Checkpoint:** `checkpoint-2026-10-01.md` records the four acceptances (Sprint 1, `sprint-1b.md`,
 `sprint-2.md`, Sprint 4 review), all granted 2026-10-01.
+
+`sprint-5.md` (inventory and expiry safety, Flow D) was **drafted 2026-10-05** at the owner's
+request, as the first of the remaining sprints (5–9) to be wrapped up before the 2026-10-15/16
+checking. It is **awaiting owner approval**; two decisions block implementation (frame IDs for the
+stock screens, and what exactly `needs_review` suppresses).
