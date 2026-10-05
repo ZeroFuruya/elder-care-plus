@@ -10,6 +10,7 @@ import { doseStatusLabels, syncStateLabels, type DoseStatus, type SyncState } fr
 import {
   stockStatusLabels,
   stockTrackingLabels,
+  type StockDisplay,
   type StockStatus,
   type StockTracking,
 } from './inventory';
@@ -86,6 +87,12 @@ export const stockStatusPresentation = Object.freeze({
 export const stockTrackingPresentation = Object.freeze({
   untracked: { label: stockTrackingLabels.untracked, icon: 'cube', tone: 'neutral' },
 } as const satisfies Record<StockTracking, StatusPresentation>);
+
+/** One lookup for a stock badge, whatever `stockDisplayFromBatch` returned. */
+export const stockDisplayPresentation = Object.freeze({
+  ...stockStatusPresentation,
+  ...stockTrackingPresentation,
+} as const satisfies Record<StockDisplay, StatusPresentation>);
 
 export const appointmentStatePresentation = Object.freeze({
   upcoming: { label: appointmentStateLabels.upcoming, icon: 'calendar', tone: 'neutral' },

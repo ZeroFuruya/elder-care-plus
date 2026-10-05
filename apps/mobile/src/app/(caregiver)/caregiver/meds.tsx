@@ -4,8 +4,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   hasUsableActiveBatch,
-  stockStatusPresentation,
-  stockStatusFromBatch,
+  stockDisplayPresentation,
+  stockDisplayFromBatch,
 } from '@eldercare/shared';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -57,17 +57,17 @@ interface MedsData {
 /** The stock state to show for one medicine, derived from its active batch. */
 function stockStateOf(plan: MedicationPlan, medication: Medication) {
   const batch = activeBatchOf(plan.batches, medication.id);
+  const hasAnyBatch = plan.batches.some((candidate) => candidate.medicationId === medication.id);
   const usable = hasUsableActiveBatch(batch, medication.doseUnit);
+  const display = stockDisplayFromBatch({
+    hasAnyBatch,
+    hasValidActiveBatch: usable,
+    quantity: batch?.quantity ?? null,
+    lowStockThreshold: batch?.lowStockThreshold ?? null,
+    expiryDate: batch?.expiryDate ?? null,
+  });
   return {
-    presentation:
-      stockStatusPresentation[
-        stockStatusFromBatch(
-          batch?.quantity ?? 0,
-          batch?.lowStockThreshold,
-          batch?.expiryDate,
-          usable,
-        )
-      ],
+    presentation: stockDisplayPresentation[display],
     batch,
   };
 }

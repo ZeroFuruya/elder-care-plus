@@ -3,8 +3,8 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import {
   hasUsableActiveBatch,
-  stockStatusPresentation,
-  stockStatusFromBatch,
+  stockDisplayPresentation,
+  stockDisplayFromBatch,
 } from '@eldercare/shared';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -68,6 +68,9 @@ export default function ElderMedsScreen() {
       ) : (
         active.map((medication) => {
           const batch = activeBatchOf(plan.batches, medication.id);
+          const hasAnyBatch = plan.batches.some(
+            (candidate) => candidate.medicationId === medication.id,
+          );
           const schedules = schedulesOf(plan.schedules, medication.id).filter(
             (schedule) => schedule.isActive,
           );
@@ -90,13 +93,14 @@ export default function ElderMedsScreen() {
 
               <StatusPill
                 presentation={
-                  stockStatusPresentation[
-                    stockStatusFromBatch(
-                      batch?.quantity ?? 0,
-                      batch?.lowStockThreshold,
-                      batch?.expiryDate,
-                      hasUsableActiveBatch(batch, medication.doseUnit),
-                    )
+                  stockDisplayPresentation[
+                    stockDisplayFromBatch({
+                      hasAnyBatch,
+                      hasValidActiveBatch: hasUsableActiveBatch(batch, medication.doseUnit),
+                      quantity: batch?.quantity ?? null,
+                      lowStockThreshold: batch?.lowStockThreshold ?? null,
+                      expiryDate: batch?.expiryDate ?? null,
+                    })
                   ]
                 }
               />

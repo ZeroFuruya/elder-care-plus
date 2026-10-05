@@ -52,6 +52,7 @@ export {
 export { inspectDatabase, type TableDump } from './inspect';
 export {
   activeBatchOf,
+  adjustStock,
   createBatch,
   createMedication,
   createSchedule,
@@ -76,6 +77,7 @@ export {
   type MedicationPlan,
   type MedicationSchedule,
   type MedicineBatch,
+  type StockAdjustmentReason,
 } from './medications';
 export {
   deactivateEmergencyNumber,
