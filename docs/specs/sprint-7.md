@@ -1,15 +1,24 @@
 # Sprint 7 — Appointments (Flow F)
 
-- **Status:** **Draft v1 for owner review (2026-10-06).** Not yet approved and not implemented. The
-  owner answered the six open decisions on 2026-10-06 (now the binding **Owner decisions** below); the
-  `@architect` critique is being run before implementation. No branch exists yet.
-- **Flow:** `docs/00-product-flow.md` §4 F (appointments: visit or in-home), §6 data model (`appointments`),
-  §8 rules (conditional fields, no silent overwrite of a historical state), §9 acceptance scenario 6.
+- **Status:** **Draft v2 (2026-10-06) after an `@architect` critique; awaiting owner approval.** The
+  critique returned **"Needs changes"** with 19 must-fix items; all are folded in below. The owner
+  answered the six decisions (now binding, below) on 2026-10-06. Not implemented; no branch exists.
+- **Critic:** `@architect` session `ses_ef31f0257ffe9x0QRTtPD5NIFW` (analyze-only). Must-fix mapping:
+  state constraint (MF1), completion note + product-flow conflict (MF2), RPC locking/state machine
+  (MF3), audit snapshot (MF4), timezone validation (MF5), bounds/normalization (MF6), reminder dedup
+  (MF7), sweep race (MF8), interval expression (MF9), grants (MF10), RLS/direct writes (MF11),
+  notification client contract (MF12), navigation/routes (MF13), deadline scope (MF14), filename
+  ordering (MF15), display/timezone contract (MF16), toggle wording (MF17), deactivated/revoked
+  accounts (MF18), extra tests (MF19).
+- **Flow:** `docs/00-product-flow.md` §4 F (appointments: visit or in-home), §6 data model
+  (`appointments`), §8 rules (conditional fields, no silent overwrite of a historical state), §9
+  acceptance scenario 6.
 - **Depends on:** Sprint 1 (`care_links`, `is_manager_of`, `is_active_member_of`, `audit_events`,
-  `profiles.role`), Sprint 4 (`notifications` + `dedup_key` after Sprint 5, the in-app notification
-  centre), Sprint 5 (the `dedup_key` index and the guarded-`pg_cron` sweep pattern). The `appointments`
-  table is **greenfield** — no appointment table exists today.
-- **Successor:** Sprint 8 (family UI) consumes the read side; `F-07`/`F-08` are built there, not here.
+  `profiles.role`/`deactivated_at`), Sprint 3 (`assert_valid_timezone`, the RPC/audit patterns), Sprint
+  4 (`notifications` + `dedup_key` after Sprint 5, the in-app notification centre), Sprint 5 (the
+  `dedup_key` index and the guarded-`pg_cron` sweep pattern). The `appointments` table is
+  **greenfield** — no appointment table exists today.
+- **Successor:** Sprint 8 (family UI) consumes the read side; `F-07`/`F-08` are built there.
 
 ## Owner decisions (binding, 2026-10-06)
 
@@ -25,14 +34,15 @@
   the fixed default and the per-appointment override only.
 - **OD5 — device calendar.** **`expo-calendar` is added** and the elder's `E-06` offers **Add to
   device calendar** when the device supports it and permission is granted in context; otherwise the
-  button is omitted. This is a native dependency, so a **fresh APK is required** for the demo.
+  button is omitted. This is a native dependency, so a **fresh APK is required** for the demo — and it
+  is an **independent increment**, never on the critical path (MF14/OD5).
 - **OD6 — overdue.** An unresolved past `upcoming` item stays in the **Upcoming** tab with the
   **Overdue** badge until the caregiver resolves it.
 
 ## Goal
 
 Give the caregiver manager a complete, auditable appointment record for both **clinic** and **in-home**
-visits: required conditional details, a single reminder, a guarded lifecycle
+visits: required conditional details, one reminder, a guarded lifecycle
 (`upcoming → completed | cancelled`, with past unresolved items shown as `overdue`), and one audit row
 for every state change. The elder and connected family member read the same record and write nothing.
 No photos, no OCR, no clinical advice.
@@ -46,7 +56,8 @@ No photos, no OCR, no clinical advice.
 3. As a caregiver manager, I can edit an appointment **while it is still upcoming**, and I can mark it
    `completed` or `cancelled` through a confirmation that names the effect; the change is audited and
    the record is never deleted.
-4. As a caregiver manager, I am reminded in-app before an appointment, once, at the configured lead time.
+4. As a caregiver manager, I receive one in-app reminder before an appointment, at the configured lead
+   time.
 5. As an older adult, I can read my upcoming and past appointments, open the details and see the
    configured reminder. I cannot edit anything.
 6. As a connected family member, I can read the same appointments. I cannot edit anything.
@@ -61,18 +72,20 @@ stays light/dark compatible.
 - **`C-06` Appointments** (caregiver) — **Upcoming / Past** tabs grouped by month, a status pill +
   type icon per row (never colour alone), and the single primary action **Add appointment**.
 - **`C-07` Add/Edit Appointment** — type (`visit` / `in_home`) drives the conditional fields; required
-  fields marked in text; one reminder picker (OD2) and the "Notify both linked users" toggle; primary
-  action **Save appointment**. Edit reuses the same screen and is reachable only while `upcoming`.
+  fields marked in text; one reminder picker (OD2) and a **Notify elder** toggle (default on; the
+  caregiver manager is always notified — MF17, never "both users"); primary action **Save
+  appointment**. Edit reuses the same screen and is reachable only while `upcoming`.
 - **`C-08` Appointment Detail** (caregiver) — the full record, **Edit** as the secondary action,
   **Mark completed** as the dominant primary action, and **Cancel appointment** as the destructive
   action behind a confirmation dialog that names the record and the effect (UI standard §12).
 - **`E-05` Appointments** (elder, read-only) — Upcoming / Past tabs, same presentation, no add/edit.
 - **`E-06` Appointment Detail** (elder, read-only) — full details, the configured reminder,
   **Call provider** where a contact exists, and **Add to device calendar** where the device supports it
-  and permission is granted in context (OD5).
+  and permission is granted in context (OD5; degrades to hidden).
 - **`E-12` Appointment History** (elder) — completed and cancelled records kept visible.
 - **`C-01` Dashboard / `E-01` Home** — a compact **Next appointment** card when one exists.
-- **`S-01` Notification Center** — renders the appointment reminder event (see the prerequisite fix).
+- **`S-01` Notification Center** — renders the appointment reminder event and every Sprint 5 stock
+  event correctly (see the prerequisite fix).
 
 Every new rendered string and interactive `accessibilityLabel` is proposed as a traceable copy batch
 for owner approval, as Sprints 3–5 did.
@@ -82,7 +95,10 @@ for owner approval, as Sprints 3–5 did.
 ### Migration `supabase/migrations/20261029120000_sprint7_appointments.sql`
 
 All foreign keys `on delete restrict`; nothing is hard-deleted. Any widened check constraint is
-replaced forward (never by editing applied history).
+replaced forward (never by editing applied history). **Filename ordering (MF15):** the timestamp is a
+**monotonic ordering token**, not a calendar date — it must sort **after** the applied Sprint 5
+migration `20261022120000`. The repo already uses synthetic forward dates; this is called out so the
+ordering is deliberate and the hosted history stays strictly increasing.
 
 **A. `public.appointments`**
 
@@ -91,95 +107,152 @@ replaced forward (never by editing applied history).
 - `appointment_type text not null check (appointment_type in ('visit','in_home'))`
 - `state text not null default 'upcoming' check (state in ('upcoming','completed','cancelled'))`
   — **`overdue` is derived on read**, never stored (matches `appointmentStateSchema`).
-- `title text not null` (trimmed, bounded length)
-- `start_at timestamptz not null`, `timezone text not null` (IANA) so display and the reminder window
-  are unambiguous; mirror the Sprint 4 "UTC instant + schedule timezone" rule.
+- `title text not null`
+- `start_at timestamptz not null`, `timezone text not null` (IANA; validated, MF5/MF16)
 - `provider text`, `facility text`, `location text`, `address text`, `contact_phone text`,
-  `notes text` (bounded lengths)
+  `notes text`
 - `reminder_lead_minutes integer` (nullable = Off) `check (reminder_lead_minutes is null or
   reminder_lead_minutes in (60, 180, 1440, 2880))`
 - `notify_elder boolean not null default true`
 - `created_by uuid not null references public.profiles (id) on delete restrict`
 - `created_at timestamptz not null default now()`, `updated_at timestamptz not null default now()`
-- `completed_at timestamptz`, `cancelled_at timestamptz`, `cancel_note text`
-- **Conditional-field constraint** (product-flow §8): `visit` requires `facility` and `location`;
-  `in_home` requires `address`, `provider` (visitor name) and `contact_phone`.
-- **State-consistency constraint:** `(state = 'completed') = (completed_at is not null)` and
-  `(state = 'cancelled') = (cancelled_at is not null)`.
+- `completed_at timestamptz`, `cancelled_at timestamptz`
+- **`completion_note text`** (the follow-up note on `complete_appointment`; MF2) and
+  **`cancel_note text`**
+- **Length bounds (MF6, exact and mirrored in the shared schema):** `title ≤ 120`, `provider ≤ 120`,
+  `facility ≤ 160`, `location ≤ 200`, `address ≤ 300`, `contact_phone ≤ 40`, `notes ≤ 1000`,
+  `completion_note ≤ 500`, `cancel_note ≤ 500`. Optional text is trimmed and a blank becomes `NULL`.
+- **State-consistency constraint (MF1) — explicit three-state invariant:**
+  `(state = 'upcoming' and completed_at is null and cancelled_at is null) or
+   (state = 'completed' and completed_at is not null and cancelled_at is null) or
+   (state = 'cancelled' and completed_at is null and cancelled_at is not null)`,
+  plus `(completion_note is null or state = 'completed')` and
+  `(cancel_note is null or state = 'cancelled')`.
+- **Conditional-field constraint (MF6, whitespace-safe):** `visit` requires
+  `length(btrim(facility)) > 0 and length(btrim(location)) > 0`; `in_home` requires
+  `length(btrim(address)) > 0 and length(btrim(provider)) > 0 and length(btrim(contact_phone)) > 0`.
 - `updated_at` maintained by a trigger (mirror Sprint 3).
-- Indexes: `(elder_id, start_at desc)` and `(state, start_at)`.
+- Indexes: `(elder_id, start_at desc)`, a sweep index
+  `(state, start_at) where state = 'upcoming' and reminder_lead_minutes is not null`.
 
-**B. RLS**
+**B. RLS and grants (MF10, MF11)**
 
-- `select`: `is_elder_self(elder_id) or is_active_member_of(elder_id)` (elder + managers + family
-  members). Unrelated accounts get zero rows.
-- **No insert/update/delete grants to any client role.** Every write goes through a
-  `security definer` RPC, exactly like `create_medication`/`confirm_dose`. RLS is still enabled.
-- `family_member` (read) is covered now so Sprint 8 only adds UI.
+- `select` policy only: `is_elder_self(elder_id) or is_active_member_of(elder_id)` (elder + managers +
+  family members). Unrelated accounts get zero rows.
+- **No insert/update/delete policy and no client write grant.** Explicitly:
+  `revoke all on public.appointments from public, anon;`
+  `revoke insert, update, delete on public.appointments from authenticated;`
+  `grant select on public.appointments to authenticated;`
+- Every write goes through a `security definer` RPC with `set search_path = public, pg_temp`.
+- `created_by` is always `auth.uid()`; the RPC cannot create an appointment for an elder the caller
+  does not manage.
 
-**C. Guarded RPCs** (all `security definer`, `grant execute` to `authenticated`, rejected calls write
-nothing, all resolve the elder server-side and require `is_manager_of`):
+**C. Guarded RPCs** (all `security definer`, `set search_path = public, pg_temp`; helpers and sweeps
+revoked from `public`/`anon`/`authenticated` before the public RPCs are granted back; MF3/MF10):
 
-1. `create_appointment(...) returns uuid` — validates the conditional fields for the chosen type;
-   inserts one row and one `audit_events` row (`appointment_created`, snapshot summary).
-2. `update_appointment(p_id uuid, ...) returns uuid` — allowed only while `state = 'upcoming'`;
-   writes one `audit_events` row with before/after summaries. Editing a past/terminal record is
-   refused (product-flow §8 "no silent overwrite of a historical appointment state").
-3. `complete_appointment(p_id uuid, p_note text) returns uuid` — `upcoming → completed`, stamps
-   `completed_at`, optional follow-up **note** (no photo — cut by the AI/OCR decision), one audit row.
-   A repeat call is a **no-op** (no second audit row) — idempotent.
-4. `cancel_appointment(p_id uuid, p_note text) returns uuid` — `upcoming → cancelled`, stamps
-   `cancelled_at`, one audit row; the client shows the destructive confirmation first (UI standard §12).
-   A repeat call is a no-op.
-5. Rejected for: the elder, a family member, an unrelated account, and a manager of another elder.
+1. `appointment_audit_summary(p_row public.appointments) returns jsonb` — stable; carries `type`,
+   `state`, `title`, `start_at`, `timezone`, all conditional location/provider/contact fields,
+   `reminder_lead_minutes`, `notify_elder`, `notes`, and the terminal timestamps + notes (MF4). Audits
+   use before/after snapshots; a rejected or true no-op call writes no audit row.
+2. `create_appointment(p_elder_id uuid, p_appointment_type text, p_title text, p_start_at timestamptz,
+   p_timezone text, p_provider text, p_facility text, p_location text, p_address text,
+   p_contact_phone text, p_notes text, p_reminder_lead_minutes integer, p_notify_elder boolean)
+   returns uuid` — requires `is_manager_of(p_elder_id)`; trims/normalizes; validates conditional fields
+   for the type; calls `assert_valid_timezone(p_timezone)` (MF5); inserts one row and one
+   `audit_events` row (`appointment_created`).
+3. `update_appointment(p_id uuid, ... same fields minus p_elder_id ...) returns uuid` — resolves and
+   **locks the row `FOR UPDATE`**, derives `elder_id` from the row (never trusts a client elder id),
+   verifies `is_manager_of`, re-reads under the lock, and refuses unless `state = 'upcoming'`
+   (MF3/MF11). Writes one `audit_events` row with before/after summaries.
+4. `complete_appointment(p_id uuid, p_note text) returns uuid` — same lock/derive/verify/re-read
+   pattern; requires `state = 'upcoming'`, stamps `completed_at` and `completion_note`, writes one
+   audit row. A repeat call on an already-`completed` row is a **no-op**; a call on a `cancelled` row
+   is **rejected** (no audit).
+5. `cancel_appointment(p_id uuid, p_note text) returns uuid` — same pattern; requires
+   `state = 'upcoming'`, stamps `cancelled_at` and `cancel_note`, writes one audit row. A repeat call
+   on an already-`cancelled` row is a **no-op**; a call on a `completed` row is **rejected** (no audit).
+   The client shows the destructive confirmation first (UI standard §12).
+6. All four reject the elder, a family member, an unrelated account, and a manager of another elder;
+   concurrent complete-vs-cancel is serialized by the row lock, so exactly one wins and the other
+   rejects.
 
-**D. Reminders (subject to OD1–OD3)**
+**D. Reminders** (OD1–OD3)
 
-6. Widen `notifications.event_type` to add `'appointment_upcoming'` (forward-replace of the Sprint 5
+7. Widen `notifications.event_type` to add `'appointment_upcoming'` (forward-replace of the Sprint 5
    check; the existing six values stay).
-7. `check_appointment_reminders() returns integer` — server-only, `security definer`:
-   - selects `state = 'upcoming'`, `reminder_lead_minutes is not null` rows in the window
-     `now() >= start_at - reminder_lead_minutes and now() < start_at`;
-   - inserts one notification per recipient: the elder (if `notify_elder`) and every active caregiver
-     manager, `event_type = 'appointment_upcoming'`, `target_table = 'appointments'`, `target_id = id`,
-     `dedup_key = 'appointment:' || id || ':' || reminder_lead_minutes`;
-   - `on conflict (recipient_id, event_type, dedup_key) do nothing`, so a repeated sweep is a no-op;
+8. `check_appointment_reminders_at(p_reference timestamptz) returns integer` — server-only,
+   `security definer`, **testable with a deterministic reference clock**; and
+   `check_appointment_reminders() returns integer` = `check_appointment_reminders_at(now())` as the
+   `pg_cron` entry point.
+   - joins active appointments (`state = 'upcoming'`, `reminder_lead_minutes is not null`) whose window
+     `p_reference >= start_at - make_interval(mins => reminder_lead_minutes)` and
+     `p_reference < start_at` (**MF9** — never `start_at - integer`);
+   - **locks each candidate row `FOR UPDATE` and re-checks `state`/window before inserting** (MF8), so
+     an appointment cancelled/edited just before the sweep is skipped rather than reminded;
+   - inserts one notification per recipient: the elder (if `notify_elder` and their
+     `profiles.deactivated_at is null`) and **every active caregiver manager** with
+     `deactivated_at is null` (MF18). Family members are never recipients.
+   - `event_type = 'appointment_upcoming'`, `target_table = 'appointments'`, `target_id = id`,
+     `dedup_key = 'appointment:' || id` — a **stable key, independent of the lead value** (MF7), with
+     `on conflict (recipient_id, event_type, dedup_key) do nothing`. A repeated sweep is a no-op.
+   - **Edit semantics (MF7):** an edit before emission uses the new schedule; an edit after emission
+     does **not** create a second reminder; setting the lead to Off, or moving to a terminal state,
+     suppresses future emission.
    - scheduled by `pg_cron` **every 15 minutes** inside a `begin … exception … end` guard, so an
-     unavailable scheduler degrades to a documented limitation rather than a failed migration
-     (mirror Sprint 5).
-8. **Lock-screen copy stays minimal** (UI standard §13): `ElderCare+: 1 appointment soon. Open the app
+     unavailable scheduler degrades to a documented limitation rather than a failed migration.
+9. **Lock-screen copy stays minimal** (UI standard §13): `ElderCare+: 1 appointment soon. Open the app
    for details.` No clinic name, no provider, no condition.
 
-**E. Prerequisite client fix (Sprint 5 gap)**
+**E. Display and timezone contract (MF16)**
 
-9. Sprint 5 added four server event types (`stock_low`, `stock_out`, `stock_expiring`,
-   `medicine_needs_review`) but **did not widen the shared `notificationEventTypeSchema`**. Today
-   `toNotification` silently falls back to `dose_confirmed`, so a stock alert renders in `S-01` as
-   **"Taken"** — a correctness bug. Sprint 7 must widen the enum and replace
-   `notificationEventDoseStatus` with an event→presentation map (dose events reuse
-   `doseStatusPresentation`, stock events reuse the stock presentation, `appointment_upcoming` uses
-   `appointmentStatePresentation.upcoming`), plus target-aware navigation in `S-01`
-   (dose → dose screen, stock → `C-04`, appointment → `C-08`/`E-06`). This is a prerequisite, not
-   optional polish.
+10. `start_at` is an absolute UTC instant; `timezone` is stored for display and editing. The client
+    converts the entered local wall-clock to UTC using the stored zone (the same contract as Sprint
+    4's `local_dose_timestamp`). Changing the timezone during an edit re-interprets the **wall-clock**
+    time in the new zone and recomputes the instant; it never silently shifts the displayed time. If
+    the device timezone differs, the stored `timezone` still drives display.
+
+**F. Prerequisite client fix (Sprint 5 gap — MF12/MF13)**
+
+11. Sprint 5 added four server event types (`stock_low`, `stock_out`, `stock_expiring`,
+    `medicine_needs_review`) but **did not widen the shared `notificationEventTypeSchema`**. Today
+    `toNotification` silently falls back to `dose_confirmed`, so a stock alert renders in `S-01` as
+    **"Taken"** — a correctness bug. Sprint 7 widens the enum to all **seven** current server types
+    plus `appointment_upcoming`; replaces `notificationEventDoseStatus` with an explicit
+    event→presentation map (`dose_confirmed`→Taken, `dose_missed`→Missed, `stock_low`→Low stock,
+    `stock_out`→Out of stock, `stock_expiring`→Expiring soon, `medicine_needs_review`→Needs caregiver
+    review, `appointment_upcoming`→Upcoming); carries `targetTable` through `AppNotification` /
+    `toNotification` (currently selected then discarded); validates `target_table` as well as
+    `event_type`; and **never coerces an unknown event to `dose_confirmed`** — an unknown event is
+    skipped with an observable error. Copy that says "dose confirmation or missed dose" is corrected.
+    This is a prerequisite, not optional polish.
 
 ### Mobile
 
 - Add **`expo-calendar`** (OD5) to `apps/mobile/package.json`, request calendar permission in context
-  on `E-06`, and degrade to hiding **Add to device calendar** when the device or permission does not
-  allow it. No other new dependency.
+  on `E-06`, and hide **Add to device calendar** when the device or permission does not allow it. No
+  other new dependency. **Calendar export ships last and must not block CRUD/RLS/reminders** (MF14).
+- New routes with concrete contracts (MF13): caregiver `(caregiver)/caregiver/appointment.tsx`
+  (detail, `?id=`) and `appointment-edit.tsx` (add/edit, optional `?id=`); elder
+  `(elder)/elder/appointment.tsx` (detail, `?id=`). The lists are the existing `calendar.tsx` tabs.
+- `S-01` navigation routes by **event and target**, not only by role: dose events → the dose screen,
+  stock events → `C-04`, `appointment_upcoming` → the appointment detail for the viewer's role. A
+  stale/deleted/unauthorized target renders `ScreenError` with a safe return path, never a crash.
+- **Build order (MF14):** (1) migration + RLS + RPCs + pgTAP; (2) shared schemas + notification fix;
+  (3) caregiver CRUD screens; (4) elder read screens; (5) reminders; (6) `expo-calendar` export as the
+  final, independently verifiable increment.
 
 ### Shared package
 
-- `packages/shared/src/appointment.ts`: zod `createAppointmentSchema`/`updateAppointmentSchema` with
-  the conditional-field refinement, `appointmentLeadTimeOptions` (+ default), and
-  `appointmentDisplayState(state, startAt, now)` returning `overdue` for an unresolved past
-  `upcoming`, matching `appointmentStateSchema`.
-- `packages/shared/src/notification.ts`: widen `notificationEventTypeSchema` to the full server set
-  (D6 + E9) and export the event→presentation + target map.
+- `packages/shared/src/appointment.ts` (**extend**, do not recreate): zod `createAppointmentSchema` /
+  `updateAppointmentSchema` with the conditional-field refinement and the exact bounds above,
+  `appointmentLeadTimeOptions` (+ default), `appointmentDisplayState(state, startAt, now)` returning
+  `overdue` for an unresolved past `upcoming`, matching `appointmentStateSchema`.
+- `packages/shared/src/notification.ts` (**extend**): widen `notificationEventTypeSchema` to the full
+  server set (F11) and export the event→presentation + target map.
 - `packages/shared/src/status-presentation.ts` + `status.test.ts`: every enum value keeps a non-empty
   `{ label, icon, tone }` entry and an assertion, or `pnpm test` fails.
-- Unit tests for the overdue boundary, the conditional-field refinement, the lead-time options, and
-  the notification event→presentation mapping.
+- Unit tests for the overdue boundary, the conditional-field refinement, the bounds, the lead-time
+  options, and the notification event→presentation mapping.
 
 ## Acceptance criteria
 
@@ -189,29 +262,35 @@ nothing, all resolve the elder server-side and require `is_manager_of`):
    unrelated account reads zero; direct insert/update/delete by any client role is `42501`.
 2. **Authorization.** Every RPC rejects the elder, a family member, an unrelated account and a manager
    of another elder, and a rejected call writes no appointment and no audit row.
-3. **Conditional fields.** A `visit` without facility/location is refused; an `in_home` without
-   address/provider/contact is refused; a complete record of each type is accepted.
+3. **Constraints.** Unknown `appointment_type`/`state`, a bad lead time, an invalid timezone, a
+   whitespace-only conditional field, an over-limit field, and inconsistent terminal timestamps are
+   rejected; `cancel_note` is illegal unless `cancelled`; `completion_note` is illegal unless
+   `completed`; the `audit_events` append-only trigger still fires.
 4. **Lifecycle + idempotency.** `upcoming → completed` and `upcoming → cancelled` each write exactly
-   one audit row; a repeated `complete_/cancel_` is a no-op (still one audit row); `update_appointment`
-   on a terminal record is refused.
-5. **Reminders.** A second `check_appointment_reminders` in the same window is a no-op; the elder
-   (when `notify_elder`) and each manager receive exactly one row; a family member receives none; an
-   `Off` appointment receives none; `has_function_privilege` confirms `anon`/`authenticated` cannot
-   execute the sweep.
-6. **Constraints.** Unknown `appointment_type`/`state`, a bad lead time, and inconsistent timestamps
-   are rejected; the `audit_events` append-only trigger still fires.
-7. **Shared unit tests** as listed above.
+   one audit row; a repeated same-terminal call is a no-op (still one audit row); complete-after-cancel
+   and cancel-after-complete are rejected with no audit row; `update_appointment` on a terminal record
+   is refused; concurrent complete-vs-cancel leaves exactly one winner.
+5. **Reminders.** Using `check_appointment_reminders_at` with a fixed reference clock: the elder (when
+   `notify_elder`) and each manager receive exactly one row; a family member receives none; an Off
+   appointment receives none; a completed/cancelled appointment receives none; a second run in the
+   same window is a no-op; changing the lead after emission does not create a second reminder; a
+   deactivated/revoked recipient receives none; `has_function_privilege` confirms `anon`/`authenticated`
+   cannot execute the sweep.
+6. **Shared unit tests** as listed above, plus every notification event mapping and navigation target.
 
 ### Requires separate evidence (not claimed as single-session pgTAP)
 
 - **Scheduler:** proof the `pg_cron` job exists and ran on hosted (`cron.job`/`cron.job_run_details`).
 - **Clock:** deterministic SQL date fixtures; a hosted, time-controlled check of a real reminder window.
 - **Mobile/device:** `C-06`–`C-08`, `E-05`/`E-06`/`E-12`, role-specific controls, the destructive
-  confirmation, accessibility (48/56 dp targets), contrast, and reminder → record navigation.
+  confirmation, accessibility (48/56 dp targets), contrast, calendar export, and reminder → record
+  navigation.
 
 ## Out of scope
 
-- Photos, OCR and embeddings (**removed**); the completion follow-up is a note only.
+- Photos, OCR and embeddings (**removed** by the 2026-10-05 owner decision; `00-product-flow.md` §4 F
+  step 4 and §9 scenario 6 still mention follow-up evidence and need reconciling). The completion
+  follow-up is a note (`completion_note`) only.
 - Push delivery and device-local scheduling (OD1).
 - The `C-13` Reminder and Escalation Settings screen (OD4).
 - Recurring appointments and two-way external calendar sync; device-calendar **export is in scope**
@@ -225,14 +304,17 @@ nothing, all resolve the elder server-side and require `is_manager_of`):
 - **Reminder timeliness.** A 15-minute sweep approximates the configured lead time; document the
   resolution rather than promising an exact minute. If `pg_cron` is unavailable, reminders are a
   documented limitation and the on-screen record stays correct.
-- **Client notification regression.** The E9 widening is load-bearing: until it lands, Sprint 5 stock
-  alerts mis-render. It should ship with this sprint, and a shared test must force a failure if a new
-  server event type has no presentation.
-- **"Notify both users".** If OD3 approves notifying the elder, the copy must stay minimal on the lock
-  screen and non-clinical in-app.
-- **Historical state.** `update_appointment` must refuse terminal records, or the "no silent overwrite"
-  rule is broken; the pgTAP call must prove it.
+- **Client notification regression.** The F11 widening is load-bearing: until it lands, Sprint 5 stock
+  alerts mis-render. It should ship with this sprint, and a shared test must fail if a new server
+  event type has no presentation.
+- **Deadline scope (MF14).** Appointment CRUD/RLS/reminders must not destabilise the medication
+  confirmation loop (the checking deliverable of record). Ship in the ordered increments above; if
+  time compresses, `expo-calendar` export and the dashboard/next-appointment card are the first to slip.
+- **Historical state.** `update_appointment` and the lifecycle RPCs must lock and refuse terminal
+  records, or the "no silent overwrite" rule is broken; the pgTAP must prove it.
+- **Concurrency.** Sweep and lifecycle must serialize on the row lock; the residual race is a tested
+  outcome, not an accident.
+- **Native dependency.** `expo-calendar` (OD5) changes the native build, so a fresh APK is required for
+  the demo; the export must degrade gracefully when unsupported or permission is denied.
 - **Copy drift.** Appointment copy is non-clinical and caregiver-directed; the elder's variant must
   never read as advice.
-- **Native dependency.** `expo-calendar` (OD5) changes the native build, so a fresh APK is required
-  for the demo; the export must degrade gracefully when unsupported or permission is denied.

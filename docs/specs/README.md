@@ -43,11 +43,11 @@ cleanly, `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions), an
 pushed. The hosted project was backed up (`backup.sql`, git-ignored) and the migration pushed
 2026-10-06, so all 12 migrations are in sync there. It is awaiting review/merge.
 
-`sprint-7.md` (appointments, Flow F) was **drafted 2026-10-06** as a v1 for owner review. It carries
-six open owner decisions (reminder delivery and lead times, who is notified, the `C-13` settings
-scope, device-calendar export, and overdue placement) and has **not** yet had its `@architect`
-critique. It also records a prerequisite fix for a Sprint 5 gap: the shared notification event schema
-was never widened, so Sprint 5 stock alerts currently mis-render as `Taken` in `S-01`.
+`sprint-7.md` (appointments, Flow F) was **drafted 2026-10-06**, the owner closed its six decisions
+the same day, and an `@architect` critique returned **"Needs changes"**; **v2** folds in all 19
+must-fix items and is **awaiting owner approval**. It records a prerequisite fix for a Sprint 5 gap:
+the shared notification event schema was never widened, so Sprint 5 stock alerts currently mis-render
+as `Taken` in `S-01`.
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
