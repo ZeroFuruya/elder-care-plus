@@ -4,9 +4,11 @@ import {
   appointmentTypePresentation,
 } from '@eldercare/shared';
 import { useLocalSearchParams } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
+import { Banner } from '@/components/banner';
+import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { DetailRow } from '@/components/detail-row';
 import { EmptyState } from '@/components/empty-state';
@@ -18,6 +20,7 @@ import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/
 import { getAppointment, type Appointment } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
+import { addAppointmentToDeviceCalendar, calendarPermissionStatus } from '@/lib/device-calendar';
 import { formatInstantInZone } from '@/lib/format';
 
 /**
@@ -29,6 +32,24 @@ export default function E06AppointmentDetail() {
   const appointmentId = typeof id === 'string' ? id : '';
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
+  const [canExport, setCanExport] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportMessage, setExportMessage] = useState<{
+    tone: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  // Probe the permission without prompting, so the export control is only offered when it can work.
+  useEffect(() => {
+    let active = true;
+    void (async () => {
+      const status = await calendarPermissionStatus();
+      if (active) setCanExport(status === 'granted' || status === 'undetermined');
+    })();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const loader = useCallback(async (): Promise<Appointment | null> => {
     if (appointmentId.length === 0) return null;
@@ -57,6 +78,34 @@ export default function E06AppointmentDetail() {
   const displayState = appointmentDisplayState(appointment.state, appointment.startAt);
   const statePresentation = appointmentStatePresentation[displayState];
   const typePresentation = appointmentTypePresentation[appointment.appointmentType];
+
+  async function addToCalendar() {
+    setExporting(true);
+    setExportMessage(null);
+    try {
+      await addAppointmentToDeviceCalendar({
+        title: appointment.title,
+        startAt: appointment.startAt,
+        timezone: appointment.timezone,
+        location:
+          appointment.appointmentType === 'visit'
+            ? [appointment.facility, appointment.location].filter(Boolean).join(', ') || null
+            : appointment.address,
+        notes: appointment.notes,
+      });
+      setExportMessage({ tone: 'success', text: 'Added to your device calendar.' });
+    } catch (cause) {
+      setExportMessage({
+        tone: 'error',
+        text:
+          cause instanceof Error
+            ? cause.message
+            : 'Could not add the event to the device calendar.',
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <Screen title="Appointment" showBack safeBottom onRefresh={reload} refreshing={refreshing}>
@@ -89,6 +138,18 @@ export default function E06AppointmentDetail() {
         <Card title="Notes">
           <Text style={styles.body}>{appointment.notes}</Text>
         </Card>
+      ) : null}
+
+      {exportMessage ? <Banner tone={exportMessage.tone} message={exportMessage.text} /> : null}
+
+      {canExport ? (
+        <Button
+          label="Add to device calendar"
+          variant="secondary"
+          loading={exporting}
+          onPress={() => void addToCalendar()}
+          accessibilityHint="Adds this appointment to your phone's calendar"
+        />
       ) : null}
     </Screen>
   );
