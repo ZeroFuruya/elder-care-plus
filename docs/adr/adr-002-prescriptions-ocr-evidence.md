@@ -1,6 +1,8 @@
 # ADR-002 — Are prescriptions, photo evidence and OCR in scope?
 
-- **Status:** **Accepted** — option A, product-flow scope (owner decision, 2026-09-25).
+- **Status:** **Amended 2026-10-05** — AI/OCR and photo evidence are **out of the app** (see
+  "Amended decision"); originally **Accepted** — option A, product-flow scope (owner decision,
+  2026-09-25).
 - **Date:** 2026-09-24.
 - **Conflict:** `docs/02-ui-ux-standard.md` §20.2 **C-R2**.
 - **Prepared by:** the main coder as a decision brief. The owner makes the call and may rewrite
@@ -83,6 +85,25 @@ Do not leave `app.json` requesting camera access while no screen uses it (C's ho
 
 Follow-up: the approved system documentation §11.1 ("no camera permission in version 1.0") must be
 revised to record the evidence-upload rationale and consent copy covering photographs.
+
+## Amended decision (2026-10-05)
+
+**Owner: do not include any AI/OCR in the app or the final presentation — hold those components
+off.** This reverses the 2026-09-25 option-A call for the app as presented. Consequences:
+
+- **Sprint 6 (prescriptions / evidence / OCR / embeddings) is dropped** from the delivery plan.
+- `services/ai` is **not consumed** by the app; `/ocr` and `/embed/text` stay unused (whether to
+  delete the service outright is a separate housekeeping decision).
+- The `expo-image-picker` plugin and its photo-permission copy in `apps/mobile/app.json` are now
+  requesting an unused permission and **should be removed** (owner to confirm timing).
+- `packages/shared/src/prescription.ts` and the `prescriptions*`/`document_chunks` schema are
+  **not built**; the previously claimed "placeholder screens" no longer exist in the tree.
+- The `AGENTS.md` hard rules that reference prescription evidence / OCR, and
+  `01-dev-environment.md` §2/§4.1/§11, must be reconciled with this decision before the final
+  release. Recorded here; not yet edited.
+- Open question for the owner: does **prescription *records* without photo evidence or OCR** stay in
+  scope as a small future slice, or is the whole Flow E deferred? The current reading is **the whole
+  of Flow E is deferred**.
 
 ## Consequences
 

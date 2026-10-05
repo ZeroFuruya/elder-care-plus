@@ -4,10 +4,11 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import {
   hasUsableActiveBatch,
-  stockStatusPresentation,
-  stockStatusFromBatch,
+  stockDisplayPresentation,
+  stockDisplayFromBatch,
 } from '@eldercare/shared';
 
+import { AdjustStockDialog } from '@/components/adjust-stock-dialog';
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
@@ -20,6 +21,7 @@ import { ScreenError } from '@/components/screen-error';
 import { StatusPill } from '@/components/status-pill';
 import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import {
+  adjustStock,
   getMedicationDetail,
   setActiveBatch,
   setMedicationActive,
@@ -51,6 +53,7 @@ export default function C04MedicationDetail() {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [adjusting, setAdjusting] = useState(false);
 
   const loader = useCallback(async (): Promise<MedicationDetail | null> => {
     if (medicationId.length === 0) return null;
@@ -70,6 +73,7 @@ export default function C04MedicationDetail() {
     } finally {
       setBusy(false);
       setConfirming(false);
+      setAdjusting(false);
     }
   }
 
@@ -96,13 +100,14 @@ export default function C04MedicationDetail() {
   const activeBatch = batches.find((batch) => batch.isActive) ?? null;
 
   function batchPresentation(batch: MedicineBatch) {
-    return stockStatusPresentation[
-      stockStatusFromBatch(
-        batch.quantity,
-        batch.lowStockThreshold,
-        batch.expiryDate,
-        hasUsableActiveBatch(batch, medication.doseUnit),
-      )
+    return stockDisplayPresentation[
+      stockDisplayFromBatch({
+        hasAnyBatch: true,
+        hasValidActiveBatch: hasUsableActiveBatch(batch, medication.doseUnit),
+        quantity: batch.quantity,
+        lowStockThreshold: batch.lowStockThreshold,
+        expiryDate: batch.expiryDate,
+      })
     ];
   }
 
@@ -166,7 +171,7 @@ export default function C04MedicationDetail() {
 
       <Card title="Stock">
         {batches.length === 0 ? (
-          <Text style={styles.meta}>No stock batch recorded.</Text>
+          <StatusPill presentation={stockDisplayPresentation.untracked} />
         ) : (
           batches.map((batch) => (
             <View key={batch.id} style={styles.batchRow}>
@@ -186,6 +191,14 @@ export default function C04MedicationDetail() {
               ) : null}
               {batch.refillContact ? (
                 <DetailRow label="Refill contact" value={batch.refillContact} />
+              ) : null}
+              {batch.isActive ? (
+                <Button
+                  label="Adjust stock"
+                  variant="secondary"
+                  disabled={busy}
+                  onPress={() => setAdjusting(true)}
+                />
               ) : null}
               {!batch.isActive && batch !== activeBatch ? (
                 <Button
@@ -241,6 +254,22 @@ export default function C04MedicationDetail() {
           )
         }
       />
+
+      {adjusting && activeBatch !== null ? (
+        <AdjustStockDialog
+          medicationName={medication.name}
+          unit={activeBatch.unit}
+          currentQuantity={activeBatch.quantity}
+          busy={busy}
+          onCancel={() => setAdjusting(false)}
+          onSubmit={(delta, reason, note) => {
+            void run(
+              () => adjustStock(activeBatch.id, delta, reason, note.length > 0 ? note : undefined),
+              'Could not adjust the stock.',
+            );
+          }}
+        />
+      ) : null}
     </Screen>
   );
 }

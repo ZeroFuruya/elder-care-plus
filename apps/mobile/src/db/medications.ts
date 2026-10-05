@@ -383,6 +383,26 @@ export async function deactivateBatch(batchId: string, reason?: string): Promise
   if (error) throw medicationWriteError(error, 'Could not change the stock batch.');
 }
 
+/** The owner-approved manual stock adjustment reasons (docs/specs/sprint-5.md). */
+export type StockAdjustmentReason =
+  'restock' | 'correction' | 'damage' | 'waste' | 'count_adjustment';
+
+export async function adjustStock(
+  batchId: string,
+  delta: number,
+  reason: StockAdjustmentReason,
+  note?: string,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('adjust_stock', {
+    p_batch_id: batchId,
+    p_delta: delta,
+    p_reason: reason,
+    p_note: note ?? null,
+  });
+
+  if (error) throw medicationWriteError(error, 'Could not adjust the stock.');
+}
+
 // ---------------------------------------------------------------------------
 // Derived helpers for the screens
 // ---------------------------------------------------------------------------

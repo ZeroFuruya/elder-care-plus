@@ -35,3 +35,21 @@ project.
 
 **Checkpoint:** `checkpoint-2026-10-01.md` records the four acceptances (Sprint 1, `sprint-1b.md`,
 `sprint-2.md`, Sprint 4 review), all granted 2026-10-01.
+
+`sprint-5.md` (inventory and expiry safety, Flow D) was **drafted 2026-10-05**, revised to **v2**
+the same day after an `@architect` critique, **approved by the owner 2026-10-05**, and
+**implemented** on `sprint-5-inventory-expiry`. `npx supabase db reset` applies its migration
+cleanly, `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions), and the branch was
+pushed. The hosted project was backed up (`backup.sql`, git-ignored) and the migration pushed
+2026-10-06, so all 12 migrations are in sync there. It is awaiting review/merge.
+
+`sprint-7.md` (appointments, Flow F) was **drafted 2026-10-06**, the owner closed its six decisions
+the same day, and an `@architect` critique returned **"Needs changes"**; **v2** folds in all 19
+must-fix items and is **awaiting owner approval**. It records a prerequisite fix for a Sprint 5 gap:
+the shared notification event schema was never widened, so Sprint 5 stock alerts currently mis-render
+as `Taken` in `S-01`.
+
+**Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
+final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
+so the remaining sequence is **Sprint 5 → 7 (appointments) → 8 (family UI) → 9 (reports/retrieval)**.
+`AGENTS.md` and `01-dev-environment.md` still need reconciling with this decision.

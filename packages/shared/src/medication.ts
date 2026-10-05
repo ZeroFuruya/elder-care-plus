@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import type { StockStatus } from './inventory';
+import { expiryWindow, type StockDisplay, type StockStatus } from './inventory';
 
 /**
  * Sprint 3 medication contracts (docs/specs/sprint-3.md).
@@ -283,5 +283,54 @@ export function stockStatusFromBatch(
   if (!hasValidActiveBatch) return 'needs_review';
   if (quantity <= 0) return 'out';
   if (threshold != null && quantity <= threshold) return 'low';
+  return 'normal';
+}
+
+function dayNumber(value: string | Date): number {
+  const iso = toDayString(value);
+  const year = Number(iso.slice(0, 4));
+  const month = Number(iso.slice(5, 7));
+  const day = Number(iso.slice(8, 10));
+  return Date.UTC(year, month - 1, day) / 86_400_000;
+}
+
+/**
+ * The stock badge a medicine should show, distinguishing "no batch at all"
+ * (`untracked`, batch optional) from "a batch exists but no valid active batch
+ * remains" (`needs_review`, suppressed). This is the **display** counterpart to
+ * `medicineSuppressesDoses`: a screen must never derive suppression from this
+ * value, and generation must never derive it from the presentation either.
+ *
+ * Precedence: untracked > expired > needs_review > out > low > expiring > normal.
+ */
+export function stockDisplayFromBatch(
+  input: {
+    readonly hasAnyBatch: boolean;
+    readonly hasValidActiveBatch: boolean;
+    readonly quantity: number | null | undefined;
+    readonly lowStockThreshold: number | null | undefined;
+    readonly expiryDate: string | Date | null | undefined;
+  },
+  today: string | Date = new Date(),
+): StockDisplay {
+  if (!input.hasAnyBatch) return 'untracked';
+
+  if (!input.hasValidActiveBatch) {
+    if (input.expiryDate != null && isEarlierDay(input.expiryDate, today)) return 'expired';
+    return 'needs_review';
+  }
+
+  if (input.quantity != null && input.quantity <= 0) return 'out';
+  if (
+    input.quantity != null &&
+    input.lowStockThreshold != null &&
+    input.quantity <= input.lowStockThreshold
+  ) {
+    return 'low';
+  }
+  if (input.expiryDate != null) {
+    const daysRemaining = dayNumber(input.expiryDate) - dayNumber(today);
+    if (expiryWindow(daysRemaining) != null) return 'expiring';
+  }
   return 'normal';
 }
