@@ -18,7 +18,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public;
 
-select plan(40);
+select plan(46);
 
 -- JWT claims helper (same as Sprints 1-8).
 create function pg_temp.set_claims(p_sub text, p_pw_age_seconds int default null)
@@ -77,6 +77,30 @@ $$;
 create function pg_temp.deactivate_profile(p_id uuid)
 returns void language sql security definer set search_path = public, pg_temp
 as $$ update public.profiles set deactivated_at = now() where id = p_id; $$;
+
+-- An occurrence whose instant is deliberately on a different calendar day than its
+-- stored local date, to prove the report buckets on `scheduled_local_date` and not
+-- on the instant's day in the session zone (MF7 / criterion 6).
+create function pg_temp.seed_dose_at(
+  p_schedule uuid, p_elder uuid, p_med uuid, p_local_date date, p_at timestamptz,
+  p_taken boolean
+)
+returns void
+language plpgsql security definer set search_path = public, pg_temp
+as $$
+begin
+  insert into public.dose_events (
+    schedule_id, elder_id, medication_id, scheduled_at, scheduled_local_date,
+    dose_quantity, dose_unit, grace_minutes, timezone,
+    taken_at, confirmed_by
+  ) values (
+    p_schedule, p_elder, p_med, p_at, p_local_date,
+    1, 'tablet', 30, 'Asia/Singapore',
+    case when p_taken then now() else null end,
+    case when p_taken then p_elder else null end
+  );
+end;
+$$;
 
 -- ---------------------------------------------------------------------------
 -- Fixtures. Inserting an auth user creates the profile via the trigger.
@@ -391,7 +415,55 @@ select pg_temp.set_claims('11111111-1111-1111-1111-111111111111');
 select is((select count(*)::text from public.audit_events), current_setting('s9.audit_before'),
   'reading the report writes no audit row');
 
--- 40. Deactivation is checked as the whole boundary for a known circle member.
+-- ===========================================================================
+-- 40-45. Bucket key, the PUBLIC grant, and the client write denials.
+-- ===========================================================================
+
+select pg_temp.set_claims('11111111-1111-1111-1111-111111111111');
+
+-- A zone-crossing occurrence: its instant is 2026-06-09 in UTC, but its stored
+-- local date is 2026-06-10, so the report must place it on 06-10.
+select pg_temp.seed_dose_at(
+  current_setting('s9.s1')::uuid, '22222222-2222-2222-2222-222222222222',
+  current_setting('s9.m1')::uuid, date '2026-06-10',
+  timestamptz '2026-06-09 20:00:00+00', true);
+select set_config('s9.rep_zone', public.get_adherence_report(
+  '22222222-2222-2222-2222-222222222222', date '2026-06-09', date '2026-06-10')::text, true);
+
+-- 40.
+select is((current_setting('s9.rep_zone')::jsonb -> 'days' -> 0 ->> 'taken')::int, 0,
+  'a day with no rows is present with zeros');
+-- 41.
+select is((current_setting('s9.rep_zone')::jsonb -> 'days' -> 1 ->> 'taken')::int, 1,
+  'the occurrence is bucketed by its stored local date, not its UTC instant');
+-- 42. PUBLIC must carry no EXECUTE (the ACL has no grantee 0 entry).
+select is(
+  exists (
+    select 1
+    from pg_proc p
+    cross join lateral aclexplode(p.proacl) a
+    where p.proname = 'get_adherence_report'
+      and a.grantee = 0
+      and a.privilege_type = 'EXECUTE'
+  ), false, 'PUBLIC has no execute on the report');
+
+-- 43.
+select pg_temp.set_claims('55555555-5555-5555-5555-555555555555');
+select is((select count(*) from public.inventory_transactions), 0::bigint,
+  'an unrelated account reads no stock ledger row');
+-- 44.
+select pg_temp.set_claims('22222222-2222-2222-2222-222222222222');
+select throws_ok($$
+  insert into public.inventory_transactions (batch_id, delta, reason)
+  values (gen_random_uuid(), 1, 'dose_confirmed')
+  $$, '42501', null, 'a client cannot insert a stock ledger row directly');
+-- 45.
+select throws_ok($$
+  insert into public.audit_events (actor_id, action, target_table)
+  values ('22222222-2222-2222-2222-222222222222', 'forged', 'audit_events')
+  $$, '42501', null, 'a client cannot insert an audit row directly');
+
+-- 46. Deactivation is checked as the whole boundary for a known circle member.
 select pg_temp.deactivate_profile('33333333-3333-3333-3333-333333333333');
 select pg_temp.set_claims('33333333-3333-3333-3333-333333333333');
 select throws_ok($$
