@@ -1,10 +1,12 @@
 # Sprint 9 — Reports and history browsing
 
-- **Status:** **Draft v2 (2026-10-06) — awaiting owner approval. No implementation before approval.**
-  Drafted by request (the owner chose **full reports/retrieval**), then revised after an independent
-  `@architect` critique (session `ses_eeeb75265ffeX2JEcenexNABPJ`, analyze-only) returned **"Needs
-  changes"**; v2 folds in the 20 must-fix items (below). Next: owner sign-off, then an implementation
-  branch.
+- **Status:** **Implemented 2026-10-06 — owner-approved; OD8 decided as "document as-is".** Drafted by
+  request (the owner chose **full reports/retrieval**), then revised after an independent `@architect`
+  critique (session `ses_eeeb75265ffeX2JEcenexNABPJ`, analyze-only) returned **"Needs changes"**; v2
+  folded in the 20 must-fix items (below). The owner approved v2 on 2026-10-06 and chose **OD8 =
+  document the current `audit_events` policy as-is** (no forward policy migration). Built in the
+  stated order: migration + RPC + index + pgTAP, then the shared contracts, then `C-09`, `C-12`, `E-08`
+  and the family Home range. The pgTAP suite grew from **550** to **596** assertions.
 - **Critic:** `@architect` session `ses_eeeb75265ffeX2JEcenexNABPJ`. Must-fix mapping: audit exposure
   vs OD3 (MF1/MF18), `total` semantics (MF2), percentage typing (MF3), null/inclusive range (MF4),
   authorization isolation tests (MF5), deactivated callers (MF6), `scheduled_local_date` wording
@@ -55,12 +57,14 @@
 - **OD7 — no new native dependency.** Every screen is a read over existing tables, so Sprint 9 adds
   no native module and does **not** by itself force an APK rebuild (Sprint 8's rebuild already covers
   the demo).
-- **OD8 — `audit_events` policy (new; MF1/MF18).** Today's policy admits the actor, the elder self,
-  and the manager. **Recommended: leave it unchanged** and record the elder's own-row read as a
-  documented, pre-existing boundary (no elder/family UI path; tightening a security policy on the
-  critical path is the riskier option). Alternative: a forward migration restricting elder-scoped
-  audit reads to the manager only. **Owner to choose.** Either way the spec must not claim the audit
-  table is manager-only at the DB boundary.
+- **OD8 — `audit_events` policy (new; MF1/MF18). DECIDED 2026-10-06: document as-is.** The policy admits
+  the actor, the elder self, and the manager. The owner chose to **leave it unchanged** and record the
+  elder's own-row read as a documented, pre-existing boundary: Sprint 9 adds **no** elder/family audit
+  UI and **no** new exposure, and the pgTAP suite asserts the exact boundary (the family member reads
+  only rows they authored; the elder reads their own elder-scoped rows). Tightening a security policy
+  on the critical path was judged the riskier option. The spec therefore does **not** claim the audit
+  table is manager-only at the DB boundary. The alternative (a forward migration restricting
+  elder-scoped audit reads to the manager only) remains available if the boundary is revisited.
 
 ## Goal
 

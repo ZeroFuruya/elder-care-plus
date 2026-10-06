@@ -2,19 +2,28 @@
 
 ## Status
 
-**Current status (2026-10-06).** Sprint 1 is accepted, and **Sprints 1b, 2, 3, 4, 4b, 5, 7 and 8 are
+**Current status (2026-10-06).** Sprint 1 is accepted, and **Sprints 1b, 2, 3, 4, 4b, 5, 7, 8 and 9 are
 implemented** (Sprint 1b/2/3/4 accepted at the 2026-10-01 checkpoint; Sprint 5 merged to `main`).
 **Sprint 6 (prescription evidence/OCR) was dropped/deferred** by owner decision 2026-10-05 — there
-is no AI/OCR in the app or the presentation — so the remaining sequence is **Sprint 5 → 7 → 8 → 9**.
-Sprint 4b (dose-reactivation fix), Sprint 7 (appointments) and Sprint 8 (family care circle, both
-increments) are stacked on `sprint-7-appointments`. Sprint 8 delivers the elder's ask-for-help flow,
-circle notifications, per-member availability and the read-only family views. The **hosted project is
+is no AI/OCR in the app or the presentation — so the sequence is **Sprint 5 → 7 → 8 → 9**. Sprint 4b
+(dose-reactivation fix), Sprint 7 (appointments) and Sprint 8 (family care circle, both increments) are
+stacked on `sprint-7-appointments`; Sprint 9 (reports and history browsing) was owner-approved and
+implemented 2026-10-06 on the same branch. Sprint 8 delivers the elder's ask-for-help flow, circle
+notifications, per-member availability and the read-only family views. Sprint 9 adds one **read-only**
+adherence-report RPC (`get_adherence_report`) plus a supporting index, the caregiver `C-09` Adherence
+Report, the `C-12` Care Activity Timeline, the elder `E-08` Personal Adherence and a 7/30/90 range on
+the family `F-10` Care Summary — no new tables and no new native dependency. **OD8 was decided as
+"document as-is"**: the `audit_events` policy keeps admitting the actor, the elder self and the manager;
+Sprint 9 adds no elder/family audit UI and no new exposure. The **hosted project is
 live** (`buwwkdhzansbyeytsufj`, Singapore, Free) with **all 16 migrations in sync** (Sprint 8 pushed
-2026-10-06 after a fresh `db dump`). **Verified green:** `pnpm typecheck`, `pnpm lint`, `pnpm test`
-(**143** passing), `pnpm format:check`, `pnpm check:contrast` (both themes, both card-gradient stops),
-and `npx supabase test db` **550/550** pgTAP assertions (Sprint 1 = 124, Sprint 2 = 60, Sprint 3 =
-96, Sprint 4 = 101, Sprint 4b = 20, Sprint 5 = 50, Sprint 7 = 52, Sprint 8 = 34, validation
-hardening = 13). **Next:** Sprint 9 (reports/retrieval); freeze new scope
+2026-10-06 after a fresh `db dump`; the Sprint 9 migration `20261108120000_sprint9_reports.sql` is
+**local-only** until the next push). **Verified green:** `pnpm typecheck`, `pnpm lint`, `pnpm test`
+(**162** passing), `pnpm format:check`, `pnpm check:contrast` (both themes, both card-gradient stops),
+and `npx supabase test db` **596/596** pgTAP assertions (Sprint 1 = 124, Sprint 2 = 60, Sprint 3 =
+96, Sprint 4 = 101, Sprint 4b = 20, Sprint 5 = 50, Sprint 7 = 52, Sprint 8 = 34, Sprint 9 = 46,
+validation hardening = 13). **Next:** merge `sprint-7-appointments` (Sprints 4b/7/8/9) to `main`, push
+the Sprint 9 migration to the hosted project, build a fresh preview APK (the current one predates
+Sprints 5/7/8/9), and dry-run the checking runbook; freeze new scope
 ~2026-10-12 ahead of the instructor's 3rd-increment checking on **2026-10-15/16**, which demos the
 medication transaction cycle on the hosted build as an installed preview APK.
 

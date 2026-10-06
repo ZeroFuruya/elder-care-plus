@@ -83,15 +83,16 @@ so all **16** migrations are in sync.
 `docs/specs/sprint-9.md` (reports and history browsing) was **drafted 2026-10-06** by owner request
 after the owner chose **full reports/retrieval**, then revised to **v2** after an independent
 `@architect` critique (session `ses_eeeb75265ffeX2JEcenexNABPJ`, analyze-only) returned "Needs changes";
-v2 folds in 20 must-fix items. It is **awaiting owner approval** (including a new **OD8** on whether to
-tighten the `audit_events` policy). Proposed scope: a server-aggregated **adherence report** RPC
-(`get_adherence_report`, bucketing on each dose's stored `scheduled_local_date`) plus one supporting
-index, a caregiver **Care Activity Timeline** (`C-12`, merging `audit_events` and
-`inventory_transactions`), the `C-09` **Adherence Report** range, the elder's `E-08` **Personal
-Adherence**, and a 7/30/90 range on the family `F-10` **Care Summary**. Read-only over tables that
-already have RLS; no new tables and no new native dependency. "Retrieval" is renamed **history
-browsing** (filtered, read-only) — no AI/embeddings. OD1–OD8 are proposed in the spec for confirmation.
-(The v1 frame ids `C-10`/`C-11`/`E-13`/`F-16` were collisions and are corrected.)
+v2 folds in 20 must-fix items. The owner **approved v2 on 2026-10-06** and chose **OD8 = document the
+current `audit_events` policy as-is**. It is now **implemented and locally verified**: a
+server-aggregated **adherence report** RPC (`get_adherence_report`, bucketing on each dose's stored
+`scheduled_local_date`) plus one supporting index, a caregiver **Care Activity Timeline** (`C-12`,
+merging `audit_events` and `inventory_transactions`), the `C-09` **Adherence Report** range, the elder's
+`E-08` **Personal Adherence**, and a 7/30/90 range on the family `F-10` **Care Summary**. Read-only over
+tables that already have RLS; no new tables and no new native dependency. "Retrieval" is renamed
+**history browsing** (filtered, read-only) — no AI/embeddings. The pgTAP suite grew from **550** to
+**596** assertions (Sprint 9 = 46); `pnpm typecheck`/`lint`/`test`/`format:check` and `check:contrast`
+are green. (The v1 frame ids `C-10`/`C-11`/`E-13`/`F-16` were collisions and are corrected.)
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
