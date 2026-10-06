@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  auditActionLabel,
-  auditActionLabels,
-  auditTargetLabel,
-  describeAuditEvent,
-} from './index';
+import { auditActionLabel, auditActionLabels, auditTargetLabel, describeAuditEvent } from './index';
 
 /**
  * Sprint 9 care-activity presenter (docs/specs/sprint-9.md, C-12).
@@ -27,9 +22,7 @@ describe('auditActionLabel', () => {
 
   it('never echoes unsafe or id-like text', () => {
     expect(auditActionLabel('weird action with spaces')).toBe('Care record updated');
-    expect(auditActionLabel('550e8400-e29b-41d4-a716-446655440000')).toBe(
-      'Care record updated',
-    );
+    expect(auditActionLabel('550e8400-e29b-41d4-a716-446655440000')).toBe('Care record updated');
     expect(auditActionLabel('{"injected":true}')).toBe('Care record updated');
   });
 
