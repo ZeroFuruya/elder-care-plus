@@ -147,6 +147,13 @@ export default function ElderHomeScreen() {
       </View>
 
       <Button
+        label="My adherence"
+        variant="secondary"
+        onPress={() => router.push('/elder/adherence')}
+        accessibilityHint="Shows how many doses you confirmed or missed recently"
+      />
+
+      <Button
         label={caregiver ? 'Care circle' : 'Enter a caregiver’s code'}
         variant="secondary"
         onPress={() => router.push(caregiver ? '/elder/circle' : '/elder/link')}

@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
@@ -10,57 +10,63 @@ import { DoseCard } from '@/components/dose-card';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { LogoutButton } from '@/components/logout-button';
+import { ReportRangeChips } from '@/components/report-range-chips';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import {
   ensureDoseEvents,
+  getAdherenceReport,
   listDoses,
   listMyLinks,
-  summarise,
-  type AdherenceSummary,
+  type AdherenceReport,
   type DoseView,
   type MyLink,
+  type ReportRange,
 } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { addDays, endOfDay, startOfDay } from '@/lib/format';
 
 /**
- * `F-03` Family Home / `F-10` Care Summary (docs/specs/sprint-8.md).
+ * `F-03` Family Home / `F-10` Care Summary (docs/specs/sprint-8.md, sprint-9.md).
  *
- * The connected family member's read-only entry point: who they can see, a short care summary and
- * the recent dose activity. The full plan and the appointment list live on their own tabs, and the
- * account actions live on `More`. Nothing here writes.
+ * The connected family member's read-only entry point: who they can see, a care
+ * summary over 7/30/90 days, and the recent dose activity. The summary is the
+ * server-aggregated report, so it carries counts only — no dose, medicine or
+ * timestamp (docs/specs/sprint-9.md OD2). Nothing here writes.
  */
 
 interface FamilyData {
   links: MyLink[];
   doses: DoseView[];
-  summary: AdherenceSummary;
+  report: AdherenceReport | null;
 }
-
-const EMPTY_SUMMARY: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming: 0, percent: 0 };
 
 export default function FamilyHomeScreen() {
   const user = useSessionUser();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const [range, setRange] = useState<ReportRange>(7);
+
   const loader = useCallback(async (): Promise<FamilyData> => {
     const links = await listMyLinks(user.id);
     const active = links.find((link) => link.status === 'active') ?? null;
-    if (!active) return { links, doses: [], summary: EMPTY_SUMMARY };
+    if (!active) return { links, doses: [], report: null };
 
     await ensureDoseEvents(active.elderId).catch(() => undefined);
     const now = new Date();
-    const doses = await listDoses(active.elderId, {
-      from: startOfDay(addDays(now, -6)),
-      to: endOfDay(now),
-      now,
-    });
-    return { links, doses, summary: summarise(doses) };
-  }, [user.id]);
+    const [doses, report] = await Promise.all([
+      listDoses(active.elderId, {
+        from: startOfDay(addDays(now, -6)),
+        to: endOfDay(now),
+        now,
+      }),
+      getAdherenceReport(active.elderId, range),
+    ]);
+    return { links, doses, report };
+  }, [user.id, range]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -69,7 +75,7 @@ export default function FamilyHomeScreen() {
     return <ScreenError title="Family view" message={state.message} onRetry={reload} safeBottom />;
   }
 
-  const { links, doses, summary } = state.data;
+  const { links, doses, report } = state.data;
   const active = links.find((link) => link.status === 'active') ?? null;
   const invited = links.find((link) => link.status === 'invited') ?? null;
   const wasRevoked = !active && !invited && links.some((link) => link.status === 'revoked');
@@ -90,11 +96,21 @@ export default function FamilyHomeScreen() {
         </Card>
 
         <Card title="Care summary">
-          <Text style={styles.summary}>
-            {summary.taken} taken · {summary.missed} missed · {summary.due} due · {summary.upcoming}{' '}
-            upcoming
-          </Text>
-          <Text style={styles.body}>Last 7 days.</Text>
+          <ReportRangeChips value={range} onChange={setRange} />
+          {report ? (
+            <>
+              <Text style={styles.summary}>
+                {report.totals.taken} confirmed · {report.totals.missed} missed
+                {report.totals.open > 0 ? ` · ${report.totals.open} still due` : ''}
+              </Text>
+              <Text style={styles.body}>
+                {report.totals.percent}% confirmed over the last {range} days. This is a summary
+                only.
+              </Text>
+            </>
+          ) : (
+            <Text style={styles.body}>No summary is available yet.</Text>
+          )}
         </Card>
 
         <Button label="See medicines" onPress={() => router.push('/family/meds')} />

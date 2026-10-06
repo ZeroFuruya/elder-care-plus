@@ -63,6 +63,8 @@ export default function ElderTabsLayout() {
       <Tabs.Screen name="appointment" options={{ href: null }} />
       {/* Sprint 8 ask-for-help (Flow F), pushed from the home screen. */}
       <Tabs.Screen name="help" options={{ href: null }} />
+      {/* Sprint 9 personal adherence (E-08), pushed from the home screen. */}
+      <Tabs.Screen name="adherence" options={{ href: null }} />
     </Tabs>
   );
 }

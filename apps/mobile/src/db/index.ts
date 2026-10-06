@@ -124,3 +124,10 @@ export {
   type HelpRequest,
   type MemberAvailability,
 } from './help-requests';
+export { getAdherenceReport, type AdherenceReport, type ReportRange } from './reports';
+export {
+  listCareActivity,
+  type ActivityKind,
+  type CareActivity,
+  type CareActivityQuery,
+} from './activity';
