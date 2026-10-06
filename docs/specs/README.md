@@ -80,6 +80,16 @@ from co-members); Increment B adds `help_requests` + `member_availability` with 
 Both migrations (`20261106120000`, `20261107120000`) were **pushed to the hosted project 2026-10-06**,
 so all **16** migrations are in sync.
 
+`docs/specs/sprint-9.md` (reports, history and retrieval) was **drafted 2026-10-06** by owner request
+after the owner chose **full reports/retrieval**. It is **v1, awaiting owner approval** (next workflow
+step: a `@architect` critique, which needs explicit approval to invoke). Proposed scope: a
+server-aggregated **adherence report** RPC (`get_adherence_report`, bucketing on each dose's stored
+`scheduled_local_date`), a caregiver **activity/audit trail** (`C-10`), a caregiver **stock history**
+(`C-11`), the elder's **my history** (`E-13`) and a family **adherence summary** (`F-16`) — all
+read-only over tables that already have RLS, with the audit trail already scoped to the manager. No new
+tables and no new native dependency; "retrieval" is filtered browsing, with no AI/embeddings. OD1–OD7
+are proposed in the spec for confirmation.
+
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
 so the remaining sequence is **Sprint 5 → 7 (appointments) → 8 (family UI) → 9 (reports/retrieval)**.
