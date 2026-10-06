@@ -4,6 +4,8 @@ export * from './dose';
 export * from './notification';
 export * from './help-request';
 export * from './inventory';
+export * from './report';
+export * from './audit';
 export * from './appointment';
 export * from './prescription';
 export * from './emergency';

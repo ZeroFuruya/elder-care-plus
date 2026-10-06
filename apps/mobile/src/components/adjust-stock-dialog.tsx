@@ -1,6 +1,10 @@
 import { useState } from 'react';
 
-import type { StockAdjustmentReason } from '@/db';
+import {
+  stockAdjustmentReasonLabels,
+  stockAdjustmentReasons,
+  type StockAdjustmentReason,
+} from '@eldercare/shared';
 
 import { Button } from '@/components/button';
 import { ChoiceChips } from '@/components/choice-chips';
@@ -15,15 +19,11 @@ type Direction = (typeof DIRECTIONS)[number]['value'];
 
 /**
  * Display wording for the owner-approved adjustment reasons
- * (`docs/specs/sprint-5.md`). The stored value stays the machine code.
+ * (`docs/specs/sprint-5.md`), taken from the shared map so the Sprint 9 activity
+ * timeline renders the same labels. The stored value stays the machine code.
  */
-const REASONS: readonly { value: StockAdjustmentReason; label: string }[] = [
-  { value: 'restock', label: 'Restock' },
-  { value: 'correction', label: 'Correction' },
-  { value: 'damage', label: 'Damaged' },
-  { value: 'waste', label: 'Wasted' },
-  { value: 'count_adjustment', label: 'Count check' },
-];
+const REASONS: readonly { value: StockAdjustmentReason; label: string }[] =
+  stockAdjustmentReasons.map((value) => ({ value, label: stockAdjustmentReasonLabels[value] }));
 
 interface AdjustStockDialogProps {
   medicationName: string;

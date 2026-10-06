@@ -1,4 +1,10 @@
-import type { BatchInput, MedicationForm, MedicationInput, ScheduleInput } from '@eldercare/shared';
+import type {
+  BatchInput,
+  MedicationForm,
+  MedicationInput,
+  ScheduleInput,
+  StockAdjustmentReason,
+} from '@eldercare/shared';
 
 import { getSupabase } from '@/supabase/client';
 
@@ -384,8 +390,7 @@ export async function deactivateBatch(batchId: string, reason?: string): Promise
 }
 
 /** The owner-approved manual stock adjustment reasons (docs/specs/sprint-5.md). */
-export type StockAdjustmentReason =
-  'restock' | 'correction' | 'damage' | 'waste' | 'count_adjustment';
+export type { StockAdjustmentReason };
 
 export async function adjustStock(
   batchId: string,

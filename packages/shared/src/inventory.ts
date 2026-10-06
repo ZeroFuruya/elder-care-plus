@@ -73,3 +73,56 @@ export function medicineSuppressesDoses(input: {
 }): boolean {
   return input.hasAnyBatch && !input.hasValidActiveBatch;
 }
+
+/**
+ * The two ledger reasons an `inventory_transactions` row can carry
+ * (`docs/specs/sprint-5.md`). One vocabulary shared by the stock editor and the
+ * Sprint 9 activity timeline, so the two can never disagree.
+ */
+export const inventoryReasonSchema = z.enum(['dose_confirmed', 'manual_adjustment']);
+export type InventoryReason = z.infer<typeof inventoryReasonSchema>;
+
+export const inventoryReasonLabels: Record<InventoryReason, string> = {
+  dose_confirmed: 'Dose taken from stock',
+  manual_adjustment: 'Manual adjustment',
+};
+
+/** The owner-approved manual adjustment reasons. */
+export const stockAdjustmentReasons = [
+  'restock',
+  'correction',
+  'damage',
+  'waste',
+  'count_adjustment',
+] as const;
+
+export const stockAdjustmentReasonSchema = z.enum(stockAdjustmentReasons);
+export type StockAdjustmentReason = z.infer<typeof stockAdjustmentReasonSchema>;
+
+/**
+ * Display wording for the adjustment reasons. The stored value stays the machine
+ * code; only the label is shown.
+ */
+export const stockAdjustmentReasonLabels: Record<StockAdjustmentReason, string> = {
+  restock: 'Restock',
+  correction: 'Correction',
+  damage: 'Damaged',
+  waste: 'Wasted',
+  count_adjustment: 'Count check',
+};
+
+/**
+ * The label for one ledger row: the specific manual reason when there is one, the
+ * automatic decrement wording otherwise. A manual row always carries an
+ * `adjustment_reason` (`inventory_transactions_adjustment_reason_required`), but a
+ * defensive fallback covers a payload gap rather than rendering nothing.
+ */
+export function inventoryAdjustmentLabel(
+  reason: InventoryReason,
+  adjustmentReason: StockAdjustmentReason | null,
+): string {
+  if (reason === 'manual_adjustment' && adjustmentReason !== null) {
+    return stockAdjustmentReasonLabels[adjustmentReason];
+  }
+  return inventoryReasonLabels[reason];
+}
