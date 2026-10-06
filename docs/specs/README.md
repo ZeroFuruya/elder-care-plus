@@ -92,7 +92,10 @@ merging `audit_events` and `inventory_transactions`), the `C-09` **Adherence Rep
 tables that already have RLS; no new tables and no new native dependency. "Retrieval" is renamed
 **history browsing** (filtered, read-only) — no AI/embeddings. The pgTAP suite grew from **550** to
 **596** assertions (Sprint 9 = 46); `pnpm typecheck`/`lint`/`test`/`format:check` and `check:contrast`
-are green. (The v1 frame ids `C-10`/`C-11`/`E-13`/`F-16` were collisions and are corrected.)
+are green. The migration was **pushed to the hosted project 2026-10-06** (after a fresh `db dump`; all
+**17** migrations in sync) with a passing non-mutating hosted smoke, and `sprint-7-appointments`
+(Sprints 4b/7/8/9) was **merged to `main`** (`6c089b9`). (The v1 frame ids `C-10`/`C-11`/`E-13`/`F-16`
+were collisions and are corrected.)
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),

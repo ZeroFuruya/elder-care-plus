@@ -15,15 +15,18 @@ Report, the `C-12` Care Activity Timeline, the elder `E-08` Personal Adherence a
 the family `F-10` Care Summary — no new tables and no new native dependency. **OD8 was decided as
 "document as-is"**: the `audit_events` policy keeps admitting the actor, the elder self and the manager;
 Sprint 9 adds no elder/family audit UI and no new exposure. The **hosted project is
-live** (`buwwkdhzansbyeytsufj`, Singapore, Free) with **all 16 migrations in sync** (Sprint 8 pushed
-2026-10-06 after a fresh `db dump`; the Sprint 9 migration `20261108120000_sprint9_reports.sql` is
-**local-only** until the next push). **Verified green:** `pnpm typecheck`, `pnpm lint`, `pnpm test`
+live** (`buwwkdhzansbyeytsufj`, Singapore, Free) with **all 17 migrations in sync** (Sprint 8 pushed
+2026-10-06 after a fresh `db dump`; the Sprint 9 migration `20261108120000_sprint9_reports.sql` was
+pushed **2026-10-06** after a fresh `db dump`, and a non-mutating hosted smoke passed — the caregiver,
+elder and active family member all read the report `200`, an unknown elder and an anonymous caller are
+refused, and the family reads only the audit row it authored). **Verified green:** `pnpm typecheck`,
+`pnpm lint`, `pnpm test`
 (**162** passing), `pnpm format:check`, `pnpm check:contrast` (both themes, both card-gradient stops),
 and `npx supabase test db` **596/596** pgTAP assertions (Sprint 1 = 124, Sprint 2 = 60, Sprint 3 =
 96, Sprint 4 = 101, Sprint 4b = 20, Sprint 5 = 50, Sprint 7 = 52, Sprint 8 = 34, Sprint 9 = 46,
-validation hardening = 13). **Next:** merge `sprint-7-appointments` (Sprints 4b/7/8/9) to `main`, push
-the Sprint 9 migration to the hosted project, build a fresh preview APK (the current one predates
-Sprints 5/7/8/9), and dry-run the checking runbook; freeze new scope
+validation hardening = 13). `sprint-7-appointments` (Sprints 4b/7/8/9) was **merged to `main` and pushed
+2026-10-06** (`6c089b9`). **Next:** build a fresh preview APK (the current one predates
+Sprints 5/7/8/9), dry-run the checking runbook and fill the evidence sheet; freeze new scope
 ~2026-10-12 ahead of the instructor's 3rd-increment checking on **2026-10-15/16**, which demos the
 medication transaction cycle on the hosted build as an installed preview APK.
 
