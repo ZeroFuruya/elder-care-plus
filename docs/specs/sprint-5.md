@@ -6,8 +6,11 @@
   in below. The owner approved v2 and the two follow-up decisions (`No stock tracking`; prescription
   records kept as a deferred slice), and the branch is implemented. `npx supabase db reset` applies
   the migration cleanly and `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions).
-  Hosted push is pending a backup.
-- **Branch:** `sprint-5-inventory-expiry` (spec only so far; implementation starts on approval).
+  The hosted project was backed up and the migration pushed 2026-10-06 (all 12 migrations in sync).
+  The owner **approved the adjust-stock dialog copy batch on 2026-10-06** (dialog title, description,
+  direction/reason labels, both validation strings, note label, and button labels — see
+  `apps/mobile/src/components/adjust-stock-dialog.tsx`). Merged to `main` (2026-10-06).
+- **Branch:** `sprint-5-inventory-expiry` (implemented; merged to `main`).
 - **Flow:** `docs/00-product-flow.md` §4 D (inventory and expiry safety), §6 data model, §8 rules.
 - **Depends on:** Sprint 3 (`medicine_batches`, `create_batch`/`update_batch`/`set_active_batch`/
   `deactivate_batch`, `stockStatusFromBatch`) and Sprint 4 (`dose_events`, `inventory_transactions`,

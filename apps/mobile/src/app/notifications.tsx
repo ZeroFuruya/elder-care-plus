@@ -1,4 +1,4 @@
-import { doseStatusPresentation, notificationEventDoseStatus } from '@eldercare/shared';
+import { notificationPresentation } from '@eldercare/shared';
 import { Redirect, router } from 'expo-router';
 import { useCallback, useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -13,6 +13,7 @@ import { ScreenError } from '@/components/screen-error';
 import { StatusPill } from '@/components/status-pill';
 import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import { listNotifications, markNotificationsRead, markAllNotificationsRead } from '@/db';
+import type { AppNotification } from '@/db/notifications';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
 import { formatRelative } from '@/lib/format';
@@ -49,18 +50,42 @@ export default function NotificationsScreen() {
   const notifications = state.data;
   const unread = notifications.filter((notification) => notification.readAt === null);
 
-  async function openNotification(id: string, targetId: string | null) {
+  async function openNotification(
+    id: string,
+    targetTable: AppNotification['targetTable'],
+    targetId: string | null,
+  ) {
     try {
       if (!notifications.find((n) => n.id === id)?.readAt) await markNotificationsRead([id]);
     } catch {
       // Marking read is best-effort; opening the record must still work.
     }
-    if (!targetId) {
+    if (!targetId || !targetTable) {
       await reload();
       return;
     }
-    if (user?.role === 'caregiver') router.push(`/caregiver/dose?id=${targetId}`);
-    else if (user?.role === 'elder') router.push(`/elder/dose?id=${targetId}`);
+    if (targetTable === 'dose_events') {
+      if (user?.role === 'caregiver') router.push(`/caregiver/dose?id=${targetId}`);
+      else if (user?.role === 'elder') router.push(`/elder/dose?id=${targetId}`);
+      else await reload();
+      return;
+    }
+    if (targetTable === 'appointments') {
+      if (user?.role === 'caregiver') router.push(`/caregiver/appointment?id=${targetId}`);
+      else if (user?.role === 'elder') router.push(`/elder/appointment?id=${targetId}`);
+      else await reload();
+      return;
+    }
+    if (targetTable === 'help_requests') {
+      if (user?.role === 'caregiver') router.push('/caregiver/help');
+      else if (user?.role === 'elder') router.push('/elder/help');
+      else if (user?.role === 'family_member') router.push('/family/help');
+      else await reload();
+      return;
+    }
+    // A stock alert about a medicine.
+    if (user?.role === 'caregiver') router.push(`/caregiver/med?id=${targetId}`);
+    else if (user?.role === 'elder') router.push('/elder/meds');
     else await reload();
   }
 
@@ -85,7 +110,7 @@ export default function NotificationsScreen() {
       {notifications.length === 0 ? (
         <EmptyState
           title="No notifications yet"
-          description="A dose confirmation or a missed dose appears here for the family caregiver."
+          description="Dose confirmations, stock alerts and appointment reminders appear here."
         />
       ) : (
         <>
@@ -99,16 +124,21 @@ export default function NotificationsScreen() {
           ) : null}
 
           {notifications.map((notification) => {
-            const status =
-              doseStatusPresentation[notificationEventDoseStatus[notification.eventType]];
+            const status = notificationPresentation[notification.eventType];
             const isUnread = notification.readAt === null;
             return (
               <Pressable
                 key={notification.id}
                 accessibilityRole="button"
                 accessibilityLabel={`${isUnread ? 'Unread' : 'Read'}, ${status.label}, ${formatRelative(notification.createdAt)}`}
-                accessibilityHint="Opens the related dose record"
-                onPress={() => void openNotification(notification.id, notification.targetId)}
+                accessibilityHint="Opens the related record"
+                onPress={() =>
+                  void openNotification(
+                    notification.id,
+                    notification.targetTable,
+                    notification.targetId,
+                  )
+                }
                 android_ripple={{ color: colors.border }}
               >
                 <Card>

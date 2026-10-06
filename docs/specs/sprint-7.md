@@ -1,8 +1,9 @@
 # Sprint 7 — Appointments (Flow F)
 
-- **Status:** **Draft v2 (2026-10-06) after an `@architect` critique; awaiting owner approval.** The
-  critique returned **"Needs changes"** with 19 must-fix items; all are folded in below. The owner
-  answered the six decisions (now binding, below) on 2026-10-06. Not implemented; no branch exists.
+- **Status:** **Approved v2 (2026-10-06); implementation in progress on `sprint-7-appointments`.** The
+  owner approved v2 for implementation and chose to stack the branch on the merged Sprint 5 tip.
+  Revision **v3 (2026-10-06, during implementation)** is recorded below and does not change scope. The
+  owner answered the six decisions (now binding, below) on 2026-10-06.
 - **Critic:** `@architect` session `ses_ef31f0257ffe9x0QRTtPD5NIFW` (analyze-only). Must-fix mapping:
   state constraint (MF1), completion note + product-flow conflict (MF2), RPC locking/state machine
   (MF3), audit snapshot (MF4), timezone validation (MF5), bounds/normalization (MF6), reminder dedup
@@ -10,6 +11,13 @@
   notification client contract (MF12), navigation/routes (MF13), deadline scope (MF14), filename
   ordering (MF15), display/timezone contract (MF16), toggle wording (MF17), deactivated/revoked
   accounts (MF18), extra tests (MF19).
+- **Revision v3 (2026-10-06, implementation).** The write RPCs take a **local `p_start_date date` +
+  `p_start_time time` + `p_timezone text`**, not a client-computed `p_start_at timestamptz`. The RPC
+  converts them server-side with Sprint 4's `local_dose_timestamp`, so the client never does IANA
+  arithmetic (the reason: that forward conversion is fragile in Hermes). Display goes the other way —
+  instant → wall-clock — using `Intl.DateTimeFormat` with the stored zone, falling back to the device
+  clock when the runtime cannot honour the zone. This supersedes the `p_start_at` signature in C.1–C.3
+  and the client-converts wording in E.10.
 - **Flow:** `docs/00-product-flow.md` §4 F (appointments: visit or in-home), §6 data model
   (`appointments`), §8 rules (conditional fields, no silent overwrite of a historical state), §9
   acceptance scenario 6.
@@ -154,12 +162,14 @@ revoked from `public`/`anon`/`authenticated` before the public RPCs are granted 
    `state`, `title`, `start_at`, `timezone`, all conditional location/provider/contact fields,
    `reminder_lead_minutes`, `notify_elder`, `notes`, and the terminal timestamps + notes (MF4). Audits
    use before/after snapshots; a rejected or true no-op call writes no audit row.
-2. `create_appointment(p_elder_id uuid, p_appointment_type text, p_title text, p_start_at timestamptz,
-   p_timezone text, p_provider text, p_facility text, p_location text, p_address text,
-   p_contact_phone text, p_notes text, p_reminder_lead_minutes integer, p_notify_elder boolean)
+2. `create_appointment(p_elder_id uuid, p_appointment_type text, p_title text,
+   p_start_date date, p_start_time time, p_timezone text, p_provider text, p_facility text,
+   p_location text, p_address text, p_contact_phone text, p_notes text,
+   p_reminder_lead_minutes integer, p_notify_elder boolean)
    returns uuid` — requires `is_manager_of(p_elder_id)`; trims/normalizes; validates conditional fields
-   for the type; calls `assert_valid_timezone(p_timezone)` (MF5); inserts one row and one
-   `audit_events` row (`appointment_created`).
+   for the type; calls `assert_valid_timezone(p_timezone)` (MF5); converts the local wall-clock to the
+   stored instant with `local_dose_timestamp(p_start_date, p_start_time, p_timezone)` (v3); inserts one
+   row and one `audit_events` row (`appointment_created`).
 3. `update_appointment(p_id uuid, ... same fields minus p_elder_id ...) returns uuid` — resolves and
    **locks the row `FOR UPDATE`**, derives `elder_id` from the row (never trusts a client elder id),
    verifies `is_manager_of`, re-reads under the lock, and refuses unless `state = 'upcoming'`
@@ -205,11 +215,14 @@ revoked from `public`/`anon`/`authenticated` before the public RPCs are granted 
 
 **E. Display and timezone contract (MF16)**
 
-10. `start_at` is an absolute UTC instant; `timezone` is stored for display and editing. The client
-    converts the entered local wall-clock to UTC using the stored zone (the same contract as Sprint
-    4's `local_dose_timestamp`). Changing the timezone during an edit re-interprets the **wall-clock**
-    time in the new zone and recomputes the instant; it never silently shifts the displayed time. If
-    the device timezone differs, the stored `timezone` still drives display.
+10. `start_at` is an absolute UTC instant; `timezone` is stored for display and editing. The **write
+    contract sends the local date + time + zone** and the **server converts** them with Sprint 4's
+    `local_dose_timestamp` (v3), so the client never does the fragile forward IANA conversion in Hermes.
+    On the way back, display converts the instant to the stored zone's wall-clock with
+    `Intl.DateTimeFormat` (falling back to the device clock if the runtime cannot honour the zone). An
+    edit re-reads the wall-clock in the stored zone and re-submits the same zone, so a round trip never
+    silently shifts the displayed time. If the device timezone differs, the stored `timezone` still
+    drives display.
 
 **F. Prerequisite client fix (Sprint 5 gap — MF12/MF13)**
 
@@ -243,10 +256,12 @@ revoked from `public`/`anon`/`authenticated` before the public RPCs are granted 
 
 ### Shared package
 
-- `packages/shared/src/appointment.ts` (**extend**, do not recreate): zod `createAppointmentSchema` /
-  `updateAppointmentSchema` with the conditional-field refinement and the exact bounds above,
-  `appointmentLeadTimeOptions` (+ default), `appointmentDisplayState(state, startAt, now)` returning
-  `overdue` for an unresolved past `upcoming`, matching `appointmentStateSchema`.
+- `packages/shared/src/appointment.ts` (**extend**, do not recreate): one zod `appointmentWriteSchema`
+  (v3 — both RPCs take the identical field set, so one shape serves create and update) with the
+  conditional-field refinement and the exact bounds above,
+  `appointmentReminderOptions` (+ `defaultAppointmentReminderLeadMinutes`),
+  `appointmentDisplayState(state, startAt, now)` returning `overdue` for an unresolved past `upcoming`,
+  matching `appointmentStateSchema`.
 - `packages/shared/src/notification.ts` (**extend**): widen `notificationEventTypeSchema` to the full
   server set (F11) and export the event→presentation + target map.
 - `packages/shared/src/status-presentation.ts` + `status.test.ts`: every enum value keeps a non-empty

@@ -1,10 +1,13 @@
-import { useCallback, useMemo } from 'react';
+import { router } from 'expo-router';
+import { useCallback, useMemo, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
+import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
+import { ReportRangeChips } from '@/components/report-range-chips';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import {
@@ -16,23 +19,30 @@ import {
   type AppGradients,
   type AppThemeColors,
 } from '@/constants/theme';
-import { getLinkedElder, listDoses, summarise, type AdherenceSummary, type MyLink } from '@/db';
+import {
+  getAdherenceReport,
+  getLinkedElder,
+  type AdherenceReport,
+  type MyLink,
+  type ReportRange,
+} from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
-import { addDays, endOfDay, formatShortDate, isSameDay, startOfDay } from '@/lib/format';
-
-interface DayReport {
-  label: string;
-  count: number;
-  summary: AdherenceSummary;
-}
+import { addDays, formatShortDate, parseDayOnly, toIsoDay } from '@/lib/format';
 
 interface ReportData {
   link: MyLink | null;
-  overall: AdherenceSummary;
-  days: DayReport[];
+  report: AdherenceReport | null;
 }
 
+/**
+ * `C-09` Adherence Report (docs/specs/sprint-9.md).
+ *
+ * A server-aggregated, read-only report over 7/30/90 days. The server buckets each
+ * occurrence by its stored local date and returns counts only, so the screen never
+ * downloads the underlying dose rows and there is no write control anywhere. The
+ * one entry point leads to the `C-12` care-activity timeline.
+ */
 export default function CaregiverReportsScreen() {
   const user = useSessionUser();
   const { colors, elevation, gradients } = useAppTheme();
@@ -41,33 +51,15 @@ export default function CaregiverReportsScreen() {
     [colors, elevation, gradients],
   );
 
+  const [range, setRange] = useState<ReportRange>(7);
+
   const loader = useCallback(async (): Promise<ReportData> => {
     const link = await getLinkedElder(user.id);
-    if (!link) {
-      const empty: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming: 0, percent: 0 };
-      return { link: null, overall: empty, days: [] };
-    }
+    if (!link) return { link: null, report: null };
 
-    const now = new Date();
-    const doses = await listDoses(link.elderId, {
-      from: startOfDay(addDays(now, -6)),
-      to: endOfDay(now),
-      now,
-    });
-
-    const days: DayReport[] = [];
-    for (let offset = 6; offset >= 0; offset -= 1) {
-      const day = addDays(now, -offset);
-      const dayDoses = doses.filter((dose) => isSameDay(dose.scheduledAt, day));
-      days.push({
-        label: offset === 0 ? 'Today' : offset === 1 ? 'Yesterday' : formatShortDate(day),
-        count: dayDoses.length,
-        summary: summarise(dayDoses),
-      });
-    }
-
-    return { link, overall: summarise(doses), days };
-  }, [user.id]);
+    const report = await getAdherenceReport(link.elderId, range);
+    return { link, report };
+  }, [user.id, range]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -76,9 +68,9 @@ export default function CaregiverReportsScreen() {
     return <ScreenError title="Reports" message={state.message} onRetry={reload} />;
   }
 
-  const { link, overall, days } = state.data;
+  const { link, report } = state.data;
 
-  if (!link) {
+  if (!link || !report) {
     return (
       <Screen title="Reports" onRefresh={reload} refreshing={refreshing}>
         <EmptyState
@@ -89,38 +81,74 @@ export default function CaregiverReportsScreen() {
     );
   }
 
+  const { totals, days } = report;
+  const today = toIsoDay(new Date());
+  const yesterday = toIsoDay(addDays(new Date(), -1));
+  const missedDays = days.filter((day) => day.missed > 0);
+
+  function dayLabel(isoDay: string): string {
+    if (isoDay === today) return 'Today';
+    if (isoDay === yesterday) return 'Yesterday';
+    return formatShortDate(parseDayOnly(isoDay));
+  }
+
   return (
     <Screen
       title="Reports"
-      subtitle={`Last 7 days · ${link.elderName ?? 'your older adult'}`}
+      subtitle={`Last ${range} days · ${link.elderName ?? 'your older adult'}`}
       onRefresh={reload}
       refreshing={refreshing}
     >
+      <Card title="Period">
+        <ReportRangeChips value={range} onChange={setRange} />
+      </Card>
+
       <Card title="Confirmation rate">
-        <Text style={styles.big}>{overall.percent}%</Text>
+        <Text style={styles.big}>{totals.percent}%</Text>
         <Text style={styles.meta}>
-          {overall.taken} confirmed · {overall.missed} missed
+          {totals.taken} confirmed · {totals.missed} missed
+          {totals.open > 0 ? ` · ${totals.open} still due` : ''}
         </Text>
       </Card>
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Day by day</Text>
         {days.map((day) => (
-          <View key={day.label} style={styles.row}>
-            <Text style={styles.day}>{day.label}</Text>
+          <View key={day.date} style={styles.row}>
+            <Text style={styles.day}>{dayLabel(day.date)}</Text>
             <Text style={styles.dayValue}>
-              {day.count === 0 ? 'No doses' : `${day.summary.taken} of ${day.count} confirmed`}
+              {day.expected === 0 ? 'No doses' : `${day.taken} of ${day.settled} confirmed`}
             </Text>
-            {day.summary.missed > 0 ? (
-              <Text style={styles.missed}>! {day.summary.missed} missed</Text>
-            ) : null}
+            {day.missed > 0 ? <Text style={styles.missed}>&#33; {day.missed} missed</Text> : null}
           </View>
         ))}
       </View>
 
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Missed doses</Text>
+        {missedDays.length === 0 ? (
+          <Text style={styles.note}>No missed doses in this period.</Text>
+        ) : (
+          missedDays.map((day) => (
+            <View key={day.date} style={styles.row}>
+              <Text style={styles.day}>{dayLabel(day.date)}</Text>
+              <Text style={styles.missed}>
+                &#33; {day.missed} {day.missed === 1 ? 'dose' : 'doses'} missed
+              </Text>
+            </View>
+          ))
+        )}
+      </View>
+
+      <Button
+        label="Care activity"
+        variant="secondary"
+        onPress={() => router.push('/caregiver/activity')}
+      />
+
       <Text style={styles.note}>
-        A dose counts as missed when its grace period passes with no confirmation recorded. No
-        record is ever deleted, so the history stays complete.
+        A dose counts as missed once the server records the missed fact after its grace period with
+        no confirmation. No record is ever deleted, so the history stays complete.
       </Text>
     </Screen>
   );

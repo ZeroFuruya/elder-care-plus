@@ -1,78 +1,72 @@
-import { medicationFormLabels } from '@eldercare/shared';
 import { router } from 'expo-router';
-import { useCallback, useMemo } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { StyleSheet, Text } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
 import { Banner } from '@/components/banner';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
-import { DeactivateAccount } from '@/components/deactivate-account';
 import { DoseCard } from '@/components/dose-card';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
 import { LogoutButton } from '@/components/logout-button';
+import { ReportRangeChips } from '@/components/report-range-chips';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import {
   ensureDoseEvents,
-  getMedicationPlan,
+  getAdherenceReport,
   listDoses,
   listMyLinks,
-  summarise,
-  type AdherenceSummary,
+  type AdherenceReport,
   type DoseView,
-  type MedicationPlan,
   type MyLink,
+  type ReportRange,
 } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
 import { useAsyncData } from '@/hooks/use-async-data';
-import {
-  addDays,
-  endOfDay,
-  formatDateWithYear,
-  formatDaysOfWeek,
-  formatTime,
-  parseDayOnly,
-  startOfDay,
-} from '@/lib/format';
+import { addDays, endOfDay, startOfDay } from '@/lib/format';
 
 /**
- * Connected family member: read-only view of the linked elder's medication plan
- * and recent adherence (docs/specs/sprint-4.md; full plan visibility is the
- * owner's 2026-09-30 decision). It renders **no control** — the plan and the dose
- * record are read through the same care-link-scoped RLS policy a manager reads,
- * and the family member holds no write grant.
+ * `F-03` Family Home / `F-10` Care Summary (docs/specs/sprint-8.md, sprint-9.md).
+ *
+ * The connected family member's read-only entry point: who they can see, a care
+ * summary over 7/30/90 days, and the recent dose activity. The summary is the
+ * server-aggregated report, so it carries counts only — no dose, medicine or
+ * timestamp (docs/specs/sprint-9.md OD2). Nothing here writes.
  */
 
 interface FamilyData {
   links: MyLink[];
-  plan: MedicationPlan | null;
   doses: DoseView[];
-  summary: AdherenceSummary;
+  report: AdherenceReport | null;
 }
-
-const EMPTY_SUMMARY: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming: 0, percent: 0 };
 
 export default function FamilyHomeScreen() {
   const user = useSessionUser();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
+  const [range, setRange] = useState<ReportRange>(7);
+
   const loader = useCallback(async (): Promise<FamilyData> => {
     const links = await listMyLinks(user.id);
     const active = links.find((link) => link.status === 'active') ?? null;
-    if (!active) return { links, plan: null, doses: [], summary: EMPTY_SUMMARY };
+    if (!active) return { links, doses: [], report: null };
 
     await ensureDoseEvents(active.elderId).catch(() => undefined);
     const now = new Date();
-    const [plan, doses] = await Promise.all([
-      getMedicationPlan(active.elderId),
-      listDoses(active.elderId, { from: startOfDay(addDays(now, -6)), to: endOfDay(now), now }),
+    const [doses, report] = await Promise.all([
+      listDoses(active.elderId, {
+        from: startOfDay(addDays(now, -6)),
+        to: endOfDay(now),
+        now,
+      }),
+      getAdherenceReport(active.elderId, range),
     ]);
-    return { links, plan, doses, summary: summarise(doses) };
-  }, [user.id]);
+    return { links, doses, report };
+  }, [user.id, range]);
 
   const { state, refreshing, reload } = useAsyncData(loader);
 
@@ -81,21 +75,18 @@ export default function FamilyHomeScreen() {
     return <ScreenError title="Family view" message={state.message} onRetry={reload} safeBottom />;
   }
 
-  const { links, plan, doses, summary } = state.data;
+  const { links, doses, report } = state.data;
   const active = links.find((link) => link.status === 'active') ?? null;
   const invited = links.find((link) => link.status === 'invited') ?? null;
   const wasRevoked = !active && !invited && links.some((link) => link.status === 'revoked');
 
   if (active) {
-    const medications = plan?.medications ?? [];
-
     return (
       <Screen
         title="Family view"
         subtitle="Read-only access"
         onRefresh={reload}
         refreshing={refreshing}
-        safeBottom
       >
         <Card title="You can see">
           <Text style={styles.name}>{active.elderName ?? 'Your older adult'}</Text>
@@ -104,55 +95,30 @@ export default function FamilyHomeScreen() {
           </Text>
         </Card>
 
-        <Card title="Medication plan">
-          {medications.length === 0 ? (
-            <EmptyState
-              title="No medicines on the plan"
-              description="The family caregiver sets up each medicine and its schedule."
-            />
+        <Card title="Care summary">
+          <ReportRangeChips value={range} onChange={setRange} />
+          {report ? (
+            <>
+              <Text style={styles.summary}>
+                {report.totals.taken} confirmed · {report.totals.missed} missed
+                {report.totals.open > 0 ? ` · ${report.totals.open} still due` : ''}
+              </Text>
+              <Text style={styles.body}>
+                {report.totals.percent}% confirmed over the last {range} days. This is a summary
+                only.
+              </Text>
+            </>
           ) : (
-            medications.map((medication) => {
-              const schedules = (plan?.schedules ?? []).filter(
-                (schedule) => schedule.medicationId === medication.id,
-              );
-              const batches = (plan?.batches ?? []).filter(
-                (batch) => batch.medicationId === medication.id,
-              );
-              return (
-                <View key={medication.id} style={styles.planRow}>
-                  <Text style={styles.medicine}>
-                    {medication.name} {medication.strength}
-                  </Text>
-                  <Text style={styles.body}>
-                    {medication.doseQuantity} {medication.doseUnit}
-                    {medication.form ? ` · ${medicationFormLabels[medication.form]}` : ''}
-                  </Text>
-                  {medication.instructions.length > 0 ? (
-                    <Text style={styles.body}>{medication.instructions}</Text>
-                  ) : null}
-                  {schedules.map((schedule) => (
-                    <Text key={schedule.id} style={styles.body}>
-                      {formatTime(schedule.timeOfDay)} · {formatDaysOfWeek(schedule.daysOfWeek)}
-                    </Text>
-                  ))}
-                  {batches.map((batch) => (
-                    <Text key={batch.id} style={styles.body}>
-                      Stock {batch.quantity} {batch.unit} · expires{' '}
-                      {formatDateWithYear(parseDayOnly(batch.expiryDate))}
-                    </Text>
-                  ))}
-                </View>
-              );
-            })
+            <Text style={styles.body}>No summary is available yet.</Text>
           )}
         </Card>
 
-        <Card title="Dose activity">
-          <Text style={styles.body}>
-            {summary.taken} taken · {summary.missed} missed · {summary.due} due · {summary.upcoming}{' '}
-            upcoming
-          </Text>
-        </Card>
+        <Button label="See medicines" onPress={() => router.push('/family/meds')} />
+        <Button
+          label="See visits"
+          variant="secondary"
+          onPress={() => router.push('/family/calendar')}
+        />
 
         {doses.length === 0 ? (
           <EmptyState
@@ -162,10 +128,6 @@ export default function FamilyHomeScreen() {
         ) : (
           doses.map((dose) => <DoseCard key={dose.id} dose={dose} />)
         )}
-
-        <DeactivateAccount />
-
-        <LogoutButton size="large" />
       </Screen>
     );
   }
@@ -177,7 +139,6 @@ export default function FamilyHomeScreen() {
         subtitle="Waiting for approval"
         onRefresh={reload}
         refreshing={refreshing}
-        safeBottom
       >
         <Banner
           tone="info"
@@ -194,7 +155,7 @@ export default function FamilyHomeScreen() {
   }
 
   return (
-    <Screen title="Family view" onRefresh={reload} refreshing={refreshing} safeBottom>
+    <Screen title="Family view" onRefresh={reload} refreshing={refreshing}>
       <EmptyState
         title={wasRevoked ? 'Your access was removed' : 'No record is shared with you'}
         description={
@@ -217,15 +178,12 @@ function createStyles(colors: AppThemeColors) {
       fontWeight: '700',
       lineHeight: lineHeight.heading,
     },
-    medicine: {
+    summary: {
       color: colors.text,
       fontSize: fontSize.body,
-      fontWeight: '700',
+      fontWeight: '600',
       lineHeight: lineHeight.body,
-    },
-    planRow: {
-      gap: spacing.xs,
-      paddingBottom: spacing.sm,
+      paddingBottom: spacing.xs,
     },
     body: {
       color: colors.textMuted,

@@ -4,6 +4,7 @@ import { useCallback, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useSessionUser } from '@/auth/auth-context';
+import { AppointmentCard } from '@/components/appointment-card';
 import { Button } from '@/components/button';
 import { Card } from '@/components/card';
 import { DoseCard } from '@/components/dose-card';
@@ -26,11 +27,14 @@ import {
   getDoseStockOutcome,
   getElderProfile,
   getLinkedElder,
+  listAppointments,
   listDoses,
   listDosesForDay,
   listRecentConfirmations,
+  nextAppointment,
   summarise,
   type AdherenceSummary,
+  type Appointment,
   type DoseStockOutcome,
   type DoseView,
   type MyLink,
@@ -58,6 +62,7 @@ interface DashboardData {
   recent: ConfirmationRow[];
   weekSummary: AdherenceSummary;
   unread: number;
+  next: Appointment | null;
 }
 
 const EMPTY_SUMMARY: AdherenceSummary = { taken: 0, missed: 0, due: 0, upcoming: 0, percent: 0 };
@@ -99,16 +104,18 @@ export default function CaregiverDashboardScreen() {
         recent: [],
         weekSummary: EMPTY_SUMMARY,
         unread: await countUnreadNotifications(),
+        next: null,
       };
     }
 
     const now = new Date();
-    const [profile, today, recentDoses, weekDoses, unread] = await Promise.all([
+    const [profile, today, recentDoses, weekDoses, unread, appointments] = await Promise.all([
       getElderProfile(link.elderId),
       listDosesForDay(link.elderId, now),
       listRecentConfirmations(link.elderId, 5),
       listDoses(link.elderId, { from: startOfDay(addDays(now, -6)), to: endOfDay(now), now }),
       countUnreadNotifications(),
+      listAppointments(link.elderId),
     ]);
 
     const recent = await Promise.all(
@@ -123,6 +130,7 @@ export default function CaregiverDashboardScreen() {
       recent,
       weekSummary: summarise(weekDoses),
       unread,
+      next: nextAppointment(appointments, now),
     };
   }, [user.id]);
 
@@ -135,7 +143,8 @@ export default function CaregiverDashboardScreen() {
     return <ScreenError title="Dashboard" showBell message={state.message} onRetry={reload} />;
   }
 
-  const { link, hasElderProfile, today, todaySummary, recent, weekSummary, unread } = state.data;
+  const { link, hasElderProfile, today, todaySummary, recent, weekSummary, unread, next } =
+    state.data;
 
   if (!link) {
     return (
@@ -195,6 +204,16 @@ export default function CaregiverDashboardScreen() {
           accessibilityHint="Opens the list of dose confirmations and missed doses"
         />
       </Card>
+
+      {next ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Next appointment</Text>
+          <AppointmentCard
+            appointment={next}
+            onPress={() => router.push(`/caregiver/appointment?id=${next.id}`)}
+          />
+        </View>
+      ) : null}
 
       <Button
         label="Care links and invites"

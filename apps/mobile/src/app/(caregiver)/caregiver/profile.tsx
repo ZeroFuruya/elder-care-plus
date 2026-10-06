@@ -65,6 +65,12 @@ export default function CaregiverProfileScreen() {
               onPress={() => router.push('/caregiver/elder-edit')}
               accessibilityHint="Opens the elder profile form"
             />
+            <Button
+              label="Help requests"
+              variant="secondary"
+              onPress={() => router.push('/caregiver/help')}
+              accessibilityHint="Opens the older adult's requests for help"
+            />
           </>
         ) : null}
         <Button

@@ -99,3 +99,35 @@ export {
   type EmergencyInfo,
   type EmergencyNumber,
 } from './emergency';
+export {
+  appointmentWriteError,
+  cancelAppointment,
+  completeAppointment,
+  createAppointment,
+  getAppointment,
+  listAppointments,
+  nextAppointment,
+  splitAppointments,
+  updateAppointment,
+  type Appointment,
+} from './appointments';
+export {
+  acceptHelpRequest,
+  cancelHelpRequest,
+  completeHelpRequest,
+  createHelpRequest,
+  getHelpRequest,
+  helpRequestWriteError,
+  listAvailability,
+  listHelpRequests,
+  setMemberAvailability,
+  type HelpRequest,
+  type MemberAvailability,
+} from './help-requests';
+export { getAdherenceReport, type AdherenceReport, type ReportRange } from './reports';
+export {
+  listCareActivity,
+  type ActivityKind,
+  type CareActivity,
+  type CareActivityQuery,
+} from './activity';

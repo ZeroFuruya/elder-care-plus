@@ -13,6 +13,14 @@ import {
   evidenceReviewStatusLabels,
   evidenceReviewStatusPresentation,
   evidenceReviewStatusSchema,
+  helpRequestCategoryLabels,
+  helpRequestCategoryPresentation,
+  helpRequestCategorySchema,
+  helpRequestStateLabels,
+  helpRequestStatePresentation,
+  helpRequestStateSchema,
+  notificationEventTypeSchema,
+  notificationPresentation,
   prescriptionStatusLabels,
   prescriptionStatusPresentation,
   prescriptionStatusSchema,
@@ -43,6 +51,8 @@ describe('status labels', () => {
     ['appointment type', appointmentTypeSchema.options, appointmentTypeLabels],
     ['prescription status', prescriptionStatusSchema.options, prescriptionStatusLabels],
     ['evidence review status', evidenceReviewStatusSchema.options, evidenceReviewStatusLabels],
+    ['help request category', helpRequestCategorySchema.options, helpRequestCategoryLabels],
+    ['help request state', helpRequestStateSchema.options, helpRequestStateLabels],
   ] as const;
 
   it.each(cases)('%s has a text label for every value', (_name, options, labels) => {
@@ -89,6 +99,18 @@ describe('status presentation', () => {
       evidenceReviewStatusLabels,
       evidenceReviewStatusPresentation,
     ],
+    [
+      'help request category',
+      helpRequestCategorySchema.options,
+      helpRequestCategoryLabels,
+      helpRequestCategoryPresentation,
+    ],
+    [
+      'help request state',
+      helpRequestStateSchema.options,
+      helpRequestStateLabels,
+      helpRequestStatePresentation,
+    ],
   ] as const;
 
   it.each(cases)(
@@ -113,4 +135,28 @@ describe('status presentation', () => {
       }
     },
   );
+});
+
+/**
+ * The notification centre renders an event from `notificationPresentation`. Sprint 5
+ * added server event types without a client presentation, so a stock alert showed as
+ * "Taken". This guards the whole vocabulary: a new server event with no presentation
+ * fails `pnpm test`.
+ */
+describe('notification event presentations', () => {
+  it('presents every server event with a label, icon and tone', () => {
+    expect(Object.keys(notificationPresentation).sort()).toEqual(
+      [...notificationEventTypeSchema.options].sort(),
+    );
+
+    for (const event of notificationEventTypeSchema.options) {
+      const presentation = notificationPresentation[event];
+      expect(presentation.label.trim().length, `missing label for "${event}"`).toBeGreaterThan(0);
+      expect(presentation.icon.trim().length, `missing icon for "${event}"`).toBeGreaterThan(0);
+      expect(
+        statusToneSchema.safeParse(presentation.tone).success,
+        `unknown tone for "${event}"`,
+      ).toBe(true);
+    }
+  });
 });

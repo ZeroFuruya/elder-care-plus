@@ -41,13 +41,58 @@ the same day after an `@architect` critique, **approved by the owner 2026-10-05*
 **implemented** on `sprint-5-inventory-expiry`. `npx supabase db reset` applies its migration
 cleanly, `npx supabase test db` is **444/444** (Sprint 5 adds 50 assertions), and the branch was
 pushed. The hosted project was backed up (`backup.sql`, git-ignored) and the migration pushed
-2026-10-06, so all 12 migrations are in sync there. It is awaiting review/merge.
+2026-10-06, so all 12 migrations are in sync there. The owner **approved the adjust-stock dialog copy
+batch on 2026-10-06**. Merged to `main` 2026-10-06 (`6c03bfa`).
 
 `sprint-7.md` (appointments, Flow F) was **drafted 2026-10-06**, the owner closed its six decisions
 the same day, and an `@architect` critique returned **"Needs changes"**; **v2** folds in all 19
-must-fix items and is **awaiting owner approval**. It records a prerequisite fix for a Sprint 5 gap:
-the shared notification event schema was never widened, so Sprint 5 stock alerts currently mis-render
-as `Taken` in `S-01`.
+must-fix items and was **approved by the owner 2026-10-06**. It is **implemented** on
+`sprint-7-appointments` (stacked on the merged Sprint 5 tip): migration, RLS, four guarded RPCs and
+the guarded reminder sweep with 52 pgTAP assertions (**496/496** total), the shared appointment
+contracts and the widened notification vocabulary, caregiver and elder appointment screens, the
+dashboard next-appointment cards, and the elder's device-calendar export (a native `expo-calendar`
+dependency, so the demo needs a **fresh APK**). **Revision v3** records the implemented timezone
+contract: the write RPCs take a local date + time + zone and convert server-side with Sprint 4's
+`local_dose_timestamp`. It also carries the prerequisite fix for a Sprint 5 gap: the shared
+notification event schema was never widened, so Sprint 5 stock alerts mis-rendered as `Taken` in
+`S-01`; Sprint 7 widens it and routes by event + target. The hosted project was backed up
+(`backup.sql`, git-ignored) and the migration **pushed 2026-10-06**, so all **13** migrations are in
+sync; a non-mutating hosted smoke confirmed signed-out reads/writes are `42501`, the sweep RPC is
+server-only, both demo accounts sign in, appointments reads are RLS-scoped, and every cross-account
+write returns the authorization guard. Awaiting review/merge.
+
+`docs/specs/sprint-4b-dose-reactivation.md` (restore future doses when a deactivated medicine is
+reactivated) was **drafted and approved by owner decision on 2026-10-06**. It is a bug fix, not a
+feature sprint: one `create or replace` of `reconcile_dose_events_for_medication` reopening future
+`plan_deactivated` occurrences that still match the current active plan and schedule, plus a
+20-assertion pgTAP regression file. **Implemented** on `sprint-7-appointments`; `npx supabase db reset`
+applies it cleanly and `npx supabase test db` is **516/516**. Backed up (fresh `backup.sql`,
+git-ignored) and **pushed to the hosted project 2026-10-06**, so all **14** migrations are in sync.
+
+`docs/specs/sprint-8.md` (Family care circle UI, Flow F-01…F-15) was **drafted and then implemented
+2026-10-06** by owner request with a two-increment scope; the owner chose **Full A + B** (OD1) and
+decided OD2–OD4 (elder-only creation, every active member notified, first member accept; availability
+is a toggle + note; in-app **and** local device notifications). Both increments are **implemented and
+locally verified** — `pnpm typecheck`/`lint`/`format:check`, **143 JS tests** and
+`npx supabase test db` **550/550** (Sprint 8 adds 34 assertions). Increment A needed **one additive
+policy**, `care_links_select_active_circle`, for F-14's co-member read (pending invites stay hidden
+from co-members); Increment B adds `help_requests` + `member_availability` with five guarded RPCs.
+Both migrations (`20261106120000`, `20261107120000`) were **pushed to the hosted project 2026-10-06**,
+so all **16** migrations are in sync.
+
+`docs/specs/sprint-9.md` (reports and history browsing) was **drafted 2026-10-06** by owner request
+after the owner chose **full reports/retrieval**, then revised to **v2** after an independent
+`@architect` critique (session `ses_eeeb75265ffeX2JEcenexNABPJ`, analyze-only) returned "Needs changes";
+v2 folds in 20 must-fix items. The owner **approved v2 on 2026-10-06** and chose **OD8 = document the
+current `audit_events` policy as-is**. It is now **implemented and locally verified**: a
+server-aggregated **adherence report** RPC (`get_adherence_report`, bucketing on each dose's stored
+`scheduled_local_date`) plus one supporting index, a caregiver **Care Activity Timeline** (`C-12`,
+merging `audit_events` and `inventory_transactions`), the `C-09` **Adherence Report** range, the elder's
+`E-08` **Personal Adherence**, and a 7/30/90 range on the family `F-10` **Care Summary**. Read-only over
+tables that already have RLS; no new tables and no new native dependency. "Retrieval" is renamed
+**history browsing** (filtered, read-only) — no AI/embeddings. The pgTAP suite grew from **550** to
+**596** assertions (Sprint 9 = 46); `pnpm typecheck`/`lint`/`test`/`format:check` and `check:contrast`
+are green. (The v1 frame ids `C-10`/`C-11`/`E-13`/`F-16` were collisions and are corrected.)
 
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
