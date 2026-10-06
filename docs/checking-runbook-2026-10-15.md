@@ -6,7 +6,7 @@ every message in-app. This is the operational script. The demo of record is
 `docs/specs/sprint-4.md` §"Checking runbook"; this file adds the pre-flight, the evidence to
 capture, and the fallbacks.
 
-Environment: Android phone (main target), hosted project `buwwkdhzansbyeytsufj.supabase.co`, 16
+Environment: Android phone (main target), hosted project `buwwkdhzansbyeytsufj.supabase.co`, 17
 migrations applied. Synthetic demo accounts only — credentials live in the git-ignored
 `apps/mobile/.env.demo-accounts` and are never printed, committed, or sent to any AI tool.
 
@@ -16,9 +16,9 @@ migrations applied. Synthetic demo accounts only — credentials live in the git
 
 | # | Check | Command / how | Expected |
 |---|---|---|---|
-| 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 16 local ↔ remote |
+| 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 17 local ↔ remote |
 | 2 | Keep-alive green | GitHub → Actions → "Supabase keep-alive" → Run workflow | Green run |
-| 3 | APK installed | **Rebuild required** — the installed `e2c86c9f` (commit `cc8ff92`) predates Sprints 5/7/8 and the `expo-calendar`/`expo-notifications` native modules. `eas build -p android --profile preview`, install, and record the build id here: `____________` | App launches, connects |
+| 3 | APK installed | **Rebuild required** — the installed `e2c86c9f` (commit `cc8ff92`) predates Sprints 5/7/8/9 and the `expo-calendar`/`expo-notifications` native modules. The config now declares the `expo-calendar` plugin (so `READ_CALENDAR`/`WRITE_CALENDAR` reach the manifest) and no longer requests the cut prescription-photo permission; `app.json` `versionCode` is **3**. `eas build -p android --profile preview`, install, and record the build id here: `____________` | App launches, connects |
 | 4 | Accounts signed in | Caregiver + elder on the phone; family for the read view | Each sees only their own data |
 | 5 | Connectivity | Wi-Fi/mobile data on | Requests succeed |
 | 6 | Pre-demo backup | `npx supabase db dump -f backup.sql --linked` | File written (git-ignored) |
@@ -39,10 +39,25 @@ Run with both apps signed in and connectivity on.
    **Mark as taken** exactly once.
 4. **Caregiver — sees it.** `C-01` shows **Taken**, the timestamp, **stock decreased by exactly the
    dose**, and an unread notification. `S-01` marks it read and opens the related record.
-5. **Family — read-only.** The family Home shows the care summary; **Meds** the plan and the
-   adherence row, **Visits** the appointments, **More → Care circle** the active links. Access is
-   read-only for all medical data — the only writes a family member has are accepting/completing a
-   help request and setting their own availability.
+5. **Family — read-only.** The family Home shows the care summary with a **7 / 30 / 90-day**
+   range selector; **Meds** the plan and the adherence row, **Visits** the appointments, **More →
+   Care circle** the active links. Access is read-only for all medical data — the only writes a
+   family member has are accepting/completing a help request and setting their own availability.
+
+## 1c. Optional — reports and history browsing (Sprint 9)
+
+A read-only pass that shows the reported surfaces without touching the medication cycle:
+
+1. **Caregiver — adherence report (`C-09`).** From the caregiver dashboard, open **Reports** and
+   switch the range **7 / 30 / 90 days**; the counts and the per-medicine breakdown change with it.
+2. **Caregiver — care activity timeline (`C-12`).** Open **Activity**: the merged audit + stock
+   timeline lists the runs above (dose confirmed, stock adjusted, appointment changes) newest first.
+3. **Elder — personal adherence (`E-08`).** The elder's own adherence screen shows the same
+   range selector scoped to the elder.
+4. **Family — summary range (`F-10`).** The family Home care summary honours the same **7 / 30 / 90**
+   range, shown as **counts only** (no per-medicine payload) — the RPC itself limits the payload.
+
+All four are **read-only**; they add no tables and no native dependency.
 
 ## 1b. Optional — help-request cycle (Sprint 8)
 
@@ -81,6 +96,9 @@ limitation until observed.
   `duplicate: true` and writes **no** new `taken_at`, stock, inventory, audit or notification row.
 - **Help-request evidence** (if section 1b is run): one `help_requests` row per run with its state
   transitions timestamped, the matching `notifications` rows, and the `member_availability` toggle.
+- **Reports evidence** (if section 1c is run): screenshots of `C-09`, `C-12`, `E-08` and the family
+  summary at each range, and confirmation that a direct read of the family summary returns
+  **counts only**.
 - **Test-case table** for the thesis: step → expected → observed (with the screenshot reference).
 
 ---

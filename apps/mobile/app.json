@@ -13,7 +13,7 @@
     },
     "android": {
       "package": "com.zerofuruya.eldercareplus",
-      "versionCode": 2,
+      "versionCode": 3,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -42,11 +42,9 @@
       "expo-secure-store",
       "expo-notifications",
       [
-        "expo-image-picker",
+        "expo-calendar",
         {
-          "photosPermission": "ElderCare+ needs access to your photos so you can attach a prescription photo for your caregiver to review.",
-          "cameraPermission": false,
-          "microphonePermission": false
+          "calendarPermission": "ElderCare+ needs access to your calendar so you can add an appointment to your device calendar."
         }
       ]
     ],
