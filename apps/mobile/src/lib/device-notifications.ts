@@ -1,4 +1,4 @@
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 /**
@@ -9,36 +9,60 @@ import { Platform } from 'react-native';
  * running and receives a help-request event over Realtime. It is deliberately defensive: every
  * entry point fails soft, so a denied permission or an unavailable module never crashes a screen.
  *
+ * Expo Go cannot load `expo-notifications` on Android since SDK 53 (remote push was removed) and
+ * importing it throws, which would take the whole route module down with it (the family layout
+ * imports this). So the module is imported **lazily** and only outside Expo Go; in Expo Go, on
+ * web, or when the native module is missing, every entry point is a silent no-op. Device
+ * notifications therefore work in the preview APK / a development build, not in Expo Go.
+ *
  * This is the only place the app talks to `expo-notifications`.
  */
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    // On Android a silent handler suppresses the heads-up banner, so a help request plays a sound.
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
-});
+type NotificationsModule = typeof import('expo-notifications');
 
 const ANDROID_CHANNEL_ID = 'help-requests';
 
+/**
+ * Expo Go specifically — not a development build (`executionEnvironment` is `storeClient` for both,
+ * so it cannot be used to tell them apart). The dynamic import's `catch` is the safety net if this
+ * ever stops being reported.
+ */
+const isExpoGo = Constants.appOwnership === 'expo';
+
+let modulePromise: Promise<NotificationsModule | null> | null = null;
 let permissionPromise: Promise<boolean> | null = null;
 let androidChannelReady = false;
 
-async function ensureAndroidChannel(): Promise<void> {
-  if (Platform.OS !== 'android' || androidChannelReady) return;
-  await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
-    name: 'Help requests',
-    importance: Notifications.AndroidImportance.HIGH,
-  });
-  androidChannelReady = true;
+/** Load `expo-notifications` once, or resolve `null` where it cannot be used. */
+function loadNotifications(): Promise<NotificationsModule | null> {
+  if (modulePromise) return modulePromise;
+  if (Platform.OS === 'web' || isExpoGo) {
+    modulePromise = Promise.resolve(null);
+    return modulePromise;
+  }
+  modulePromise = import('expo-notifications')
+    .then((loaded) => {
+      loaded.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowBanner: true,
+          shouldShowList: true,
+          // On Android a silent handler suppresses the heads-up banner, so a help request plays a sound.
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+        }),
+      });
+      return loaded;
+    })
+    .catch(() => null);
+  return modulePromise;
 }
 
-/** True only when the platform can present a local notification. */
+/**
+ * True when the platform could present a local notification. Best-effort and synchronous; the
+ * module is loaded when a notification is actually presented.
+ */
 export function deviceNotificationsSupported(): boolean {
-  return Platform.OS !== 'web';
+  return Platform.OS !== 'web' && !isExpoGo;
 }
 
 /**
@@ -46,7 +70,8 @@ export function deviceNotificationsSupported(): boolean {
  * platform cannot answer.
  */
 export async function ensureNotificationPermission(): Promise<boolean> {
-  if (!deviceNotificationsSupported()) return false;
+  const Notifications = await loadNotifications();
+  if (!Notifications) return false;
   if (!permissionPromise) {
     permissionPromise = (async () => {
       try {
@@ -64,11 +89,18 @@ export async function ensureNotificationPermission(): Promise<boolean> {
 
 /** Present a local help-request notification. A refusal or failure is silent by design. */
 export async function presentHelpNotification(title: string, body: string): Promise<void> {
-  if (!deviceNotificationsSupported()) return;
+  const Notifications = await loadNotifications();
+  if (!Notifications) return;
   const granted = await ensureNotificationPermission();
   if (!granted) return;
   try {
-    await ensureAndroidChannel();
+    if (Platform.OS === 'android' && !androidChannelReady) {
+      await Notifications.setNotificationChannelAsync(ANDROID_CHANNEL_ID, {
+        name: 'Help requests',
+        importance: Notifications.AndroidImportance.HIGH,
+      });
+      androidChannelReady = true;
+    }
     await Notifications.scheduleNotificationAsync({
       content: { title, body },
       // On Android, a channel-aware trigger delivers immediately on that channel; iOS uses null.
