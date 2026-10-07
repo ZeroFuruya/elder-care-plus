@@ -109,7 +109,10 @@ limitation until observed.
   observed, state it as a limitation rather than claiming it.
 - **Device notifications have no remote push service.** A help-request device notification is a
   **local** presentation fired by the app when it receives the row over Realtime, so it needs the app
-  running and connected; the in-app notification centre is the source of truth.
+  running and connected; the in-app notification centre is the source of truth. Expo Go cannot load
+  `expo-notifications` on Android at all (SDK 53+), so device notifications only appear in the
+  preview APK / a development build — in Expo Go the feature is a silent no-op and everything else
+  works normally.
 - **Realtime** refreshes `C-01` on a confirmation; if the subscription is unavailable the dashboard
   still refreshes on focus, so the demo does not depend on it.
 - **Card gradient** renders with React Native's native `experimental_backgroundImage`; a device that
