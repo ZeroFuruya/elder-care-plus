@@ -62,6 +62,10 @@ export default function CaregiverTabsLayout() {
       <Tabs.Screen name="med-new" options={{ href: null }} />
       <Tabs.Screen name="med-edit" options={{ href: null }} />
       <Tabs.Screen name="med" options={{ href: null }} />
+      {/* Sprint 7 appointments: `C-06` is the `calendar` tab above; `C-07` (add/edit, titled
+          "New appointment") and `C-08` (detail) are pushed screens, hidden from the tab bar. */}
+      <Tabs.Screen name="appointment" options={{ href: null }} />
+      <Tabs.Screen name="appointment-edit" options={{ href: null }} />
       {/* Sprint 4 dose detail (`C-05` missed dose), pushed from the dashboard. */}
       <Tabs.Screen name="dose" options={{ href: null }} />
       {/* Sprint 8 help requests (Flow F), reached from the notification centre. */}
