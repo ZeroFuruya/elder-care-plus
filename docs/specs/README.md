@@ -105,5 +105,6 @@ in-place scope note on the affected sections.
 
 **Checking-prep fix 2026-10-08:** `supabase/migrations/20261109120000_realtime_notifications.sql`
 publishes `notifications` for Realtime so the family/caregiver device mirror can fire (18 migrations
-total). The hosted project receives it only after an owner-approved `db dump` + `db push`; see
-`AGENTS.md`, `docs/checking-runbook-2026-10-15.md`.
+total). It was backed up with `db dump` and pushed to hosted 2026-10-08 (all 18 in sync; the hosted
+publication now includes `notifications`), with local pgTAP at **599/599**. See `AGENTS.md`,
+`docs/checking-runbook-2026-10-15.md`.
