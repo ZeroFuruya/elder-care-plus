@@ -100,4 +100,10 @@ were collisions and are corrected.)
 **Scope change 2026-10-05:** the owner has cut **all AI/OCR and photo evidence** from the app and the
 final presentation. **Sprint 6 is dropped** (see the amended `adr-002-prescriptions-ocr-evidence.md`),
 so the remaining sequence is **Sprint 5 → 7 (appointments) → 8 (family UI) → 9 (reports/retrieval)**.
-`AGENTS.md` and `01-dev-environment.md` still need reconciling with this decision.
+`AGENTS.md` is reconciled with this decision (2026-10-08); `docs/01-dev-environment.md` carries an
+in-place scope note on the affected sections.
+
+**Checking-prep fix 2026-10-08:** `supabase/migrations/20261109120000_realtime_notifications.sql`
+publishes `notifications` for Realtime so the family/caregiver device mirror can fire (18 migrations
+total). The hosted project receives it only after an owner-approved `db dump` + `db push`; see
+`AGENTS.md`, `docs/checking-runbook-2026-10-15.md`.

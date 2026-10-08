@@ -8,6 +8,7 @@ import { LoadingScreen } from '@/components/loading-screen';
 import { TabIcon } from '@/components/tab-icon';
 import { fontSize } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
+import { useHelpRequestNotifications } from '@/hooks/use-help-notifications';
 
 const TAB_ICONS: Record<string, AppIconName> = {
   index: 'home',
@@ -28,6 +29,9 @@ function tabIcon(name: keyof typeof TAB_ICONS) {
 export default function CaregiverTabsLayout() {
   const { ready, user } = useAuth();
   const { colors } = useAppTheme();
+
+  // Mirrors help-request events to the caregiver's device while the app is running (OD4).
+  useHelpRequestNotifications();
 
   if (!ready) return <LoadingScreen message="Starting ElderCare+…" />;
   if (!user) return <Redirect href="/sign-in" />;

@@ -14,8 +14,9 @@ each ADR now records the accepted option and its follow-ups.
 
 - `adr-001-third-user-role.md` — **Accepted: A** — "Connected Family Member" is a third role,
   modelled as care-circle membership. (C-R1)
-- `adr-002-prescriptions-ocr-evidence.md` — **Accepted: A** — prescriptions, evidence and OCR stay
-  in scope. (C-R2)
+- `adr-002-prescriptions-ocr-evidence.md` — **Accepted: A** at the 2026-09-25 baseline;
+  **amended 2026-10-05** — prescriptions, photo evidence and OCR were cut from the app and the
+  presentation by owner decision (Sprint 6 dropped). (C-R2)
 - `adr-003-stock-expiry-tracking.md` — **Accepted: A** — stock/expiry tracking stays in scope. (C-R3)
 - `adr-004-emergency-contacts.md` — **Accepted: A** — ordered list of emergency numbers. (C-R4)
 

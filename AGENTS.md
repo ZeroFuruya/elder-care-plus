@@ -30,6 +30,27 @@ Sprints 5/7/8/9), dry-run the checking runbook and fill the evidence sheet; free
 ~2026-10-12 ahead of the instructor's 3rd-increment checking on **2026-10-15/16**, which demos the
 medication transaction cycle on the hosted build as an installed preview APK.
 
+**Checking-prep update (2026-10-08), local-only.** An adversarial plan/QA pass found two integrity
+risks and one dead code path; the fixes are on `main` but **not yet pushed to hosted** (the hosted
+project is still at 17 migrations until an owner-approved `db dump` + `db push`). (1) The family
+device mirror was dead: `useHelpRequestNotifications` subscribes to `postgres_changes` on
+`notifications`, but only `dose_events` and `help_requests` were published for Realtime, and the
+caregiver shell never mounted the hook. The new migration
+`20261109120000_realtime_notifications.sql` publishes `notifications` (idempotent, RLS still scopes
+rows per subscriber) and the caregiver `_layout.tsx` now mounts the hook; a new pgTAP file
+`realtime_publications.test.sql` asserts the three publication memberships (**3** assertions; the
+suite is expected to reach **599**, to be re-verified once local Docker is available). (2) The
+runbook/evidence claimed a per-medicine report breakdown that does not exist —
+`get_adherence_report` returns per-day counts plus totals only. (3) The row-count evidence was
+table-wide; it is now scoped to the demo dose IDs, the idempotency claim is proven by a laptop
+`confirm_dose` RPC called twice (the APK button disappears after success), the help and reports
+passes are promoted from optional to required, and "fresh state" no longer conflicts with the
+never-hard-delete rule. `scripts/provision-demo-circle.mjs` was re-derived from the current guarded
+RPCs to link the hosted demo circle (caregiver↔elder, elder profile, consented family link). JS
+gates remain green: `pnpm typecheck`/`lint`/`test`/`format:check` (**162**) and
+`pnpm check:contrast`. **Next:** owner-approved hosted push (18 migrations) and the preview APK
+build from the frozen commit, then the dry-run and evidence fill.
+
 **Historical (2026-10-01 checkpoint):** **Merged to `main`; Sprint 1 accepted, Sprints 1b–4 shipped.** `main` is now the Supabase-backed
 build — the full Sprint 1 schema plus Sprints 2–4 (elder/emergency profile, medication setup, dose
 adherence), the UI theme and validation hardening, merged via PRs #1–#3 on 2026-10-01; the tagged

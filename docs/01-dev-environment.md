@@ -25,10 +25,10 @@
 
 **ElderCare+** is a family-centered care-coordination and record-keeping app for older adults. It is **not** a diagnostic, prescribing, drug-interaction-checking, emergency-dispatch, or pharmacy-ordering service — that boundary governs every feature.
 
-- A **family caregiver** manages the elder's medication plan, inventory/expiry, prescriptions, appointments and emergency info.
+- A **family caregiver** manages the elder's medication plan, inventory/expiry, appointments and emergency info.
 - The **elder** views their plan and confirms their own doses; nothing else. One active caregiver-to-one-elder link per release.
 - The core mechanic is a **confirmation loop**: elder marks a dose taken → caregiver is notified → an escalation fires if the dose is missed past its grace period. This loop is the product's main differentiator.
-- OCR/AI on prescription photos is **reference-only** — it can never auto-create or auto-fill a medicine, schedule, dose, or clinical advice. The caregiver manually reviews and enters every field.
+- ~~OCR/AI on prescription photos is **reference-only**~~ **[cut 2026-10-05]** — OCR, photo evidence and the prescription flow were dropped from the app and the presentation (Sprint 6 dropped; `adr-002` amended). No AI output ever creates or fills a medicine, schedule, dose, or clinical advice.
 - History is **never hard-deleted** — deactivate or archive with timestamps instead. Confirmed doses, stock adjustments, prescription verifications and past appointment states all require confirmation and produce an audit event.
 
 **Hard product rules (from the product-flow doc):**
@@ -227,13 +227,22 @@ eas build -p android --profile preview      # installable APK for testers
 - **Idempotency is a hard requirement, not an optimization.** Dose confirmation, the missed-dose transition, and inventory decrement all need a database-level unique constraint (e.g. one `dose_events` row per schedule occurrence) so a retried offline sync cannot duplicate a `taken_at` timestamp or double-decrement stock.
 - `document_chunks`: only store an embedding after the caregiver has approved the extracted text. Retrieval is filtered by the active care link and prescription ID **before** the vector similarity search — never a global search across all users' data.
 
-### 8.2 Prescription OCR and AI boundary (Flow E)
+### 8.2 Prescription OCR and AI boundary (Flow E) — **[CUT 2026-10-05, Sprint 6 dropped]**
+
+> The prescription/photo-evidence/OCR flow described below was removed from scope by owner decision
+> 2026-10-05 and is no longer implemented or presented. It is retained only as a record of the
+> original design. The `prescription-evidence` storage bucket, the `/ocr` endpoint and
+> `document_chunks` retrieval are **not** part of the delivered app.
+
 - OCR extracts text from an uploaded photo purely as a **suggestion** the caregiver sees. It never auto-creates or auto-fills a medicine, schedule, dose, or prescription record. The caregiver manually reviews and enters every field before saving.
 - Elder-submitted evidence stays `pending_review` until caregiver verification; it is never treated as verified data anywhere else in the app.
 - Validate file type/size before upload; reject anything but supported image/PDF MIME types. Strip unnecessary image metadata where feasible.
 - `document_chunks` retrieval supports private "find in my prescriptions" lookup only — never diagnosis, drug-interaction analysis, or any autonomous change to a care plan.
 
-### 8.3 AI service
+### 8.3 AI service — **[OCR/embeddings cut 2026-10-05]**
+
+> `services/ai/` remains a contract-only scaffold in the repo; the `/ocr` and `/embed/text`
+> endpoints are **not** part of the delivered app (Sprint 6 dropped). Only `/health` is real.
 - Endpoints: `GET /health`, `POST /ocr`, `POST /embed/text`. Shared-secret header required. No image-embedding endpoint — this product doesn't need one.
 - Never log images, extracted prescription text, or embeddings.
 - Hugging Face free CPU Spaces can sleep when idle and reload weights on wake. Callers need timeouts and retries; wake it before demos. **[verify]** current sleep behavior.
@@ -292,10 +301,10 @@ Store quantities as decimals with an explicit unit. Auto-decrement stock only wh
 | 3 | Medication and inventory setup (Flow B) | `medications`, `medication_schedules`, `medicine_batches` |
 | 4 | Daily medication adherence (Flow C) | `dose_events`, confirmation RPC, notifications, offline queue |
 | 5 | Inventory and expiry safety (Flow D) | `inventory_transactions`, alert thresholds, needs-review state |
-| 6 | Prescriptions and evidence (Flow E) | `prescriptions`, `prescription_evidence`, OCR service, signed URLs |
+| 6 | ~~Prescriptions and evidence (Flow E)~~ **dropped 2026-10-05** | — |
 | 7 | Appointments (Flow F) | `appointments`, reminders, visit/in_home fields |
 | 8 | Family care circle UI (`F-01`…`F-15`) | `(family)` routes, read-only care view, help requests, availability |
-| 9 | Reports, audit trail, `document_chunks` retrieval, offline-sync hardening | `audit_events`, embeddings, idempotency tests |
+| 9 | Reports and history browsing | `get_adherence_report` RPC, `C-09` report, `C-12` timeline, `E-08`, family summary range; read-only, no embeddings |
 
 After Sprint 9: integration and security pass, system testing, user evaluation, final deployment — same academic-cycle shape as the owner's other thesis app.
 
@@ -314,7 +323,7 @@ After Sprint 9: integration and security pass, system testing, user evaluation, 
 **Conventions**
 - References live in Zotero. Writing happens in Word/Google Docs using the school template.
 - Data gathering is the owner's job: Google Forms with a consent statement first, responses in Sheets, analysis in Jamovi/JASP. Ask the adviser whether evaluation uses SUS, ISO 25010, or both, and whether a health-app-specific instrument is expected given the domain.
-- Evaluation evidence to collect: confirmation-loop success/timing in user tests, offline-sync correctness under retry, OCR usefulness (not accuracy alone — it's reference-only, so "did it save caregiver time" matters more than exact-match rate), SUS or ISO 25010 scores, a system test-case table.
+- Evaluation evidence to collect: confirmation-loop success/timing in user tests, offline-sync correctness under retry, ~~OCR usefulness~~ **[cut 2026-10-05]**, SUS or ISO 25010 scores, a system test-case table.
 - Keep an **AI-use log** (date, tool, purpose) and follow the school's disclosure rules.
 
 ---
@@ -364,6 +373,7 @@ After Sprint 9: integration and security pass, system testing, user evaluation, 
 
 ## 16. Changelog
 
+- 2026-10-08: Reconciled the tooling doc with the 2026-10-05 scope change (Sprint 6 / OCR / photo evidence cut): §2 no longer lists prescriptions for the caregiver and marks the OCR bullet cut; §8.2 and §8.3 carry **cut** banners (the `prescription-evidence` bucket, `/ocr`, `/embed/text` and `document_chunks` retrieval are not delivered); the §11 sprint map marks Sprint 6 dropped and corrects Sprint 9 to reports/history browsing (no embeddings); §12 drops the OCR evaluation line. Also recorded the checking fix: `20261109120000_realtime_notifications.sql` publishes `notifications` for Realtime (18 migrations; hosted push pending owner approval), the caregiver shell mounts the help device-mirror hook, and `scripts/provision-demo-circle.mjs` links the hosted demo circle. No stack decision changed.
 - 2026-10-06: Native-config hygiene before the checking APK. Removed the unused `expo-image-picker` dependency and its `app.json` config plugin — it existed only for the dropped Sprint 6 prescription-photo flow, so the build no longer requests a photo-library permission for a cut feature. Added the `expo-calendar` config plugin (with a permission string) because the library's Android manifest declares only an intent query — the plugin is what injects `READ_CALENDAR`/`WRITE_CALENDAR`, without which the Sprint 7 device-calendar export is permission-denied on the APK. Bumped `app.json` `versionCode` 2 → 3. No stack decision changed; verified with `expo config --type prebuild` (both calendar permissions present), `expo export --platform android`, `pnpm typecheck`/`lint`/`test`/`format:check`.
 - 2026-10-01: Owner checkpoint accepted all four decisions — Sprint 1 accepted, `sprint-1b.md` approved, `sprint-2.md` signed off, and the Sprint 4 diff approved (`docs/specs/checkpoint-2026-10-01.md`) — and the work was merged to `main` (PR #2 `cd1778f`; the `C-01` first-run-gate follow-up in PR #3 `d39268e`). Documentation only; no stack decision changed.
 - 2026-10-01: Hosted delivery plumbing closed out. The EAS `preview` (and `production`) environments now carry `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_ANON_KEY`, and the preview Android build produces an installable APK (build `e2c86c9f`, commit `cc8ff92`, versionCode 2). The project's client key is the **new publishable format** (`sb_publishable_…`); PostgREST's root `/rest/v1/` endpoint rejects it with 401 ("Secret API key required"), so the keep-alive workflow now pings `/auth/v1/health` (200) and accepts any PostgREST response as proof of reachability. Repository secrets `SUPABASE_URL` / `SUPABASE_ANON_KEY` are set and a manual dispatch is green. GitHub CLI 2.102.0 installed for PR, secret and workflow-dispatch work. No stack decision changed.
