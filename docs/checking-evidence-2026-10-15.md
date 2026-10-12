@@ -15,8 +15,8 @@ account credentials anywhere — they live in the git-ignored `apps/mobile/.env.
 
 | Field | Value |
 |---|---|
-| EAS build id | `TBD` |
-| Git commit | `TBD` (record the actual HEAD the APK was built from) |
+| EAS build id | `cda0374d-7202-413a-9bf9-cae9c3246d17` (FINISHED 2026-10-08; artifact expires 2026-10-22) |
+| Git commit | `149a89e` (frozen HEAD; tree clean at build time) |
 | `versionCode` | 3 |
 | Package | `com.zerofuruya.eldercareplus` |
 | Hosted project | `buwwkdhzansbyeytsufj.supabase.co` (18 migrations) |

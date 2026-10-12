@@ -22,7 +22,7 @@ three live on two phones.
 |---|---|---|---|
 | 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 18 local ↔ remote |
 | 2 | Keep-alive green | GitHub → Actions → "Supabase keep-alive" → Run workflow | Green run |
-| 3 | APK installed | **Rebuild required** — the installed `e2c86c9f` (commit `cc8ff92`) predates Sprints 5/7/8/9 and the `expo-calendar`/`expo-notifications` native modules. `eas build -p android --profile preview`, install, and record the build id here: `____________` | App launches, connects |
+| 3 | APK installed | **Use build `cda0374d-7202-413a-9bf9-cae9c3246d17`** — `preview`/internal APK built 2026-10-08 from commit `149a89e` (the frozen HEAD; same fingerprint `53f808a3`, versionCode 3). Download and install it (APK artifact expires **2026-10-22**): `https://expo.dev/artifacts/eas/CycEZ0AoGZKxDn3aemUwq_km3TochTrAG1CUiY8EEvM.apk`. The previously installed `e2c86c9f` (commit `cc8ff92`) predates Sprints 5/7/8/9 and the `expo-calendar`/`expo-notifications` native modules, so it cannot run the full demo. A same-commit rebuild was queued 2026-10-12 and **canceled** to save quota; no new build is needed unless this artifact is missing. | App launches, connects |
 | 4 | Accounts signed in | Caregiver + elder on two phones; family on a third device | Each sees only their own data |
 | 5 | Care circle linked | `node scripts/provision-demo-circle.mjs` (idempotent; links caregiver↔elder, creates the elder profile, and consents the family link) | "Care circle pre-provisioned" |
 | 6 | Connectivity | Wi-Fi/mobile data on | Requests succeed |
