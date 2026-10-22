@@ -11,7 +11,7 @@ idempotency proof.
 - **Data:** synthetic fixtures only. Demo credentials live in the git-ignored
   `apps/mobile/.env.demo-accounts` and are **never** printed, committed, or shown on screen.
 - Companion docs: `docs/checking-runbook-2026-10-15.md` (operational detail),
-  `docs/checking-evidence-2026-10-15.md` (evidence sheet).
+  `docs/presentation-evidence-2026-10-23.md` (evidence sheet).
 
 ---
 
@@ -185,7 +185,7 @@ range views · help request + availability · idempotency RPC responses + counts
 
 ## 9. After the demo
 
-- Fill the evidence tables in `docs/checking-evidence-2026-10-15.md` (scope every DB query to the demo
-  IDs — never a table-wide count).
+- Fill the evidence tables in `docs/presentation-evidence-2026-10-23.md` (scope every DB query to the
+  demo IDs — never a table-wide count).
 - Leave the demo data in place: **never hard-delete** history. The pre-demo `backup.sql` is the
   recovery point if a reset is ever needed.
