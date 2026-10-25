@@ -45,7 +45,8 @@
         "expo-image-picker",
         {
           "photosPermission": "ElderCare+ needs access to your photos so a caregiver can attach a prescription photo to a medicine.",
-          "cameraPermission": "ElderCare+ needs access to your camera so a caregiver can photograph a paper prescription."
+          "cameraPermission": "ElderCare+ needs access to your camera so a caregiver can photograph a paper prescription.",
+          "microphonePermission": false
         }
       ],
       [
