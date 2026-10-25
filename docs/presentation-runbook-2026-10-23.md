@@ -42,6 +42,12 @@ idempotency proof.
 > **Exception (2026-10-25):** the Sprint 10 prescription-photo feature adds the native
 > `expo-image-picker`, so it is **not** in `b5134e38`. Do §4d only after a **rebuilt preview APK**;
 > the rebuild supersedes this one and is the new build of record below.
+>
+> **Exception (2026-10-26 — required):** the Realtime channel-topic fix (`AGENTS.md`, "Bug fix
+> 2026-10-26") is JavaScript-only, but the JS bundle is embedded in the APK, so `939eec2d` still
+> **closes with no message when the caregiver or family shell mounts a second time** — a tap on an
+> `S-01` row or on a `C-01` dose card. **Rebuild before the demo**, bump `versionCode` to **6**, and
+> record the new build id, commit and fingerprint in the table above.
 
 ---
 
@@ -131,6 +137,9 @@ screen that has to render for the medication cycle.
 - [ ] Wi-Fi / mobile data on; open the app once to confirm it reaches hosted.
 - [ ] Sign in **each** role on its device (caregiver + elder on two phones, family on the third).
 - [ ] Confirm the circle still looks right (§1.5) — the accounts persist, nothing needs re-linking.
+- [ ] **Tap into a detail screen twice** — bell → an `S-01` row → back → another row, and a `C-01` dose
+      card. Each tap must open its record. A tap that **closes the app** means this is a pre-2026-10-26
+      APK: install the rebuilt one (§0) before the run.
 - [ ] Prepare a **fresh cycle**: the accounts are new, so there is **no prior medicine** — just be
       ready to create the plan at step 1 of §3. (If you rehearsed on the same accounts, **deactivate**
       the earlier demo medicine and add a new one; the assertion is "no dose for the *new* schedule
@@ -289,6 +298,7 @@ clock** and is **not** proof the scheduled sweep ran.
 
 | Symptom | Do this |
 |---|---|
+| A tap **closes the app** (no message) | The build predates the 2026-10-26 Realtime fix (§0, `AGENTS.md`) — install the rebuilt APK. **Interim:** force-stop ElderCare+ and reopen; a fresh JS session has no stale Realtime channel |
 | Dose not showing as Due | **Pull to refresh** / leave and re-enter the screen (status is derived on load) |
 | Caregiver dashboard not updating | Pull to refresh — the demo does **not** depend on Realtime |
 | No device notification | Expected without remote push; use the **in-app** notification centre. Expo Go can't load `expo-notifications` at all — device notifications only work in this **preview APK** |

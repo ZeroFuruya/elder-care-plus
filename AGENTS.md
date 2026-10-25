@@ -72,6 +72,25 @@ so the checking needs a **fresh APK**. `adr-002` and `docs/01-dev-environment.md
 smoke confirms `medication_images` and both new RPCs answer `42501` to `anon`, and a hosted
 `storage` dump confirms the `prescription-images` bucket exists privately with the 10 MB cap).
 
+**Bug fix (2026-10-26) — the notification/detail-tap crash.** Reported from the installed preview APK:
+signed in as the caregiver, tapping a row in `S-01` (any event type) or a dose card on `C-01` closed
+the app with **no message**. Expo Go showed the real error: realtime-js refusing `postgres_changes`
+callbacks for `realtime:family-help-requests` **after** `subscribe()`, thrown from
+`useHelpRequestNotifications` while React mounted the effect. Cause: that hook (mounted by the
+**caregiver** and **family** shells) and `useDoseRealtime` (`C-01`) each subscribed to a **fixed**
+Realtime topic. In `@supabase/realtime-js` 2.117.0 `RealtimeClient.channel(topic)` returns the
+**existing** channel for a topic and `RealtimeChannel.on()` **throws** once that channel is
+subscribed, so the **second** mount of a shell inside one JS session threw — and an uncaught error in
+a release build is fatal. The `removeChannel` in the cleanup cannot prevent it: it is asynchronous, so
+a re-mount can arrive while the old channel is still registered. Fix (branch
+`fix/realtime-channel-crash`, JS-only — no migration, no dependency, no user-visible change to the row
+filter or the RLS scoping): new `apps/mobile/src/lib/realtime-channel.ts` exports
+`uniqueRealtimeTopic(prefix)`, and both hooks take a unique topic and **fail soft** inside a
+`try/catch`, so a Realtime failure can never take a screen down (the in-app notification centre stays
+the source of truth; Realtime is a mirror). Verified green: `pnpm typecheck`, `pnpm lint`,
+`pnpm test` (**178**), `pnpm format:check`. The installed APK `939eec2d` embeds the old JS bundle, so
+the demo APK **must be rebuilt** before the next checking (`versionCode` 6).
+
 **Historical (2026-10-01 checkpoint):** **Merged to `main`; Sprint 1 accepted, Sprints 1b–4 shipped.** `main` is now the Supabase-backed
 build — the full Sprint 1 schema plus Sprints 2–4 (elder/emergency profile, medication setup, dose
 adherence), the UI theme and validation hardening, merged via PRs #1–#3 on 2026-10-01; the tagged
