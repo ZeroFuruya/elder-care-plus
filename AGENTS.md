@@ -67,8 +67,10 @@ photo to a medicine; the elder and the connected family member view it read-only
 so the checking needs a **fresh APK**. `adr-002` and `docs/01-dev-environment.md` are reconciled
 (OCR/AI stays out; only storage came back). Local gates green: `pnpm typecheck`/`lint`/`test`
 (**178**), `pnpm format:check`, `pnpm check:contrast`, and `npx supabase test db` **641/641**
-(sprint 10 = 42). **Not yet pushed to the hosted project** — the migration needs a fresh
-`db dump` backup and a push before the demo.
+(sprint 10 = 42). **Pushed to the hosted project 2026-10-25** (fresh `db dump` to
+`backup.sql`/`backup-data.sql` first; all **19** migrations in sync; a non-mutating signed-out
+smoke confirms `medication_images` and both new RPCs answer `42501` to `anon`, and a hosted
+`storage` dump confirms the `prescription-images` bucket exists privately with the 10 MB cap).
 
 **Historical (2026-10-01 checkpoint):** **Merged to `main`; Sprint 1 accepted, Sprints 1b–4 shipped.** `main` is now the Supabase-backed
 build — the full Sprint 1 schema plus Sprints 2–4 (elder/emergency profile, medication setup, dose
