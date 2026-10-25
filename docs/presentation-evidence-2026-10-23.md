@@ -4,8 +4,10 @@ Filled during the dry-run and again at the presentation. This sheet is the evide
 thesis: one complete medication-adherence transaction cycle on the installed preview APK against the
 **hosted** Supabase project, plus the help-request and reports passes.
 
-Operational script: `docs/presentation-runbook-2026-10-23.md`. Do not print, commit, or send the demo
-account credentials anywhere — they live in the git-ignored `apps/mobile/.env.demo-accounts`.
+Operational script: `docs/presentation-runbook-2026-10-23.md`. The demo uses **three brand-new
+accounts registered in-app** (dummy emails, easy passwords chosen by the presenter); the
+pre-provisioned demo accounts and `scripts/provision-demo-circle.mjs` are **not** used. Never print,
+commit or screen-share the passwords.
 
 > Status: **skeleton — not yet filled.** Replace every `TBD` during the dry-run. Every database value
 > below is **scoped to the demo IDs**; never write a table-wide count (setup and earlier runs leave
@@ -16,10 +18,11 @@ account credentials anywhere — they live in the git-ignored `apps/mobile/.env.
 | Field | Value |
 |---|---|
 | EAS build id | `b5134e38-abff-4250-92fd-a7cc507ebdc3` (FINISHED 2026-10-22; artifact valid to 2026-11-05) |
-| Git commit | `61eafd7` (HEAD; versionCode bump only on top of `149a89e`) |
+| Git commit | `61eafd7` (the commit the APK was built from; `main` is now `4588710`, docs only) |
 | `versionCode` | **4** |
 | Package | `com.zerofuruya.eldercareplus` |
-| Hosted project | `buwwkdhzansbyeytsufj.supabase.co` (18 migrations) |
+| Hosted project | `buwwkdhzansbyeytsufj.supabase.co` (19 migrations; Sprint 10 pushed 2026-10-25) |
+| Sprint 10 client | **Needs a rebuilt APK** — `expo-image-picker` is native and is *not* in `b5134e38`; §4d is not demonstrable on the old build |
 | Device / Android version | `TBD` |
 | Date/time of dry-run | `TBD` |
 
@@ -30,8 +33,8 @@ account credentials anywhere — they live in the git-ignored `apps/mobile/.env.
 | 1 | `npx supabase migration list --linked` | All 18 in sync | 18 local ↔ remote in sync (2026-10-22) | ☑ |
 | 2 | Keep-alive workflow run | Green | Supabase keep-alive green, 2026-10-10 (scheduled) | ☑ |
 | 3 | APK `b5134e38` installed and launches | Launches, connects to hosted | TBD | ☐ |
-| 4 | Accounts signed in (caregiver, elder, family on three devices) | Each sees only own data | TBD | ☐ |
-| 5 | Care circle linked (`provision-demo-circle.mjs`) | Caregiver + family active, elder profile present | caregiver + family active, elder profile present (2026-10-22) | ☑ |
+| 4 | Three fresh accounts registered in-app (runbook §1.1) | Caregiver, elder, family each sign in; each sees only its own data | TBD | ☐ |
+| 5 | Care circle linked in-app (runbook §1.2–§1.4) | Caregiver + family links active, elder profile present | TBD | ☐ |
 | 6 | Connectivity | Requests succeed | TBD | ☐ |
 | 7 | Pre-demo `db dump` | File written (git-ignored) | TBD | ☐ |
 | 8 | Fresh cycle state | New plan has no confirmation yet (not "table empty") | TBD | ☐ |
@@ -88,6 +91,22 @@ elder's JWT (SQL/REST) against the same dose.
 | 3 | Elder `E-08` | Same range selector, scoped to the elder | TBD | `TBD` |
 | 4 | Family `F-10` summary | Range honoured; the **report RPC payload** is counts + dates only | TBD | `TBD` |
 
+## Prescription photo (Sprint 10; needs the rebuilt APK)
+
+Storage only — no OCR, no AI. Verified non-mutating on hosted during the 2026-10-25 push (anon
+`select` on `medication_images` → `401/42501`; anon `register_medication_image` /
+`archive_medication_image` → `401/42501`; the `prescription-images` bucket exists, `public=false`,
+10 MB cap). The table, RLS and both RPCs are covered by 42 pgTAP assertions (641/641 local).
+
+| # | Step | Expected | Observed | Screenshot |
+|---|---|---|---|---|
+| 1 | Caregiver attaches a photo to a medicine (camera or library) | Uploads to the private bucket, row registered, photo shows on `C-04` | TBD | `TBD` |
+| 2 | Tap the thumbnail | Full image via a short-lived signed URL | TBD | `TBD` |
+| 3 | Elder and family open the same medicine | Same photo, read-only, no add/remove | TBD | `TBD` |
+| 4 | Caregiver removes the photo | Row archived (`is_archived=true`), the stored object is **kept**; `medication_image.archived` audit row written | TBD | `TBD` |
+| 5 | Signed-out API probe | Anon reads/writes of `medication_images` and its RPCs are refused (`42501`) | ☑ 2026-10-25 | `TBD` |
+| 6 | State the guardrail | No OCR/AI: the image is stored and shown to humans only; it never fills a field | TBD | — |
+
 ## Negative proof (missed dose) — evidence-gated
 
 | # | Step | Expected | Observed | Screenshot |
@@ -107,6 +126,7 @@ elder's JWT (SQL/REST) against the same dose.
 | `F-*` family read view | ☐ | |
 | `C-09` / `C-12` / `E-08` | ☐ | Day list grows with the range |
 | Help request + availability | ☐ | |
+| `C-04` prescription photo (add + view) + family read-only | ☐ | Sprint 10; needs the rebuilt APK |
 | Idempotency RPC responses + counts | ☐ | Laptop |
 
 ## Sign-off
