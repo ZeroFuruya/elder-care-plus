@@ -21,14 +21,15 @@ idempotency proof.
 
 | Field | Value |
 |---|---|
-| EAS build id | `b5134e38-abff-4250-92fd-a7cc507ebdc3` (FINISHED 2026-10-22) |
-| Git commit | `61eafd7` (`main`) |
-| `versionCode` | **4** |
+| EAS build id | `939eec2d-c005-462d-8608-8048b3d9e72e` (2026-10-25; replaces `b5134e38`) |
+| Git commit | `db63867` (`main`) |
+| `versionCode` | **5** |
 | `expo.version` | `0.0.1` |
 | Package | `com.zerofuruya.eldercareplus` |
 | Profile | `preview` (internal distribution, installable APK) |
-| APK artifact | `https://expo.dev/artifacts/eas/DovhIqJpjeqtS1dnrP4p4FAfKI4OgX5eWCJ4B6urciY.apk` (~108 MB) — **expires 2026-11-05** |
-| Fingerprint | `379a25cc042241c6d2f061479867d52873b24c94` |
+| Build page | `https://expo.dev/accounts/zerofuruyas-team/projects/eldercare-plus/builds/939eec2d-c005-462d-8608-8048b3d9e72e` |
+| APK artifact | from the build page once it shows **FINISHED** (Download → APK) |
+| Fingerprint | from the build page |
 | Hosted project | `buwwkdhzansbyeytsufj.supabase.co` (19 migrations, local ↔ remote in sync) |
 
 > **Install:** open the artifact link on the phone (**Allow install from this source**), or over USB
@@ -116,9 +117,9 @@ screen that has to render for the medication cycle.
 
 | # | Check | How | Expected |
 |---|---|---|---|
-| 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 18 local ↔ remote |
+| 1 | Hosted schema in sync | `npx supabase migration list --linked` | All 19 local ↔ remote |
 | 2 | Keep-alive green | GitHub → Actions → **Supabase keep-alive** → Run workflow | Green run (project awake) |
-| 3 | APK installed | Install `b5134e38` on all three devices | App launches, connects |
+| 3 | APK installed | Install `939eec2d` on all three devices | App launches, connects |
 | 4 | Accounts work | Sign in all three roles | Each sees only its own data |
 | 5 | Circle linked | §1 above | Checklist in §1.5 all ticked |
 | 6 | Backup taken | **Start Docker Desktop**, then `npx supabase db dump -f backup.sql --linked` | Non-zero file written (git-ignored) |
@@ -190,10 +191,9 @@ screen that has to render for the medication cycle.
 
 ### 4d. Prescription photo (Sprint 10 — needs the rebuilt APK)
 
-> **Native change.** `expo-image-picker` was added *after* the `b5134e38` APK, so the photo control
-> is **not in that APK**. This pass needs the **rebuilt preview APK** (it replaces `b5134e38`; a
-> rebuild uses 1 of the 15 monthly Android builds). Hosted has the Sprint 10 migration applied, so
-> the backend is ready — only the client build is new.
+> **Native change.** `expo-image-picker` is native, so this pass needs the rebuilt preview APK
+> `939eec2d` (it replaces `b5134e38`; a rebuild uses 1 of the 15 monthly Android builds). Hosted has
+> the Sprint 10 migration applied, so the backend is ready — only the client build is new.
 
 | Device | Steps | Point to make |
 |---|---|---|
@@ -202,8 +202,21 @@ screen that has to render for the medication cycle.
 | Elder / Family | Open the same medicine | The **same photo, read-only**; there is no add or remove control |
 | Caregiver | **Remove** → confirm | It is **archived, not deleted**; a `medication_image.archived` audit row is written |
 
-- **Guardrail:** nothing reads the photo. There is **no OCR and no AI** — the image never creates or
+- **Guardrail:** nothing reads the photo. There is **no OCR and no AI** - the image never creates or
   fills a medicine, dose or schedule; it is only ever shown to a human.
+
+**Fallback if on-device capture misbehaves on stage.** A laptop can seed a synthetic photo onto the
+caregiver's circle through the *same* public path the app uses (Storage upload + `register_medication_image`;
+no service-role key):
+
+```bash
+node scripts/seed-demo-prescription-photo.mjs --email <caregiver-email> --password <password> --medication-id <uuid>
+# omit --medication-id to attach to the circle's newest medicine; --list only lists medicines
+```
+
+It generates a clearly synthetic "prescription" PNG by default (`--file` to use a real image). Note the
+pre-provisioned `apps/mobile/.env.demo-accounts` passwords are **stale**, so pass the presenter's own
+fresh credentials explicitly.
 
 ---
 

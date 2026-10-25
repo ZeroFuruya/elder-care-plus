@@ -17,12 +17,12 @@ commit or screen-share the passwords.
 
 | Field | Value |
 |---|---|
-| EAS build id | `b5134e38-abff-4250-92fd-a7cc507ebdc3` (FINISHED 2026-10-22; artifact valid to 2026-11-05) |
-| Git commit | `61eafd7` (the commit the APK was built from; `main` is now `4588710`, docs only) |
-| `versionCode` | **4** |
+| EAS build id | `939eec2d-c005-462d-8608-8048b3d9e72e` (2026-10-25; replaces `b5134e38`) |
+| Git commit | `db63867` (the commit the APK was built from; later commits are docs/scripts only) |
+| `versionCode` | **5** |
 | Package | `com.zerofuruya.eldercareplus` |
 | Hosted project | `buwwkdhzansbyeytsufj.supabase.co` (19 migrations; Sprint 10 pushed 2026-10-25) |
-| Sprint 10 client | **Needs a rebuilt APK** — `expo-image-picker` is native and is *not* in `b5134e38`; §4d is not demonstrable on the old build |
+| Sprint 10 client | **Rebuilt APK** `939eec2d` carries the native `expo-image-picker`; 4d runs on that build |
 | Device / Android version | `TBD` |
 | Date/time of dry-run | `TBD` |
 
@@ -30,9 +30,9 @@ commit or screen-share the passwords.
 
 | # | Check | Expected | Observed | Pass |
 |---|---|---|---|---|
-| 1 | `npx supabase migration list --linked` | All 18 in sync | 18 local ↔ remote in sync (2026-10-22) | ☑ |
+| 1 | `npx supabase migration list --linked` | All 19 in sync | 19 local ↔ remote in sync (2026-10-25) | ☑ |
 | 2 | Keep-alive workflow run | Green | Supabase keep-alive green, 2026-10-10 (scheduled) | ☑ |
-| 3 | APK `b5134e38` installed and launches | Launches, connects to hosted | TBD | ☐ |
+| 3 | APK `939eec2d` installed and launches | Launches, connects to hosted | TBD | ☐ |
 | 4 | Three fresh accounts registered in-app (runbook §1.1) | Caregiver, elder, family each sign in; each sees only its own data | TBD | ☐ |
 | 5 | Care circle linked in-app (runbook §1.2–§1.4) | Caregiver + family links active, elder profile present | TBD | ☐ |
 | 6 | Connectivity | Requests succeed | TBD | ☐ |
