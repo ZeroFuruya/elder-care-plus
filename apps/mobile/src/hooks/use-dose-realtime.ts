@@ -1,5 +1,7 @@
+import type { RealtimeChannel } from '@supabase/supabase-js';
 import { useEffect } from 'react';
 
+import { uniqueRealtimeTopic } from '@/lib/realtime-channel';
 import { getSupabase, supabaseConfigError } from '@/supabase/client';
 
 /**
@@ -16,20 +18,30 @@ export function useDoseRealtime(elderId: string | null, onChange: () => void): v
     if (!elderId || supabaseConfigError) return;
     const client = getSupabase();
 
-    const channel = client
-      .channel(`caregiver-dose-events-${elderId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'dose_events', filter: `elder_id=eq.${elderId}` },
-        () => onChange(),
-      )
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () =>
-        onChange(),
-      )
-      .subscribe();
+    // Each subscription takes its own topic: `client.channel(topic)` hands back an
+    // existing channel for the same topic, and adding a listener to one that is
+    // already subscribed throws (`lib/realtime-channel.ts`).
+    let channel: RealtimeChannel | null = null;
+    try {
+      channel = client
+        .channel(uniqueRealtimeTopic(`caregiver-dose-events-${elderId}`))
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'dose_events', filter: `elder_id=eq.${elderId}` },
+          () => onChange(),
+        )
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () =>
+          onChange(),
+        )
+        .subscribe();
+    } catch {
+      // Fails soft: this is a convenience refresh. Every screen still reloads on
+      // focus and on pull-to-refresh, so a Realtime failure never closes the app.
+      channel = null;
+    }
 
     return () => {
-      void client.removeChannel(channel);
+      if (channel) void client.removeChannel(channel);
     };
   }, [elderId, onChange]);
 }
