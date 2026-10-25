@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DetailRow } from '@/components/detail-row';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
+import { PrescriptionPhotos } from '@/components/prescription-photos';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { StatusPill } from '@/components/status-pill';
@@ -218,6 +219,8 @@ export default function C04MedicationDetail() {
       <Card title="Recent adherence">
         <Text style={styles.meta}>{ADHERENCE_PARTIAL}</Text>
       </Card>
+
+      <PrescriptionPhotos medicationId={medication.id} />
 
       {medication.isActive ? (
         <Button

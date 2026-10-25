@@ -51,6 +51,25 @@ RPCs to link the hosted demo circle (caregiver↔elder, elder profile, consented
 gates remain green: `pnpm typecheck`/`lint`/`test`/`format:check` (**162**) and
 `pnpm check:contrast`. **Next:** the preview APK build from the frozen commit, then the dry-run and evidence fill.
 
+**Status update (2026-10-25) — prescription photo storage.** The owner asked for prescription
+**photos** back under the Medicines module with **no OCR** ahead of the final checking. This is a
+narrow slice of the dropped Sprint 6, **storage only**: no prescription record, no
+`document_chunks`, no `services/ai` call and no verification workflow. A caregiver attaches a
+photo to a medicine; the elder and the connected family member view it read-only. Removal is a
+**soft archive** — the row and the stored object are kept (never hard-delete). New migration
+`20261110120000_sprint10_medication_images.sql` adds a `medication_images` table, a **private**
+`prescription-images` bucket whose `storage.objects` policies are scoped to the care circle
+(readable by the circle, writable only by the linked manager), and two guarded RPCs
+(`register_medication_image`, `archive_medication_image`). The client is
+`packages/shared/src/medication-image.ts` + `apps/mobile/src/db/medication-images.ts` + the
+`prescription-photos` component, surfaced on the caregiver `C-04`, the family `F-06` and the elder
+`Meds` screens. **`expo-image-picker` returns as a native dependency** (camera + photo library),
+so the checking needs a **fresh APK**. `adr-002` and `docs/01-dev-environment.md` are reconciled
+(OCR/AI stays out; only storage came back). Local gates green: `pnpm typecheck`/`lint`/`test`
+(**178**), `pnpm format:check`, `pnpm check:contrast`, and `npx supabase test db` **641/641**
+(sprint 10 = 42). **Not yet pushed to the hosted project** — the migration needs a fresh
+`db dump` backup and a push before the demo.
+
 **Historical (2026-10-01 checkpoint):** **Merged to `main`; Sprint 1 accepted, Sprints 1b–4 shipped.** `main` is now the Supabase-backed
 build — the full Sprint 1 schema plus Sprints 2–4 (elder/emergency profile, medication setup, dose
 adherence), the UI theme and validation hardening, merged via PRs #1–#3 on 2026-10-01; the tagged

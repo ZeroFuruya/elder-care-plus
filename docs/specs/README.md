@@ -108,3 +108,15 @@ publishes `notifications` for Realtime so the family/caregiver device mirror can
 total). It was backed up with `db dump` and pushed to hosted 2026-10-08 (all 18 in sync; the hosted
 publication now includes `notifications`), with local pgTAP at **599/599**. See `AGENTS.md`,
 `docs/checking-runbook-2026-10-15.md`.
+
+**Photo storage re-added 2026-10-25 (owner request, ahead of the final checking).** The owner asked
+for prescription **photos** back under the Medicines module with **no OCR**. This is a small slice
+of the dropped Sprint 6 — **storage only**: no prescription record, no `document_chunks`, no
+`services/ai` call, no verification workflow. A caregiver attaches a photo to a medicine; the
+elder and family view it read-only. Implementation (no separate spec file, by owner request):
+`supabase/migrations/20261110120000_sprint10_medication_images.sql` (a `medication_images` table,
+a **private** `prescription-images` bucket with care-circle `storage.objects` policies, and two
+guarded RPCs), `packages/shared/src/medication-image.ts`,
+`apps/mobile/src/db/medication-images.ts`, `apps/mobile/src/components/prescription-photos.tsx`.
+Removal is a soft archive (never hard-delete). `expo-image-picker` returns as a native dependency,
+so the checking needs a fresh APK. See `adr-002-prescriptions-ocr-evidence.md`.

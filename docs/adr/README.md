@@ -16,7 +16,9 @@ each ADR now records the accepted option and its follow-ups.
   modelled as care-circle membership. (C-R1)
 - `adr-002-prescriptions-ocr-evidence.md` — **Accepted: A** at the 2026-09-25 baseline;
   **amended 2026-10-05** — prescriptions, photo evidence and OCR were cut from the app and the
-  presentation by owner decision (Sprint 6 dropped). (C-R2)
+  presentation by owner decision (Sprint 6 dropped); **amended 2026-10-25** — prescription **photo
+  storage** is re-added under the Medicines module **without OCR** (a private bucket + signed
+  URLs, no prescription record, no AI). (C-R2)
 - `adr-003-stock-expiry-tracking.md` — **Accepted: A** — stock/expiry tracking stays in scope. (C-R3)
 - `adr-004-emergency-contacts.md` — **Accepted: A** — ordered list of emergency numbers. (C-R4)
 

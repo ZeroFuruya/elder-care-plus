@@ -11,6 +11,7 @@ import { Card } from '@/components/card';
 import { DetailRow } from '@/components/detail-row';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
+import { PrescriptionPhotos } from '@/components/prescription-photos';
 import { Screen } from '@/components/screen';
 import { ScreenError } from '@/components/screen-error';
 import { StatusPill } from '@/components/status-pill';
@@ -134,6 +135,8 @@ export default function FamilyMedicineDetail() {
           ))
         )}
       </Card>
+
+      <PrescriptionPhotos medicationId={medication.id} readOnly />
 
       <Text style={styles.meta}>
         Read-only. Only the older adult and their caregiver can change this.

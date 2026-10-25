@@ -40,6 +40,8 @@ export const auditActionLabels: Record<string, string> = {
   'medication.deactivated': 'Medicine stopped',
   'medication.reactivated': 'Medicine restarted',
   'medication.updated': 'Medicine updated',
+  'medication_image.added': 'Prescription photo added',
+  'medication_image.archived': 'Prescription photo removed',
   'schedule.created': 'Schedule added',
   'schedule.deactivated': 'Schedule stopped',
   'schedule.reactivated': 'Schedule restarted',
@@ -57,6 +59,7 @@ export const auditTargetLabels: Record<string, string> = {
   inventory_transactions: 'Stock',
   medication_schedules: 'Schedule',
   medications: 'Medicine',
+  medication_images: 'Prescription photo',
   medicine_batches: 'Stock batch',
   profiles: 'Account',
 };

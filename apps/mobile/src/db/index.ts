@@ -80,6 +80,13 @@ export {
   type StockAdjustmentReason,
 } from './medications';
 export {
+  archiveMedicationImage,
+  getMedicationImageUrl,
+  listMedicationImages,
+  uploadMedicationImage,
+  type MedicationImage,
+} from './medication-images';
+export {
   deactivateEmergencyNumber,
   elderAddressLines,
   emergencyWriteError,

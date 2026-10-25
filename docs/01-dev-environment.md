@@ -28,7 +28,7 @@
 - A **family caregiver** manages the elder's medication plan, inventory/expiry, appointments and emergency info.
 - The **elder** views their plan and confirms their own doses; nothing else. One active caregiver-to-one-elder link per release.
 - The core mechanic is a **confirmation loop**: elder marks a dose taken → caregiver is notified → an escalation fires if the dose is missed past its grace period. This loop is the product's main differentiator.
-- ~~OCR/AI on prescription photos is **reference-only**~~ **[cut 2026-10-05]** — OCR, photo evidence and the prescription flow were dropped from the app and the presentation (Sprint 6 dropped; `adr-002` amended). No AI output ever creates or fills a medicine, schedule, dose, or clinical advice.
+- ~~OCR/AI on prescription photos is **reference-only**~~ **[OCR/AI cut 2026-10-05; prescription **photo storage** re-added 2026-10-25, storage only]** — OCR and the prescription *record* flow were dropped from the app and the presentation (Sprint 6 dropped; `adr-002` amended). A caregiver may still attach a **photo** to a medicine (private bucket + signed URLs, no OCR, no field ever filled from it). No AI output ever creates or fills a medicine, schedule, dose, or clinical advice.
 - History is **never hard-deleted** — deactivate or archive with timestamps instead. Confirmed doses, stock adjustments, prescription verifications and past appointment states all require confirmation and produce an audit event.
 
 **Hard product rules (from the product-flow doc):**
@@ -222,17 +222,23 @@ eas build -p android --profile preview      # installable APK for testers
 - Limits: 500 MB DB, 1 GB file storage, two active projects. The project **pauses after about a week idle**. No downloadable backups on Free.
 - Keep-alive: a GitHub Actions cron (every ~3 days) hitting the REST endpoint with the anon key.
 - **All schema changes via migration files.** Never edit an applied migration or hand-change the production schema.
-- **RLS enabled on every table, default deny.** Caregiver accesses only the active linked elder's records. Elder can read only their own linked care records and may change only their own due dose, through a guarded RPC — never a direct table write. Elder-uploaded prescription evidence is insert-only / `pending_review`. Service-role key is server-only, never in mobile, web, or repo.
-- Storage: the `prescription-evidence` bucket is **private**; object paths include elder/prescription UUIDs; access only through short-lived signed URLs. No public health-document URLs, ever.
+- **RLS enabled on every table, default deny.** Caregiver accesses only the active linked elder's records. Elder can read only their own linked care records and may change only their own due dose, through a guarded RPC — never a direct table write. Prescription *photos* are uploadable only by the linked manager and read-only for the circle (there is no elder-submitted evidence path). Service-role key is server-only, never in mobile, web, or repo.
+- Storage (2026-10-25): the `prescription-images` bucket is **private**; an object name is `<medication_id>/<file>.<ext>`; a caregiver-uploaded prescription *photo* is readable by the whole care circle and writable only by the linked manager, and is shown through short-lived signed URLs. No public health-document URLs, ever. (The original `prescription-evidence` bucket and `document_chunks` retrieval are **not** delivered.)
+- `document_chunks`: only store an embedding after the caregiver has approved the extracted text. Retrieval is filtered by the active care link and prescription ID **before** the vector similarity search — never a global search across all users' data. **[Not delivered — Sprint 6 dropped 2026-10-05.]**
 - **Idempotency is a hard requirement, not an optimization.** Dose confirmation, the missed-dose transition, and inventory decrement all need a database-level unique constraint (e.g. one `dose_events` row per schedule occurrence) so a retried offline sync cannot duplicate a `taken_at` timestamp or double-decrement stock.
-- `document_chunks`: only store an embedding after the caregiver has approved the extracted text. Retrieval is filtered by the active care link and prescription ID **before** the vector similarity search — never a global search across all users' data.
 
-### 8.2 Prescription OCR and AI boundary (Flow E) — **[CUT 2026-10-05, Sprint 6 dropped]**
+### 8.2 Prescription OCR and AI boundary (Flow E) — **[OCR/record cut 2026-10-05; photo storage re-added 2026-10-25 without OCR]**
 
 > The prescription/photo-evidence/OCR flow described below was removed from scope by owner decision
 > 2026-10-05 and is no longer implemented or presented. It is retained only as a record of the
 > original design. The `prescription-evidence` storage bucket, the `/ocr` endpoint and
 > `document_chunks` retrieval are **not** part of the delivered app.
+>
+> **Partial re-add 2026-10-25:** prescription **photo storage** is back as a small attachment
+> feature under the Medicines module (a private `prescription-images` bucket, caregiver upload,
+> read-only for the circle, soft archive) — but **no OCR and no prescription record**: everything
+> below about OCR, `pending_review` and `document_chunks` stays cut. See
+> `adr-002-prescriptions-ocr-evidence.md`.
 
 - OCR extracts text from an uploaded photo purely as a **suggestion** the caregiver sees. It never auto-creates or auto-fills a medicine, schedule, dose, or prescription record. The caregiver manually reviews and enters every field before saving.
 - Elder-submitted evidence stays `pending_review` until caregiver verification; it is never treated as verified data anywhere else in the app.
@@ -373,6 +379,7 @@ After Sprint 9: integration and security pass, system testing, user evaluation, 
 
 ## 16. Changelog
 
+- 2026-10-25: Prescription **photo storage** re-added under the Medicines module, **storage only, no OCR** (owner request ahead of the final checking; `adr-002` amended again). A private `prescription-images` bucket + `storage.objects` care-circle policies (`20261110120000_sprint10_medication_images.sql`), a `medication_images` metadata table with two guarded RPCs (register, soft archive), `packages/shared/src/medication-image.ts`, `apps/mobile/src/db/medication-images.ts` and the `prescription-photos` component. `expo-image-picker` returns as a dependency + config plugin with camera/photo permission copy, because a screen now uses it (§2, §8.1/§8.2 updated). No stack decision changed; local pgTAP 643/643 and the JS gates are green.
 - 2026-10-08: Reconciled the tooling doc with the 2026-10-05 scope change (Sprint 6 / OCR / photo evidence cut): §2 no longer lists prescriptions for the caregiver and marks the OCR bullet cut; §8.2 and §8.3 carry **cut** banners (the `prescription-evidence` bucket, `/ocr`, `/embed/text` and `document_chunks` retrieval are not delivered); the §11 sprint map marks Sprint 6 dropped and corrects Sprint 9 to reports/history browsing (no embeddings); §12 drops the OCR evaluation line. Also recorded the checking fix: `20261109120000_realtime_notifications.sql` publishes `notifications` for Realtime (18 migrations; pushed to hosted 2026-10-08 after a `db dump` backup, local pgTAP 599/599), the caregiver shell mounts the help device-mirror hook, and `scripts/provision-demo-circle.mjs` links the hosted demo circle. No stack decision changed.
 - 2026-10-06: Native-config hygiene before the checking APK. Removed the unused `expo-image-picker` dependency and its `app.json` config plugin — it existed only for the dropped Sprint 6 prescription-photo flow, so the build no longer requests a photo-library permission for a cut feature. Added the `expo-calendar` config plugin (with a permission string) because the library's Android manifest declares only an intent query — the plugin is what injects `READ_CALENDAR`/`WRITE_CALENDAR`, without which the Sprint 7 device-calendar export is permission-denied on the APK. Bumped `app.json` `versionCode` 2 → 3. No stack decision changed; verified with `expo config --type prebuild` (both calendar permissions present), `expo export --platform android`, `pnpm typecheck`/`lint`/`test`/`format:check`.
 - 2026-10-01: Owner checkpoint accepted all four decisions — Sprint 1 accepted, `sprint-1b.md` approved, `sprint-2.md` signed off, and the Sprint 4 diff approved (`docs/specs/checkpoint-2026-10-01.md`) — and the work was merged to `main` (PR #2 `cd1778f`; the `C-01` first-run-gate follow-up in PR #3 `d39268e`). Documentation only; no stack decision changed.

@@ -11,6 +11,7 @@ import { useSessionUser } from '@/auth/auth-context';
 import { Banner } from '@/components/banner';
 import { EmptyState } from '@/components/empty-state';
 import { LoadingScreen } from '@/components/loading-screen';
+import { PrescriptionPhotos } from '@/components/prescription-photos';
 import { Screen } from '@/components/screen';
 import { StatusPill } from '@/components/status-pill';
 import {
@@ -104,6 +105,8 @@ export default function ElderMedsScreen() {
                   ]
                 }
               />
+
+              <PrescriptionPhotos medicationId={medication.id} readOnly compact />
             </View>
           );
         })

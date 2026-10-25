@@ -1,8 +1,8 @@
 # ADR-002 — Are prescriptions, photo evidence and OCR in scope?
 
-- **Status:** **Amended 2026-10-05** — AI/OCR and photo evidence are **out of the app** (see
-  "Amended decision"); originally **Accepted** — option A, product-flow scope (owner decision,
-  2026-09-25).
+- **Status:** **Amended 2026-10-05 and 2026-10-25** — AI/OCR stays **out**; **photo storage was
+  re-added without OCR** (see "Amended decision" and "Photo storage re-added"). Originally
+  **Accepted** — option A, product-flow scope (owner decision, 2026-09-25).
 - **Date:** 2026-09-24.
 - **Conflict:** `docs/02-ui-ux-standard.md` §20.2 **C-R2**.
 - **Prepared by:** the main coder as a decision brief. The owner makes the call and may rewrite
@@ -96,6 +96,8 @@ off.** This reverses the 2026-09-25 option-A call for the app as presented. Cons
   delete the service outright is a separate housekeeping decision).
 - The `expo-image-picker` plugin and its photo-permission copy in `apps/mobile/app.json` are now
   requesting an unused permission and **should be removed** (owner to confirm timing).
+  *(Reversed 2026-10-25: the dependency and plugin return because photo storage is back — see
+  "Photo storage re-added, without OCR".)*
 - `packages/shared/src/prescription.ts` and the `prescriptions*`/`document_chunks` schema are
   **not built**; the previously claimed "placeholder screens" no longer exist in the tree.
 - The `AGENTS.md` hard rules that reference prescription evidence / OCR, and
@@ -112,3 +114,26 @@ off.** This reverses the 2026-09-25 option-A call for the app as presented. Cons
 - **B:** `prescription.ts` and two screens deleted, `app.json` camera plugin removed, `/ocr`
   retired, Sprint 6 removed, hard rules trimmed.
 - **C:** unresolved; do not start Sprint 6.
+
+## Photo storage re-added, without OCR (2026-10-25)
+
+**Owner: add prescription **photos** back under the Medicines module — storage only, **no OCR**.
+Decided 2026-10-25, ahead of the final checking.** This narrows the 2026-10-05 reversal: the
+**AI/OCR half stays out**, but the **photo half is back** as a small attachment feature. It is
+not Sprint 6 — no prescription record, no `prescription_medicines`, no `document_chunks`, no
+`services/ai` call, no verification state.
+
+- A caregiver attaches a prescription photo to a medicine; the care circle views it read-only.
+  The elder never submits evidence, so the `pending_review` rule is not triggered.
+- Storage is a **private** `prescription-images` bucket (not `prescription-evidence`), with
+  short-lived signed URLs and `storage.objects` policies scoped to the care circle. The bytes are
+  never read or interpreted, and no field is ever filled from a photo.
+- Removal is a **soft archive** (never hard-delete): the row is kept and the object stays.
+- `apps/mobile/app.json` requests camera and photo-library permissions again, because a screen now
+  uses them; the `expo-image-picker` dependency and config plugin return.
+- Implementation: `supabase/migrations/20261110120000_sprint10_medication_images.sql`,
+  `packages/shared/src/medication-image.ts`, `apps/mobile/src/db/medication-images.ts`,
+  `apps/mobile/src/components/prescription-photos.tsx`. `expo-image-picker` is a **native**
+  dependency, so the checking needs a fresh APK.
+- The earlier follow-up ("revise system documentation §11.1 for a camera rationale") is satisfied
+  in the same spirit: the app now uses the permission it requests.

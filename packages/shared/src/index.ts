@@ -1,4 +1,5 @@
 export * from './role';
+export * from './base64';
 export * from './chunked-storage';
 export * from './dose';
 export * from './notification';
@@ -8,6 +9,7 @@ export * from './report';
 export * from './audit';
 export * from './appointment';
 export * from './prescription';
+export * from './medication-image';
 export * from './emergency';
 export * from './medication';
 export * from './status-presentation';
