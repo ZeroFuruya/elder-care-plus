@@ -10,6 +10,7 @@ import { Card } from '@/components/card';
 import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
+import { SecurityCard } from '@/components/security-card';
 import { fontSize, lineHeight, spacing, type AppThemeColors } from '@/constants/theme';
 import { getLinkedElder } from '@/db';
 import { useAppTheme } from '@/hooks/use-app-theme';
@@ -82,6 +83,8 @@ export default function CaregiverProfileScreen() {
       </Card>
 
       <DeactivateAccount />
+
+      <SecurityCard />
 
       <LogoutButton size="large" />
     </Screen>

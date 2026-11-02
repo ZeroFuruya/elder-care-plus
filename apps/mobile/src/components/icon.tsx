@@ -28,7 +28,9 @@ export type AppIconName =
   | 'collapse'
   | 'expand'
   | 'forward'
+  | 'fingerprint'
   | 'info'
+  | 'lock'
   | 'medication'
   | 'person'
   | 'phone'
@@ -65,11 +67,13 @@ const ICONS: Record<AppIconName, IconSpec> = {
   cube: { md: 'inventory-2', sf: 'shippingbox' },
   expand: { md: 'expand-more', sf: 'chevron.down' },
   file: { md: 'description', sf: 'doc.text' },
+  fingerprint: { md: 'fingerprint', sf: 'touchid' },
   forward: { md: 'chevron-right', sf: 'chevron.right' },
   help: { md: 'help-outline', sf: 'questionmark.circle' },
   home: { md: 'home', sf: 'house' },
   hourglass: { md: 'hourglass-empty', sf: 'hourglass' },
   info: { md: 'info-outline', sf: 'info.circle' },
+  lock: { md: 'lock', sf: 'lock.fill' },
   medication: { md: 'medication', sf: 'pills' },
   person: { md: 'person', sf: 'person' },
   phone: { md: 'call', sf: 'phone' },

@@ -11,7 +11,7 @@ import {
 } from 'react';
 import { AppState } from 'react-native';
 
-import { userRoleSchema, type UserRole } from '@eldercare/shared';
+import { PASSWORD_REQUIREMENTS, userRoleSchema, type UserRole } from '@eldercare/shared';
 
 import { getSupabase, supabaseConfigError } from '@/supabase/client';
 
@@ -137,7 +137,7 @@ function signUpErrorMessage(error: AuthError): string {
   ) {
     return 'That email is already registered. Sign in instead.';
   }
-  if (error.code === 'weak_password') return 'Use a password of at least 8 characters.';
+  if (error.code === 'weak_password') return PASSWORD_REQUIREMENTS;
   return 'Could not create the account. Please try again.';
 }
 

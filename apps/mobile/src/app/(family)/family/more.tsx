@@ -7,6 +7,7 @@ import { Card } from '@/components/card';
 import { DeactivateAccount } from '@/components/deactivate-account';
 import { LogoutButton } from '@/components/logout-button';
 import { Screen } from '@/components/screen';
+import { SecurityCard } from '@/components/security-card';
 import { fontSize, lineHeight, type AppThemeColors } from '@/constants/theme';
 import { useAppTheme } from '@/hooks/use-app-theme';
 
@@ -46,6 +47,8 @@ export default function FamilyMoreScreen() {
       </Card>
 
       <DeactivateAccount />
+
+      <SecurityCard />
 
       <LogoutButton size="large" />
     </Screen>

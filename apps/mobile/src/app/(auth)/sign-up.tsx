@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
-import type { UserRole } from '@eldercare/shared';
+import { MIN_PASSWORD_LENGTH, PASSWORD_REQUIREMENTS, type UserRole } from '@eldercare/shared';
 
 import { useAuth } from '@/auth/auth-context';
 import { validateSignUp, type FieldErrors } from '@/auth/validation';
@@ -120,10 +120,11 @@ export default function SignUpScreen() {
           onChangeText={setPassword}
           error={errors.password}
           isPassword
-          placeholder="At least 8 characters"
+          placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
           autoCapitalize="none"
           autoCorrect={false}
         />
+        <Text style={styles.hint}>{PASSWORD_REQUIREMENTS}</Text>
 
         <Field
           label="Confirm password"
@@ -194,6 +195,11 @@ function createStyles(colors: AppThemeColors) {
     },
     roleGroup: {
       gap: spacing.sm,
+    },
+    hint: {
+      color: colors.textMuted,
+      fontSize: fontSize.caption,
+      lineHeight: lineHeight.caption,
     },
     roleHeading: {
       color: colors.text,

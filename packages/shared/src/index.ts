@@ -1,4 +1,6 @@
 export * from './role';
+export * from './app-lock';
+export * from './password';
 export * from './base64';
 export * from './chunked-storage';
 export * from './dose';
