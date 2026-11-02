@@ -14,7 +14,9 @@ to the hosted project on 2026-11-02 (verified: hosted signup returns `weak_passw
 mirrors the same rule; an existing 8-character demo account still signs in because Supabase only
 validates at signup/update). JS gates green: `pnpm typecheck`, `pnpm lint`, `pnpm test` (**199**),
 `pnpm format:check`, `pnpm check:contrast`; no migration, so pgTAP is unchanged at **641/641**. The
-checking script is `docs/final-checking-script-2026-11-04.md`. **The final APK is built**:
+checking script is `docs/final-checking-script-2026-11-04.md` (the 12-minute stage run), with the
+complete screen-by-screen and function-by-function walkthrough in
+`docs/demo-flow-complete-2026-11-04.md`. **The final APK is built**:
 `versionCode` **6**, EAS `4baaa0d1-8208-4485-ac68-7bf9d4b5724e`, commit `5e6f27e`, installed and
 smoke-tested on the Android emulator (sign-in, app lock, fingerprint unlock, password unlock).
 `expo-local-authentication` is native, so the previous `939eec2d` build must not be used. After the

@@ -6,7 +6,9 @@
 Daniot, and a live demonstration of frontend + backend + database + user roles. The brief also says
 **"use real-time samples as data"** — demonstrate with live data, never screenshots.
 
-This script is the 12-minute run. The long-form operational detail stays in
+This script is the 12-minute run. The **complete** walkthrough — every screen, every database function,
+one medicine traced through all three users, and the permission matrix — is
+`docs/demo-flow-complete-2026-11-04.md`. The long-form operational detail stays in
 `docs/presentation-runbook-2026-10-23.md`; the evidence sheet stays in
 `docs/presentation-evidence-2026-10-23.md`.
 
