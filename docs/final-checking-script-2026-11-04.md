@@ -228,10 +228,20 @@ first. *"Medical history is append-only; nothing is hard-deleted."*
 
 | Field | Value |
 |---|---|
-| EAS build id | _fill after the final build_ |
-| Commit | _fill after the merge to `main`_ |
-| `versionCode` | 6 |
+| EAS build id | `4baaa0d1-8208-4485-ac68-7bf9d4b5724e` (finished 2026-11-02 19:08) |
+| Commit | `5e6f27e` (app code `6fe7b78`) |
+| `versionCode` | **6** (verified with `aapt dump badging`) |
+| Fingerprint | `47bf46ed19e02f7aba7a65535c9ab304ccde69c3` |
+| APK | `https://expo.dev/artifacts/eas/gAmYxK3ckCT8HTNSXByFKMNqLKC_CL4G80j80P0a2Oc.apk` |
 | Installed on | caregiver phone, elder phone, family phone |
+
+**Installed and smoke-tested on the Android emulator (2026-11-02):** the standalone APK launches,
+signs in, shows the "Allow notifications" prompt once (tap **Allow**), locks on demand, unlocks with
+the fingerprint and with the password. This APK replaces `939eec2d` and is the build of record.
+
+> One post-build commit (`55fa146`, on branch `after-checking/sign-out-lock-record`) clears the lock
+> timestamp after a real sign-out. It is **not** in this APK and is not needed for the checking: the
+> three phones stay signed in for the whole demo.
 
 ---
 
