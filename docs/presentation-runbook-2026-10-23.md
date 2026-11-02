@@ -67,15 +67,15 @@ On each device: **Welcome → Create account**, pick the role, and complete the 
 
 | Device | Role card to pick | Email | Password |
 |---|---|---|---|
-| Phone A | **Family caregiver** | dummy, e.g. `demo.care@gmail.com` | easy, **≥ 8 characters** |
-| Phone B | **Older adult** | dummy, e.g. `demo.elder@gmail.com` | easy, **≥ 8 characters** |
-| Phone C | **Connected family member** | dummy, e.g. `demo.family@gmail.com` | easy, **≥ 8 characters** |
+| Phone A | **Family caregiver** | dummy, e.g. `demo.care@gmail.com` | strong, **10+ chars, upper + lower + digit** |
+| Phone B | **Older adult** | dummy, e.g. `demo.elder@gmail.com` | strong, **10+ chars, upper + lower + digit** |
+| Phone C | **Connected family member** | dummy, e.g. `demo.family@gmail.com` | strong, **10+ chars, upper + lower + digit** |
 
 Form rules the screen enforces:
 
 - **Name:** at least 2 characters.
 - **Email:** must look like `name@example.com` (a real, resolvable domain is not required).
-- **Password:** **at least 8 characters** (this is stricter than the server's 6-character minimum).
+- **Password:** **at least 10 characters, including an upper-case letter, a lower-case letter and a number**. The client form and the hosted Auth server now enforce the same rule (Sprint 11), so an 8-character password is rejected before any request is sent.
 - **Confirm password** must match.
 - A **role is mandatory** — the account cannot be created without choosing one.
 

@@ -232,3 +232,26 @@ first. *"Medical history is append-only; nothing is hard-deleted."*
 | Commit | _fill after the merge to `main`_ |
 | `versionCode` | 6 |
 | Installed on | caregiver phone, elder phone, family phone |
+
+---
+
+## 10. What was verified on the emulator (2026-11-02)
+
+Run on the Android emulator (`Medium_Phone_API_37.0`, Android 17, fingerprint enrolled) against the
+hosted project, with the API 37 system image and a synthetic test account. This is the evidence behind
+the §4.1/§4.2 claims; repeat §4.2 on the physical phone during the dry run.
+
+| Check | Result |
+|---|---|
+| Sign-up form rejects a weak password | Inline **"Use at least 10 characters."**, no request sent |
+| Hosted Auth rejects the same weak password | `422 weak_password` (reasons: `length`, `characters`) |
+| Existing 8-character demo account still signs in | Yes — the policy only applies at signup/password change |
+| Sign-up with a compliant password | Account created, routed to the caregiver shell |
+| Security card | "App lock: On. After 2 minutes in the background this app asks for your fingerprint or your password." |
+| Lock now → system prompt | "Unlock ElderCare+" with "Touch the fingerprint sensor" |
+| Fingerprint unlock | Simulated touch (`adb emu finger touch 1`) → back on Profile |
+| Password unlock | Wrong password → "That password is not correct."; correct password → unlocked |
+| 2-minute background lock | Home for 2 min 22 s → reopening shows the lock screen and the fingerprint prompt |
+| Cold-start lock | Killing and reopening the app after 2 minutes → locked again |
+| Lock screen contents | Account name only: no email, no medicines, no appointments |
+| 5-attempt cooldown | Policy transition unit-tested (`registerUnlockFailure`, 199 JS tests); the banner is driven by the same value |

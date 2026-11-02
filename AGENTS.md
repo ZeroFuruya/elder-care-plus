@@ -12,7 +12,7 @@ a **Security card** with "Lock now" on all three profiles, and a stronger **pass
 characters with upper + lower + digit). The policy is declared in `supabase/config.toml` and was pushed
 to the hosted project on 2026-11-02 (verified: hosted signup returns `weak_password` 422 and the client
 mirrors the same rule; an existing 8-character demo account still signs in because Supabase only
-validates at signup/update). JS gates green: `pnpm typecheck`, `pnpm lint`, `pnpm test` (**194**),
+validates at signup/update). JS gates green: `pnpm typecheck`, `pnpm lint`, `pnpm test` (**199**),
 `pnpm format:check`, `pnpm check:contrast`; no migration, so pgTAP is unchanged at **641/641**. The
 checking script is `docs/final-checking-script-2026-11-04.md`. **The final APK must be rebuilt**
 (`versionCode` 6): `expo-local-authentication` is a native module, so the installed `939eec2d` build has
