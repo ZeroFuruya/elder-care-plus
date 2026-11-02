@@ -2,6 +2,22 @@
 
 ## Status
 
+**Final-checking status (2026-11-02).** The 4th Increment and Final Checking is **4–6 November 2026**
+with **Ms. Liezel F. Grande** as the owner's assigned evaluator (the brief bans switching evaluators and
+offers no remarks after the window). The 3rd-increment remark — prescription **photos** — is closed by
+Sprint 10 (storage only, no OCR). Per owner decision 2026-11-02 the app also **tightens authentication**
+(branch `sprint-11-auth-hardening`): a biometric-or-password **app lock** after 2 minutes in the
+background (policy in `packages/shared/src/app-lock.ts`, device check via `expo-local-authentication`),
+a **Security card** with "Lock now" on all three profiles, and a stronger **password policy** (10
+characters with upper + lower + digit). The policy is declared in `supabase/config.toml` and was pushed
+to the hosted project on 2026-11-02 (verified: hosted signup returns `weak_password` 422 and the client
+mirrors the same rule; an existing 8-character demo account still signs in because Supabase only
+validates at signup/update). JS gates green: `pnpm typecheck`, `pnpm lint`, `pnpm test` (**194**),
+`pnpm format:check`, `pnpm check:contrast`; no migration, so pgTAP is unchanged at **641/641**. The
+checking script is `docs/final-checking-script-2026-11-04.md`. **The final APK must be rebuilt**
+(`versionCode` 6): `expo-local-authentication` is a native module, so the installed `939eec2d` build has
+neither the app lock nor the prescription-photo screens.
+
 **Current status (2026-10-06).** Sprint 1 is accepted, and **Sprints 1b, 2, 3, 4, 4b, 5, 7, 8 and 9 are
 implemented** (Sprint 1b/2/3/4 accepted at the 2026-10-01 checkpoint; Sprint 5 merged to `main`).
 **Sprint 6 (prescription evidence/OCR) was dropped/deferred** by owner decision 2026-10-05 — there

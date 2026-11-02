@@ -1,9 +1,9 @@
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { Modal, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { APP_LOCK_MAX_ATTEMPTS, unlockCooldownMs } from '@eldercare/shared';
+import { APP_LOCK_MAX_ATTEMPTS, cooldownRemainingMs } from '@eldercare/shared';
 
 import { useAppLock } from '@/auth/app-lock';
 import { useAuth } from '@/auth/auth-context';
@@ -43,7 +43,7 @@ export function AppLockScreen() {
 }
 
 function LockScreenBody() {
-  const { unlock, biometric } = useAppLock();
+  const { unlock, biometric, cooldownUntil, registerFailure } = useAppLock();
   const { user, reauthenticate, signOut } = useAuth();
   const { colors } = useAppTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
@@ -52,25 +52,18 @@ function LockScreenBody() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState<'password' | 'biometric' | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
 
   const busyRef = useRef(false);
 
-  const cooldownSeconds = cooldownUntil ? Math.max(0, Math.ceil((cooldownUntil - now) / 1000)) : 0;
+  const cooldownSeconds = Math.ceil(cooldownRemainingMs(cooldownUntil, now) / 1000);
 
+  // A one-second tick while the lock is on screen, so the cooldown text counts down. The callback
+  // starts a timer rather than setting state synchronously in the effect.
   useEffect(() => {
-    if (!cooldownUntil) return;
-
-    const timer = setInterval(() => {
-      const current = Date.now();
-      setNow(current);
-      if (current >= cooldownUntil) setCooldownUntil(null);
-    }, 1000);
-
+    const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(timer);
-  }, [cooldownUntil]);
+  }, []);
 
   const runBiometric = useCallback(async () => {
     if (busyRef.current) return;
@@ -129,39 +122,39 @@ function LockScreenBody() {
     setBusy('password');
     setMessage(null);
 
-    const result = await reauthenticate(password);
+    try {
+      const result = await reauthenticate(password);
 
-    if (result.ok) {
+      if (result.ok) {
+        unlock();
+        return;
+      }
+
+      setPassword('');
+      setMessage(result.message);
+      registerFailure();
+    } catch {
+      // A thrown auth call (timeout, offline, malformed response) must never leave the lock screen
+      // stuck with a dead button; the user gets the message and can try again.
+      setMessage('The password could not be checked just now. Please try again.');
+    } finally {
       busyRef.current = false;
       setBusy(null);
-      unlock();
-      return;
     }
-
-    const failed = attempts + 1;
-    const cooldown = unlockCooldownMs(failed);
-    setPassword('');
-    setMessage(result.message);
-    setAttempts(cooldown > 0 ? 0 : failed);
-    if (cooldown > 0) {
-      setCooldownUntil(Date.now() + cooldown);
-      setNow(Date.now());
-    }
-
-    busyRef.current = false;
-    setBusy(null);
   };
 
   return (
-    <View
-      style={[
-        styles.screen,
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.content,
         { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg },
       ]}
+      keyboardShouldPersistTaps="handled"
     >
       <View style={styles.header}>
         <View style={styles.lockBadge}>
-          <Icon name="lock" size={40} color={colors.primary} />
+          <Icon name="lock" size={36} color={colors.primary} />
         </View>
         <Text style={styles.title} accessibilityRole="header">
           ElderCare+ is locked
@@ -243,7 +236,7 @@ function LockScreenBody() {
           accessibilityHint="Signs out of this account. Your record is not deleted."
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -252,12 +245,17 @@ function createStyles(colors: AppThemeColors) {
     screen: {
       backgroundColor: colors.background,
       flex: 1,
+    },
+    content: {
+      flexGrow: 1,
+      gap: spacing.md,
+      justifyContent: 'center',
       paddingHorizontal: spacing.lg,
     },
     header: {
       alignItems: 'center',
       gap: spacing.sm,
-      paddingTop: spacing.xl,
+      paddingTop: spacing.sm,
     },
     lockBadge: {
       alignItems: 'center',
@@ -283,10 +281,8 @@ function createStyles(colors: AppThemeColors) {
       textAlign: 'center',
     },
     body: {
-      flex: 1,
       gap: spacing.md,
-      justifyContent: 'center',
-      paddingTop: spacing.lg,
+      paddingTop: spacing.md,
     },
     policy: {
       color: colors.textMuted,

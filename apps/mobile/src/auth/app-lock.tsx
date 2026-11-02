@@ -3,7 +3,14 @@ import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { AppState } from 'react-native';
 
-import { parseAppLockRecord, shouldLockOnResume, type AppLockRecord } from '@eldercare/shared';
+import {
+  INITIAL_UNLOCK_ATTEMPTS,
+  parseAppLockRecord,
+  registerUnlockFailure,
+  shouldLockOnResume,
+  type AppLockRecord,
+  type UnlockAttemptState,
+} from '@eldercare/shared';
 
 import { useAuth } from '@/auth/auth-context';
 
@@ -33,6 +40,12 @@ interface AppLockValue {
   lockNow: () => void;
   /** Called by the lock screen after a successful password or biometric check. */
   unlock: () => void;
+  /** Wrong passwords recorded since the last reset (0 while a cooldown runs). */
+  failedAttempts: number;
+  /** Epoch ms until which the keypad refuses further attempts, or null. */
+  cooldownUntil: number | null;
+  /** Records one wrong password and starts the cooldown on the fifth. */
+  registerFailure: () => void;
   biometric: BiometricState;
 }
 
@@ -74,6 +87,7 @@ function AppLockState({ userId, children }: { userId: string; children: React.Re
     available: false,
     label: 'Password',
   });
+  const [attempts, setAttempts] = useState<UnlockAttemptState>(INITIAL_UNLOCK_ATTEMPTS);
 
   // Cold start: the JS context may have been killed while the app was backgrounded for hours.
   useEffect(() => {
@@ -178,13 +192,31 @@ function AppLockState({ userId, children }: { userId: string; children: React.Re
   }, [userId]);
 
   const unlock = useCallback(() => {
+    setAttempts(INITIAL_UNLOCK_ATTEMPTS);
     setLocked(false);
     void clearBackgroundedAt();
   }, []);
 
+  /**
+   * One wrong password. The transition itself is in `@eldercare/shared` (`registerUnlockFailure`)
+   * and unit-tested; the functional update is what makes rapid submissions safe, because React
+   * hands the updater the latest state instead of a render-time snapshot.
+   */
+  const registerFailure = useCallback(() => {
+    setAttempts((current) => registerUnlockFailure(current, Date.now()));
+  }, []);
+
   const value = useMemo<AppLockValue>(
-    () => ({ locked, lockNow, unlock, biometric }),
-    [biometric, lockNow, locked, unlock],
+    () => ({
+      locked,
+      lockNow,
+      unlock,
+      failedAttempts: attempts.failedAttempts,
+      cooldownUntil: attempts.cooldownUntil,
+      registerFailure,
+      biometric,
+    }),
+    [attempts, biometric, lockNow, locked, registerFailure, unlock],
   );
 
   return <AppLockContext.Provider value={value}>{children}</AppLockContext.Provider>;
@@ -208,6 +240,9 @@ const SIGNED_OUT: AppLockValue = {
   locked: false,
   lockNow: () => undefined,
   unlock: () => undefined,
+  failedAttempts: 0,
+  cooldownUntil: null,
+  registerFailure: () => undefined,
   biometric: { available: false, label: 'Password' },
 };
 

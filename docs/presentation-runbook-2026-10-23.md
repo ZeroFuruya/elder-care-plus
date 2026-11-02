@@ -1,5 +1,10 @@
 # Presentation runbook — ElderCare+ — 2026-10-23
 
+> **Superseded for the 4–6 November 2026 final checking** by
+> `docs/final-checking-script-2026-11-04.md`, which also covers the Sprint 11 app lock, biometrics and
+> the stronger password policy. This runbook stays as the detailed operational appendix (pre-flight,
+> account setup, fallbacks, SQL).
+
 The demo of record for the presentation: **one complete medication-adherence transaction cycle** on
 the installed **preview APK**, against the **hosted** Supabase project, with every message **in-app**.
 Plus the supporting passes (reports, help request, appointments, family read-only) and the

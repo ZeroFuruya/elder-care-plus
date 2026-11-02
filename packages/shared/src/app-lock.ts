@@ -71,3 +71,35 @@ export function shouldLockOnResume(input: {
 export function unlockCooldownMs(failedAttempts: number): number {
   return failedAttempts >= APP_LOCK_MAX_ATTEMPTS ? APP_LOCK_COOLDOWN_MS : 0;
 }
+
+/** The lock screen's attempt bookkeeping, kept in one value so a render cannot mix two counters. */
+export interface UnlockAttemptState {
+  failedAttempts: number;
+  cooldownUntil: number | null;
+}
+
+export const INITIAL_UNLOCK_ATTEMPTS: UnlockAttemptState = {
+  failedAttempts: 0,
+  cooldownUntil: null,
+};
+
+/**
+ * Records one wrong password. A state transition rather than a timer: the lock screen already ticks
+ * once a second, so an expired pause hides itself when `cooldownRemainingMs` reaches 0.
+ */
+export function registerUnlockFailure(state: UnlockAttemptState, now: number): UnlockAttemptState {
+  const failed = state.failedAttempts + 1;
+  const cooldown = unlockCooldownMs(failed);
+
+  if (cooldown === 0) {
+    return { failedAttempts: failed, cooldownUntil: state.cooldownUntil };
+  }
+
+  return { failedAttempts: 0, cooldownUntil: now + cooldown };
+}
+
+/** Milliseconds left on the pause, never negative. */
+export function cooldownRemainingMs(cooldownUntil: number | null, now: number): number {
+  if (!cooldownUntil) return 0;
+  return Math.max(0, cooldownUntil - now);
+}
